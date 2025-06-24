@@ -79,9 +79,9 @@ function App() {
       const base = {
         "Submission Date": row[0],
         "Registration Type": regType,
-        "Admin First Name": row[2],
-        "Admin Last Name": row[3],
-        "Admin Email": row[4],
+        "First Name": row[2],
+        "Last Name": row[3],
+        Email: row[4],
         "Company / Institution": isGroup ? row[15] : row[8],
         "Total Cost": rowObj["TOTAL COST (GROUP)"] || "",
         "Payment Option": rowObj["Please select one payment option."] || "",
@@ -154,28 +154,42 @@ function App() {
                 <tr>
                   <th>Submission Date</th>
                   <th>Registration Type</th>
-                  <th>First Name</th>
-                  <th>Last Name</th>
-                  <th>Admin Email Address</th>
                   <th>Admin First Name</th>
                   <th>Admin Last Name</th>
-                  <th>Email</th>
-                  <th>Company / Insitution</th>
+                  <th>Admin Email</th>
+                  <th>Attendee First Name</th>
+                  <th>Attendee Last Name</th>
+                  <th>Attendee Email</th>
+                  <th>Company / Institution</th>
                   <th>Job Position</th>
-                  <th>Deisgnation</th>
+                  <th>Designation</th>
                   <th>Country</th>
                   <th>Trainings</th>
-                  <th>Total</th>
+                  <th>Subtotal</th>
                 </tr>
               </thead>
               <tbody>
-                {excelData.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {Object.values(row).map((value, cellIndex) => (
-                      <td key={`cell-${rowIndex}-${cellIndex}`}>{value}</td>
-                    ))}
-                  </tr>
-                ))}
+                {excelData.map((row, rowIndex) => {
+                  const attendees = row.Attendees || [{}]; // fallback for individuals
+                  return attendees.map((attendee, i) => (
+                    <tr key={`${rowIndex}-${i}`}>
+                      <td>{row["Submission Date"]}</td>
+                      <td>{row["Registration Type"]}</td>
+                      <td>{row["First Name"]}</td>
+                      <td>{row["Last Name"]}</td>
+                      <td>{row["Email"]}</td>
+                      <td>{attendee["First Name"]}</td>
+                      <td>{attendee["Last Name"]}</td>
+                      <td>{attendee["Email"]}</td>
+                      <td>{row["Company / Institution"]}</td>
+                      <td>{attendee["Job Position"]}</td>
+                      <td>{attendee["Designation"]}</td>
+                      <td>{attendee["Country"]}</td>
+                      <td>{attendee["Trainings"]}</td>
+                      <td>{attendee["Subtotal"]}</td>
+                    </tr>
+                  ));
+                })}
               </tbody>
             </table>
           </div>
