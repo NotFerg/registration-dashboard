@@ -40,11 +40,14 @@ function App() {
 
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json(worksheet);
+        const data = XLSX.utils.sheet_to_json(worksheet, {
+          header: 1,
+          defval: "",
+        });
         // console.log(data);
         // console.log(data[1]);
 
-        const normalizedData = normalizeExcelData(data);
+        const normalizedData = normalizeExcelDataFromArray(data);
         setExcelData(normalizedData);
       } catch (error) {
         console.error("Error reading Excel file:", error);
@@ -60,57 +63,47 @@ function App() {
     reader.readAsArrayBuffer(file);
   }
 
-  function normalizeExcelData(data) {
+  function normalizeExcelDataFromArray(data) {
+    const [headers, ...rows] = data;
     const normalized = [];
 
-    data.forEach((row) => {
-      const regType = row["SELECT YOUR REGISTRATION TYPE"]?.trim();
+    rows.forEach((row) => {
+      const rowObj = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
+
+      const regType = rowObj["SELECT YOUR REGISTRATION TYPE"]?.trim();
       const isGroup = regType === "Someone Else / Group";
       const attendeeCount =
-        parseInt(row["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) || 0;
+        parseInt(rowObj["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) ||
+        0;
 
       const base = {
-        "Submission Date": row["Submission Date"],
+        "Submission Date": row[0],
         "Registration Type": regType,
-        "Admin First Name": row["First Name"],
-        "Admin Last Name": row["Last Name"],
-        "Admin Email": row["ADMIN EMAIL ADDRESS"],
-        "Company / Institution":
-          row["COMPANY / INSTITUTION"] || row["Company / Institution"],
-        "Total Cost": row["TOTAL COST (GROUP)"] || "",
-        "Payment Option": row["Please select one payment option."] || "",
+        "Admin First Name": row[2],
+        "Admin Last Name": row[3],
+        "Admin Email": row[4],
+        "Company / Institution": isGroup ? row[15] : row[8],
+        "Total Cost": rowObj["TOTAL COST (GROUP)"] || "",
+        "Payment Option": rowObj["Please select one payment option."] || "",
       };
 
       if (isGroup && attendeeCount > 0) {
-        const keys = Object.keys(row);
-        const startIndex =
-          keys.indexOf("HOW MANY ATTENDEES ARE YOU REGISTERING FOR?") + 1;
-
         const attendees = [];
+        let startIndex =
+          headers.indexOf("HOW MANY ATTENDEES ARE YOU REGISTERING FOR?") + 1;
 
         for (let i = 0; i < attendeeCount; i++) {
           const offset = i * 8;
 
-          const fieldKeys = {
-            firstName: keys[startIndex + offset + 1],
-            lastName: keys[startIndex + offset + 2],
-            email: keys[startIndex + offset + 3],
-            jobPosition: keys[startIndex + offset + 4],
-            designation: keys[startIndex + offset + 5],
-            country: keys[startIndex + offset + 6],
-            trainings: keys[startIndex + offset + 7],
-            subtotal: keys[startIndex + offset + 8],
-          };
-
           const attendee = {
-            "First Name": row[fieldKeys.firstName],
-            "Last Name": row[fieldKeys.lastName],
-            Email: row[fieldKeys.email],
-            "Job Position": row[fieldKeys.jobPosition],
-            Designation: row[fieldKeys.designation],
-            Country: row[fieldKeys.country],
-            Trainings: row[fieldKeys.trainings],
-            Subtotal: row[fieldKeys.subtotal],
+            "First Name": row[startIndex + offset + 1],
+            "Last Name": row[startIndex + offset + 2],
+            Email: row[startIndex + offset + 3],
+            "Job Position": row[startIndex + offset + 4],
+            Designation: row[startIndex + offset + 5],
+            Country: row[startIndex + offset + 6],
+            Trainings: row[startIndex + offset + 7],
+            Subtotal: row[startIndex + offset + 8],
           };
 
           attendees.push(attendee);
@@ -120,14 +113,14 @@ function App() {
       } else {
         // Individual
         const attendee = {
-          "First Name": row["First Name"],
-          "Last Name": row["Last Name"],
-          Email: row["EMAIL"],
-          "Job Position": row["JOB POSITION"],
-          Designation: row["DESIGNATION"],
-          Country: row["COUNTRY"],
-          Trainings: row["TRAININGS (Individual Attendee)"],
-          Subtotal: row["TOTAL (Individual Attendee)"],
+          "First Name": rowObj["First Name"],
+          "Last Name": rowObj["Last Name"],
+          Email: rowObj["EMAIL"],
+          "Job Position": rowObj["JOB POSITION"],
+          Designation: rowObj["DESIGNATION"],
+          Country: rowObj["COUNTRY"],
+          Trainings: rowObj["TRAININGS (Individual Attendee)"],
+          Subtotal: rowObj["TOTAL (Individual Attendee)"],
         };
 
         normalized.push({ ...base, Attendees: [attendee] });
