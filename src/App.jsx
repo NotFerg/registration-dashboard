@@ -166,11 +166,12 @@ function App() {
                   <th>Country</th>
                   <th>Trainings</th>
                   <th>Subtotal</th>
+                  <th>Total Cost</th>
                 </tr>
               </thead>
               <tbody>
                 {excelData.map((row, rowIndex) => {
-                  const attendees = row.Attendees || [{}]; // fallback for individuals
+                  const attendees = row.Attendees || [{}]; // if no Attendees, use single blank object
                   return attendees.map((attendee, i) => (
                     <tr key={`${rowIndex}-${i}`}>
                       <td>{row["Submission Date"]}</td>
@@ -178,15 +179,16 @@ function App() {
                       <td>{row["First Name"]}</td>
                       <td>{row["Last Name"]}</td>
                       <td>{row["Email"]}</td>
-                      <td>{attendee["First Name"]}</td>
-                      <td>{attendee["Last Name"]}</td>
-                      <td>{attendee["Email"]}</td>
+                      <td>{attendee["First Name"] || row["First Name"]}</td>
+                      <td>{attendee["Last Name"] || row["Last Name"]}</td>
+                      <td>{attendee["Email"] || row["Email"]}</td>
                       <td>{row["Company / Institution"]}</td>
-                      <td>{attendee["Job Position"]}</td>
-                      <td>{attendee["Designation"]}</td>
-                      <td>{attendee["Country"]}</td>
-                      <td>{attendee["Trainings"]}</td>
-                      <td>{attendee["Subtotal"]}</td>
+                      <td>{attendee["Job Position"] || row["Job Position"]}</td>
+                      <td>{attendee["Designation"] || row["Designation"]}</td>
+                      <td>{attendee["Country"] || row["Country"]}</td>
+                      <td>{attendee["Trainings"] || row["Trainings"]}</td>
+                      <td>{attendee["Subtotal"] || row["Subtotal"]}</td>
+                      <td>{row["Total Cost"] || row["Subtotal"]}</td>
                     </tr>
                   ));
                 })}
