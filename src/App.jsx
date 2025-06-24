@@ -112,18 +112,20 @@ function App() {
         normalized.push({ ...base, Attendees: attendees });
       } else {
         // Individual
-        const attendee = {
-          "First Name": rowObj["First Name"],
-          "Last Name": rowObj["Last Name"],
-          Email: rowObj["EMAIL"],
-          "Job Position": rowObj["JOB POSITION"],
-          Designation: rowObj["DESIGNATION"],
-          Country: rowObj["COUNTRY"],
+        normalized.push({
+          "Submission Date": rowObj["Submission Date"],
+          "Registration Type": rowObj["SELECT YOUR REGISTRATION TYPE"],
+          "First Name": row[5],
+          "Last Name": row[6],
+          Email: row[7],
+          "Company / Institution": row[8],
+          "Job Position": row[9],
+          Designation: row[10],
+          Country: row[11],
           Trainings: rowObj["TRAININGS (Individual Attendee)"],
           Subtotal: rowObj["TOTAL (Individual Attendee)"],
-        };
-
-        normalized.push({ ...base, Attendees: [attendee] });
+          "Payment Option": rowObj["Please select one payment option."] || "",
+        });
       }
     });
 
