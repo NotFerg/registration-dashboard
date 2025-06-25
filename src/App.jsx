@@ -154,12 +154,9 @@ function App() {
                 <tr>
                   <th>Submission Date</th>
                   <th>Registration Type</th>
-                  <th>Admin First Name</th>
-                  <th>Admin Last Name</th>
-                  <th>Admin Email</th>
-                  <th>Attendee First Name</th>
-                  <th>Attendee Last Name</th>
-                  <th>Attendee Email</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Email</th>
                   <th>Company / Institution</th>
                   <th>Job Position</th>
                   <th>Designation</th>
@@ -176,9 +173,6 @@ function App() {
                     <tr key={`${rowIndex}-${i}`}>
                       <td>{row["Submission Date"]}</td>
                       <td>{row["Registration Type"]}</td>
-                      <td>{row["First Name"]}</td>
-                      <td>{row["Last Name"]}</td>
-                      <td>{row["Email"]}</td>
                       <td>{attendee["First Name"] || row["First Name"]}</td>
                       <td>{attendee["Last Name"] || row["Last Name"]}</td>
                       <td>{attendee["Email"] || row["Email"]}</td>
