@@ -21,6 +21,7 @@ function App() {
       return;
     }
 
+    console.log("DATA", registrations);
     setExcelData(registrations);
   }
 
@@ -85,7 +86,10 @@ function App() {
             designation: regData["Designation"],
             country: regData["Country"],
             trainings: regData["Trainings"],
-            total_cost: regData["Total Cost"]?.slice(1),
+            total_cost:
+              parseFloat(
+                (regData["Total Cost"] || "").toString().replace(/[$,]/g, "")
+              ) || 0,
             payment_options: regData["Payment Option"],
           },
         ])
@@ -107,7 +111,9 @@ function App() {
           designation: a["Designation"],
           country: a["Country"],
           trainings: a["Trainings"],
-          subtotal: parseFloat((a["Subtotal"] || "").toString().slice(1)) || 0,
+          subtotal:
+            parseFloat((a["Subtotal"] || "").toString().replace(/[$,]/g, "")) ||
+            0,
         }));
 
         const { error: attErr } = await supabase
@@ -174,6 +180,16 @@ function App() {
     return normalized;
   }
 
+  function formatCurrency(amount) {
+    const num = parseFloat(amount);
+    if (isNaN(num)) return "$0.00";
+
+    return num.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
+  }
+
   return (
     <>
       <div className='container text-center my-5'>
@@ -212,11 +228,14 @@ function App() {
                       <tr className='table-info fw-bold'>
                         <td>{reg.company}</td>
                         <td>{reg.submission_date}</td>
-                        <td colSpan='7' className='text-muted fst-italic'>
+                        <td>{reg.first_name}</td>
+                        <td>{reg.last_name}</td>
+                        <td>{reg.email}</td>
+                        <td colSpan='4' className='text-muted fst-italic'>
                           Group Registration - {reg.attendees?.length || 0}{" "}
                           attendees
                         </td>
-                        <td>{reg.total_cost}</td>
+                        <td>{formatCurrency(reg.total_cost)}</td>
                       </tr>
                     )}
 
@@ -235,7 +254,7 @@ function App() {
                           <td>{attendee.designation}</td>
                           <td>{attendee.country}</td>
                           <td className='small'>{attendee.trainings}</td>
-                          <td>{attendee.subtotal}</td>
+                          <td>{formatCurrency(attendee.subtotal)}</td>
                         </tr>
                       ))}
 
@@ -251,7 +270,7 @@ function App() {
                         <td>{reg.designation}</td>
                         <td>{reg.country}</td>
                         <td className='small'>{reg.trainings}</td>
-                        <td>{reg.total_cost}</td>
+                        <td>{formatCurrency(reg.total_cost)}</td>
                       </tr>
                     )}
                   </React.Fragment>
