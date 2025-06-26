@@ -129,7 +129,7 @@ function App() {
             designation: regData["Designation"],
             country: regData["Country"],
             trainings: regData["Trainings"],
-            total_cost: regData["Total Cost"],
+            total_cost: regData["Total Cost"]?.slice(1),
             payment_options: regData["Payment Option"],
           },
         ])
@@ -151,10 +151,7 @@ function App() {
           designation: a["Designation"],
           country: a["Country"],
           trainings: a["Trainings"],
-          subtotal:
-            parseFloat(
-              (a["Subtotal"] || "").toString().replace(/[^0-9.]/g, "")
-            ) || 0,
+          subtotal: parseFloat((a["Subtotal"] || "").toString().slice(1)) || 0,
         }));
 
         const { error: attErr } = await supabase
@@ -163,15 +160,6 @@ function App() {
         if (attErr) console.error("Attendee insert error:", attErr);
       }
     }
-  }
-
-  function parseCurrency(value) {
-    if (typeof value === "string") {
-      const cleaned = value.replace(/[^0-9.-]+/g, ""); // removes $, commas, etc.
-      const number = parseFloat(cleaned);
-      return isNaN(number) ? null : number;
-    }
-    return value;
   }
 
   function normalizeExcelDataFromArray(data) {
@@ -194,8 +182,7 @@ function App() {
         Email: row[4],
         "Company / Institution": isGroup ? row[15] : row[8],
         "Total Cost":
-          parseCurrency(rowObj["TOTAL COST (GROUP)"]) ||
-          parseCurrency(rowObj["TOTAL (Individual Attendee)"]),
+          rowObj["TOTAL COST (GROUP)"] || rowObj["TOTAL (Individual Attendee)"],
         "Payment Option": rowObj["Please select one payment option."] || "",
         "Job Position": row[9],
         Designation: row[10],
@@ -217,7 +204,7 @@ function App() {
             Designation: row[startIndex + offset + 5],
             Country: row[startIndex + offset + 6],
             Trainings: row[startIndex + offset + 7],
-            Subtotal: parseCurrency(row[startIndex + offset + 8]),
+            Subtotal: row[startIndex + offset + 8],
           };
           attendees.push(a);
         }
@@ -234,24 +221,13 @@ function App() {
   return (
     <>
       <div className='container text-center my-5'>
-        <form
-          className='container text-center my-5'
-          onSubmit={(e) => e.preventDefault()} // prevent full page reload
-        >
-          <label htmlFor='myFile' className='form-label'>
-            Upload Excel File:
-          </label>
-          <input
-            id='myFile'
-            name='file'
-            type='file'
-            accept='.xlsx, .xls'
-            className='form-control mb-3 mx-auto'
-            onChange={handleFileUpload}
-            required
-            style={{ maxWidth: "400px" }}
-          />
-        </form>
+        <label htmlFor='myFile'>Select a file:</label>
+        <input
+          id='myFile'
+          type='file'
+          accept='.xlsx, .xls'
+          onChange={handleFileUpload}
+        />
       </div>
 
       <div className='container mt-4'>
