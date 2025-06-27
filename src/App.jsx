@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 import supabase from "./utils/supabase";
+import Sidebar from "./components/sidebar.jsx";
 import "./App.css";
 
 function App() {
@@ -192,93 +193,117 @@ function App() {
 
   return (
     <>
-      <div className='container text-center my-5'>
-        <label htmlFor='myFile'>Select a file:</label>
-        <input
-          id='myFile'
-          type='file'
-          accept='.xlsx, .xls'
-          onChange={handleFileUpload}
-        />
-      </div>
+      <div className="d-flex flex-row">
+        <Sidebar />
+        <div className="flex-row">
+          <div className="container text-end mt-3">
+            <label htmlFor="myFile" className="btn btn-success fw-bold">
+              <i className="bi bi-upload"></i> Upload File
+            </label>
+            <input
+              id="myFile"
+              className="d-none"
+              type="file"
+              accept=".xlsx, .xls"
+              onChange={handleFileUpload}
+            />
 
-      <div className='container mt-4'>
-        {excelData.length > 0 && (
-          <div className='table-responsive'>
-            <table className='table table-bordered table-striped table-hover'>
-              <thead className='table-dark'>
-                <tr>
-                  <th>Company / Institution</th>
-                  <th>Submission Date</th>
-                  <th>First Name</th>
-                  <th>Last Name</th>
-                  <th>Email</th>
-                  <th>Position</th>
-                  <th>Designation</th>
-                  <th>Country</th>
-                  <th>Trainings</th>
-                  <th>Total Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {excelData.map((reg, i) => (
-                  <React.Fragment key={i}>
-                    {/* Main registration row - only for group registrations */}
-                    {reg.registration_type === "Someone Else / Group" && (
-                      <tr className='table-info fw-bold'>
-                        <td>{reg.company}</td>
-                        <td>{reg.submission_date}</td>
-                        <td>{reg.first_name}</td>
-                        <td>{reg.last_name}</td>
-                        <td>{reg.email}</td>
-                        <td colSpan='4' className='text-muted fst-italic'>
-                          Group Registration - {reg.attendees?.length || 0}{" "}
-                          attendees
-                        </td>
-                        <td>{formatCurrency(reg.total_cost)}</td>
-                      </tr>
-                    )}
-
-                    {/* Attendees rows */}
-                    {reg.attendees &&
-                      reg.attendees.map((attendee, j) => (
-                        <tr key={`${i}-${j}`} className='table-light'>
-                          <td className='ps-4'>
-                            <span className='text-muted'>└─</span>
-                          </td>
-                          <td></td>
-                          <td>{attendee.first_name}</td>
-                          <td>{attendee.last_name}</td>
-                          <td>{attendee.email}</td>
-                          <td>{attendee.position}</td>
-                          <td>{attendee.designation}</td>
-                          <td>{attendee.country}</td>
-                          <td className='small'>{attendee.trainings}</td>
-                          <td>{formatCurrency(attendee.subtotal)}</td>
-                        </tr>
-                      ))}
-
-                    {/* Individual registration row - for non-group registrations */}
-                    {reg.registration_type !== "Someone Else / Group" && (
-                      <tr>
-                        <td>{reg.company}</td>
-                        <td>{reg.submission_date}</td>
-                        <td>{reg.first_name}</td>
-                        <td>{reg.last_name}</td>
-                        <td>{reg.email}</td>
-                        <td>{reg.position}</td>
-                        <td>{reg.designation}</td>
-                        <td>{reg.country}</td>
-                        <td className='small'>{reg.trainings}</td>
-                        <td>{formatCurrency(reg.total_cost)}</td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
+            <button className="btn btn-primary fw-bold ms-2">
+              <i className="bi bi-download"></i> Export Data
+            </button>
           </div>
-        )}
+
+          <div className="container mt-3">
+            <ul className="nav nav-tabs">
+              <li className="nav-item">
+                <a className="nav-link active" aria-current="page" href="#">
+                  Individual
+                </a>
+              </li>
+              <li className="nav-item">
+                <a className="nav-link" href="#">
+                  Group
+                </a>
+              </li>
+            </ul>
+            {excelData.length > 0 && (
+              <div className="table-responsive">
+                <table className="table table-bordered table-striped table-hover">
+                  <thead className="table-dark">
+                    <tr>
+                      <th>Company / Institution</th>
+                      <th>Submission Date</th>
+                      <th>First Name</th>
+                      <th>Last Name</th>
+                      <th>Email</th>
+                      <th>Position</th>
+                      <th>Designation</th>
+                      <th>Country</th>
+                      <th>Trainings</th>
+                      <th>Total Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {excelData.map((reg, i) => (
+                      <React.Fragment key={i}>
+                        {/* Main registration row - only for group registrations */}
+                        {reg.registration_type === "Someone Else / Group" && (
+                          <tr className="table-info fw-bold">
+                            <td>{reg.company}</td>
+                            <td>{reg.submission_date}</td>
+                            <td>{reg.first_name}</td>
+                            <td>{reg.last_name}</td>
+                            <td>{reg.email}</td>
+                            <td colSpan="4" className="text-muted fst-italic">
+                              Group Registration - {reg.attendees?.length || 0}{" "}
+                              attendees
+                            </td>
+                            <td>{formatCurrency(reg.total_cost)}</td>
+                          </tr>
+                        )}
+
+                        {/* Attendees rows */}
+                        {reg.attendees &&
+                          reg.attendees.map((attendee, j) => (
+                            <tr key={`${i}-${j}`} className="table-light">
+                              <td className="ps-4">
+                                <span className="text-muted">└─</span>
+                              </td>
+                              <td></td>
+                              <td>{attendee.first_name}</td>
+                              <td>{attendee.last_name}</td>
+                              <td>{attendee.email}</td>
+                              <td>{attendee.position}</td>
+                              <td>{attendee.designation}</td>
+                              <td>{attendee.country}</td>
+                              <td className="small">{attendee.trainings}</td>
+                              <td>{formatCurrency(attendee.subtotal)}</td>
+                            </tr>
+                          ))}
+
+                        {/* Individual registration row - for non-group registrations */}
+                        {reg.registration_type !== "Someone Else / Group" && (
+                          <tr>
+                            <td>{reg.company}</td>
+                            <td>{reg.submission_date}</td>
+                            <td>{reg.first_name}</td>
+                            <td>{reg.last_name}</td>
+                            <td>{reg.email}</td>
+                            <td>{reg.position}</td>
+                            <td>{reg.designation}</td>
+                            <td>{reg.country}</td>
+                            <td className="small">{reg.trainings}</td>
+                            <td>{formatCurrency(reg.total_cost)}</td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </>
   );
