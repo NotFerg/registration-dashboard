@@ -103,6 +103,25 @@ function App() {
         continue;
       }
 
+      // --- Handle trainings for registration ---
+      const trainingLines = splitTrainingLines(regData["Trainings"]);
+      for (const line of trainingLines) {
+        const parsed = parseTrainingLine(line);
+        if (!parsed) continue;
+
+        const trainingId = await upsertTrainingByNameDatePrice(
+          parsed.name,
+          parsed.date,
+          parsed.price
+        );
+
+        if (trainingId) {
+          await supabase
+            .from("registration_trainings")
+            .insert([{ registration_id: reg.id, training_id: trainingId }]);
+        }
+      }
+
       if (Attendees.length > 0) {
         const mapped = Attendees.map((a) => ({
           registration_id: reg.id,
@@ -118,12 +137,93 @@ function App() {
             0,
         }));
 
-        const { error: attErr } = await supabase
+        const { data: insertedAttendees, error: attErr } = await supabase
           .from("attendees")
-          .insert(mapped);
-        if (attErr) console.error("Attendee insert error:", attErr);
+          .insert(mapped)
+          .select();
+
+        if (attErr) {
+          console.error("Attendee insert error:", attErr);
+        } else {
+          for (const [index, a] of Attendees.entries()) {
+            const trainingLines = splitTrainingLines(a["Trainings"]);
+            for (const line of trainingLines) {
+              const parsed = parseTrainingLine(line);
+              if (!parsed) continue;
+
+              const trainingId = await upsertTrainingByNameDatePrice(
+                parsed.name,
+                parsed.date,
+                parsed.price
+              );
+
+              const insertedAttendee = insertedAttendees[index]; // Safe because insertion was ordered
+
+              if (insertedAttendee && trainingId) {
+                await supabase.from("attendee_trainings").insert([
+                  {
+                    attendee_id: insertedAttendee.id,
+                    training_id: trainingId,
+                  },
+                ]);
+              }
+            }
+          }
+        }
       }
     }
+  }
+
+  // Split string into training lines
+  function splitTrainingLines(cell) {
+    return (cell || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  // Parse "Nov 18-19: Training Name ($1234)" into { date, name, price }
+  function parseTrainingLine(line) {
+    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
+    if (!match) return null;
+    return {
+      date: match[1].trim(),
+      name: match[2].trim(),
+      price: parseFloat(match[3]),
+    };
+  }
+
+  // Upsert into trainings table
+  async function upsertTrainingByNameDatePrice(name, date, price) {
+    const { data: existing, error: fetchError } = await supabase
+      .from("trainings")
+      .select("id")
+      .eq("name", name)
+      .eq("date", date)
+      .eq("price", price)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("Fetch error:", fetchError);
+      return null;
+    }
+
+    if (existing) {
+      return existing.id;
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("trainings")
+      .insert([{ name, date, price }])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      return null;
+    }
+
+    return inserted.id;
   }
 
   function normalizeExcelDataFromArray(data) {
