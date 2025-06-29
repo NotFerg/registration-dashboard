@@ -14,9 +14,21 @@ function App() {
   }, []);
 
   async function fetchDataFromSupabase() {
-    const { data: registrations, error } = await supabase
-      .from("registrations")
-      .select("*, attendees(*)");
+    const { data: registrations, error } = await supabase.from("registrations")
+      .select(`
+    *,
+    attendees (
+      *,
+      training_references (
+        training_id,
+        trainings ( name, date, price )
+      )
+    ),
+    training_references (
+      training_id,
+      trainings ( name, date, price )
+    )
+  `);
 
     if (error) {
       console.error("Error fetching data:", error);
@@ -409,7 +421,17 @@ function App() {
                               <td>{attendee.position}</td>
                               <td>{attendee.designation}</td>
                               <td>{attendee.country}</td>
-                              <td className='small'>{attendee.trainings}</td>
+                              <td className='small'>
+                                {(attendee.training_references || [])
+                                  .map((tr) =>
+                                    tr.trainings
+                                      ? `${tr.trainings.name} (${tr.trainings.date})`
+                                      : null
+                                  )
+                                  .filter(Boolean)
+                                  .join(", ")}
+                              </td>
+
                               <td>{formatCurrency(attendee.subtotal)}</td>
                             </tr>
                           ))}
@@ -424,7 +446,17 @@ function App() {
                           <td>{reg.position}</td>
                           <td>{reg.designation}</td>
                           <td>{reg.country}</td>
-                          <td className='small'>{reg.trainings}</td>
+                          <td className='small'>
+                            {(reg.training_references || [])
+                              .map((tr) =>
+                                tr.trainings
+                                  ? `${tr.trainings.name} (${tr.trainings.date})`
+                                  : null
+                              )
+                              .filter(Boolean)
+                              .join(", ")}
+                          </td>
+
                           <td>{formatCurrency(reg.total_cost)}</td>
                         </tr>
                       </React.Fragment>
