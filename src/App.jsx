@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 import supabase from "./utils/supabase";
 import Sidebar from "./components/sidebar.jsx";
+import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
 function App() {
@@ -40,7 +41,7 @@ function App() {
 
     console.log("DATA", registrations);
     setExcelData(registrations);
-          setIsLoading(false);
+    setIsLoading(false);
   }
 
   async function handleFileUpload(e) {
@@ -345,29 +346,29 @@ function App() {
 
   return (
     <>
-      <div className='d-flex flex-row'>
+      <div className="d-flex flex-row">
         <Sidebar />
-        <div className='flex-row'>
-          <div className='container text-end mt-3'>
-            <label htmlFor='myFile' className='btn btn-success fw-bold'>
-              <i className='bi bi-upload'></i> Upload File
+        <div className="flex-row">
+          <div className="container text-end mt-3">
+            <label htmlFor="myFile" className="btn btn-success fw-bold">
+              <i className="bi bi-upload"></i> Upload File
             </label>
             <input
-              id='myFile'
-              className='d-none'
-              type='file'
-              accept='.xlsx, .xls'
+              id="myFile"
+              className="d-none"
+              type="file"
+              accept=".xlsx, .xls"
               onChange={handleFileUpload}
             />
 
-            <button className='btn btn-primary fw-bold ms-2'>
-              <i className='bi bi-download'></i> Export Data
+            <button className="btn btn-primary fw-bold ms-2">
+              <i className="bi bi-download"></i> Export Data
             </button>
           </div>
 
-          <div className='container mt-3'>
-            <ul className='nav nav-tabs'>
-              <li className='nav-item'>
+          <div className="container mt-3">
+            <ul className="nav nav-tabs">
+              <li className="nav-item">
                 <a
                   className={`nav-link ${
                     activeTab === "individual"
@@ -380,7 +381,7 @@ function App() {
                   Individual
                 </a>
               </li>
-              <li className='nav-item'>
+              <li className="nav-item">
                 <a
                   className={`nav-link ${
                     activeTab === "group"
@@ -394,10 +395,94 @@ function App() {
                 </a>
               </li>
             </ul>
-            {filteredUsers.length > 0 && (
-              <div className='table-responsive'>
-                <table className='table table-bordered table-striped table-hover'>
-                  <thead className='table-dark'>
+            {activeTab === "group" ? (
+              <div className="table-responsive">
+                <table className="table table-bordered table-striped table-hover">
+                  <thead className="table-dark">
+                    <tr>
+                      <th>Company / Institution</th>
+                      <th>Submission Date</th>
+                      <th>First Name</th>
+                      <th>Last Name</th>
+                      <th>Email</th>
+                      <th colSpan="4">Attendees</th>
+                      <th>Total Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map((reg, idx) => (
+                      <React.Fragment key={idx}>
+                        <tr
+                          data-bs-toggle="collapse"
+                          data-bs-target={`#attendees-${idx}`}
+                          aria-expanded="false"
+                          aria-controls={`attendees-${idx}`}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <td>{reg.company}</td>
+                          <td>{reg.submission_date}</td>
+                          <td>{reg.first_name}</td>
+                          <td>{reg.last_name}</td>
+                          <td>{reg.email}</td>
+                          <td colSpan="4">
+                            Group Registration - {reg.attendees?.length || 0}{" "}
+                            attendees
+                          </td>
+                          <td>{formatCurrency(reg.total_cost)}</td>
+                        </tr>
+                        <tr className="collapse" id={`attendees-${idx}`}>
+                          <td colSpan="10" className="p-0">
+                            <div className="table-responsive">
+                              <table className="table mb-0">
+                                <thead>
+                                  <tr>
+                                    <th className="ps-4">First Name</th>
+                                    <th>Last Name</th>
+                                    <th>Email</th>
+                                    <th>Position</th>
+                                    <th>Designation</th>
+                                    <th>Country</th>
+                                    <th>Trainings</th>
+                                    <th>Subtotal</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {reg.attendees?.map((att, j) => (
+                                    <tr key={j} className="table-light">
+                                      <td className="ps-4">{att.first_name}</td>
+                                      <td>{att.last_name}</td>
+                                      <td>{att.email}</td>
+                                      <td>{att.position}</td>
+                                      <td>{att.designation}</td>
+                                      <td>{att.country}</td>
+                                      <td className="small">
+                                        {(att.training_references || [])
+                                          .map((tr) =>
+                                            tr.trainings
+                                              ? `${tr.trainings.name} (${tr.trainings.date})`
+                                              : null
+                                          )
+                                          .filter(Boolean)
+                                          .join(", ")}
+                                      </td>
+                                      <td>{formatCurrency(att.subtotal)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* existing individual table markup */
+              <div className="table-responsive">
+                <table className="table table-bordered table-striped table-hover">
+                  <thead className="table-dark">
                     <tr>
                       <th>Company / Institution</th>
                       <th>Submission Date</th>
@@ -413,76 +498,27 @@ function App() {
                   </thead>
                   <tbody>
                     {filteredUsers.map((reg, i) => (
-                      <React.Fragment key={i}>
-                        {/* Main registration row - only for group registrations */}
-                        {reg.registration_type === "Someone Else / Group" && (
-                          <tr className='table-info fw-bold'>
-                            <td>{reg.company}</td>
-                            <td>{reg.submission_date}</td>
-                            <td>{reg.first_name}</td>
-                            <td>{reg.last_name}</td>
-                            <td>{reg.email}</td>
-                            <td colSpan='4' className='text-muted fst-italic'>
-                              Group Registration - {reg.attendees?.length || 0}{" "}
-                              attendees
-                            </td>
-                            <td>{formatCurrency(reg.total_cost)}</td>
-                          </tr>
-                        )}
-
-                        {/* Attendees rows */}
-                        {reg.attendees &&
-                          reg.attendees.map((attendee, j) => (
-                            <tr key={`${i}-${j}`} className='table-light'>
-                              <td className='ps-4'>
-                                <span className='text-muted'>└─</span>
-                              </td>
-                              <td></td>
-                              <td>{attendee.first_name}</td>
-                              <td>{attendee.last_name}</td>
-                              <td>{attendee.email}</td>
-                              <td>{attendee.position}</td>
-                              <td>{attendee.designation}</td>
-                              <td>{attendee.country}</td>
-                              <td className='small'>
-                                {(attendee.training_references || [])
-                                  .map((tr) =>
-                                    tr.trainings
-                                      ? `${tr.trainings.name} (${tr.trainings.date})`
-                                      : null
-                                  )
-                                  .filter(Boolean)
-                                  .join(", ")}
-                              </td>
-
-                              <td>{formatCurrency(attendee.subtotal)}</td>
-                            </tr>
-                          ))}
-
-                        {/* Individual registration row - for non-group registrations */}
-                        <tr>
-                          <td>{reg.company}</td>
-                          <td>{reg.submission_date}</td>
-                          <td>{reg.first_name}</td>
-                          <td>{reg.last_name}</td>
-                          <td>{reg.email}</td>
-                          <td>{reg.position}</td>
-                          <td>{reg.designation}</td>
-                          <td>{reg.country}</td>
-                          <td className='small'>
-                            {(reg.training_references || [])
-                              .map((tr) =>
-                                tr.trainings
-                                  ? `${tr.trainings.name} (${tr.trainings.date})`
-                                  : null
-                              )
-                              .filter(Boolean)
-                              .join(", ")}
-                          </td>
-
-                          <td>{formatCurrency(reg.total_cost)}</td>
-                        </tr>
-                      </React.Fragment>
+                      <tr key={i}>
+                        <td>{reg.company}</td>
+                        <td>{reg.submission_date}</td>
+                        <td>{reg.first_name}</td>
+                        <td>{reg.last_name}</td>
+                        <td>{reg.email}</td>
+                        <td>{reg.position}</td>
+                        <td>{reg.designation}</td>
+                        <td>{reg.country}</td>
+                        <td className="small">
+                          {(reg.training_references || [])
+                            .map((tr) =>
+                              tr.trainings
+                                ? `${tr.trainings.name} (${tr.trainings.date})`
+                                : null
+                            )
+                            .filter(Boolean)
+                            .join(", ")}
+                        </td>
+                        <td>{formatCurrency(reg.total_cost)}</td>
+                      </tr>
                     ))}
                   </tbody>
                 </table>

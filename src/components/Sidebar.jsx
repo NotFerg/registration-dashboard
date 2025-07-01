@@ -5,7 +5,7 @@ const Sidebar = () => {
   return (
     <div
       className="d-flex flex-column p-3 text-white min-vh-100"
-      style={{ width: "250px", backgroundColor: "#202030"}}
+      style={{ width: "250px", backgroundColor: "#202030" }}
     >
       <h1>logo</h1>
       <hr />
