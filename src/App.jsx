@@ -8,12 +8,14 @@ import "./App.css";
 function App() {
   const [excelData, setExcelData] = useState([]);
   const [activeTab, setActiveTab] = useState("individual");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchDataFromSupabase();
   }, []);
 
   async function fetchDataFromSupabase() {
+    setIsLoading(true);
     const { data: registrations, error } = await supabase.from("registrations")
       .select(`
     *,
@@ -32,11 +34,13 @@ function App() {
 
     if (error) {
       console.error("Error fetching data:", error);
+      setIsLoading(false);
       return;
     }
 
     console.log("DATA", registrations);
     setExcelData(registrations);
+          setIsLoading(false);
   }
 
   async function handleFileUpload(e) {
@@ -117,45 +121,45 @@ function App() {
         continue;
       }
 
-      // --- Handle trainings for registration ---
-      const trainingLines = splitTrainingLines(regData["Trainings"]);
-      for (const line of trainingLines) {
-        const parsed = parseTrainingLine(line);
-        if (!parsed) continue;
+      // // --- Handle trainings for registration ---
+      // const trainingLines = splitTrainingLines(regData["Trainings"]);
+      // for (const line of trainingLines) {
+      //   const parsed = parseTrainingLine(line);
+      //   if (!parsed) continue;
 
-        const trainingId = await upsertTrainingByNameDatePrice(
-          parsed.name,
-          parsed.date,
-          parsed.price
-        );
+      //   const trainingId = await upsertTrainingByNameDatePrice(
+      //     parsed.name,
+      //     parsed.date,
+      //     parsed.price
+      //   );
 
-        if (trainingId) {
-          await supabase
-            .from("registration_trainings")
-            .insert([{ registration_id: reg.id, training_id: trainingId }]);
-        }
-      }
+      //   if (trainingId) {
+      //     await supabase
+      //       .from("registration_trainings")
+      //       .insert([{ registration_id: reg.id, training_id: trainingId }]);
+      //   }
+      // }
 
-      // Link trainings to registration
-      const trainingLines = splitTrainingLines(regData["Trainings"]);
-      for (const line of trainingLines) {
-        const parsed = parseTrainingLine(line);
-        if (!parsed) continue;
+      // // Link trainings to registration
+      // const trainingLines = splitTrainingLines(regData["Trainings"]);
+      // for (const line of trainingLines) {
+      //   const parsed = parseTrainingLine(line);
+      //   if (!parsed) continue;
 
-        const trainingId = await upsertTrainingByNameDatePrice(
-          parsed.name,
-          parsed.date,
-          parsed.price
-        );
-        if (trainingId) {
-          await supabase.from("training_references").insert([
-            {
-              training_id: trainingId,
-              registration_id: reg.id,
-            },
-          ]);
-        }
-      }
+      //   const trainingId = await upsertTrainingByNameDatePrice(
+      //     parsed.name,
+      //     parsed.date,
+      //     parsed.price
+      //   );
+      //   if (trainingId) {
+      //     await supabase.from("training_references").insert([
+      //       {
+      //         training_id: trainingId,
+      //         registration_id: reg.id,
+      //       },
+      //     ]);
+      //   }
+      // }
 
       // Handle attendees
       for (const a of Attendees) {
