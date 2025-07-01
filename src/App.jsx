@@ -14,9 +14,21 @@ function App() {
   }, []);
 
   async function fetchDataFromSupabase() {
-    const { data: registrations, error } = await supabase
-      .from("registrations")
-      .select("*, attendees(*)");
+    const { data: registrations, error } = await supabase.from("registrations")
+      .select(`
+    *,
+    attendees (
+      *,
+      training_references (
+        training_id,
+        trainings ( name, date, price )
+      )
+    ),
+    training_references (
+      training_id,
+      trainings ( name, date, price )
+    )
+  `);
 
     if (error) {
       console.error("Error fetching data:", error);
@@ -74,6 +86,8 @@ function App() {
   async function uploadToSupabase(data) {
     for (const row of data) {
       const { Attendees = [], ...regData } = row;
+
+      // Insert main registration
       const { data: reg, error } = await supabase
         .from("registrations")
         .insert([
@@ -122,108 +136,76 @@ function App() {
         }
       }
 
-      if (Attendees.length > 0) {
-        const mapped = Attendees.map((a) => ({
-          registration_id: reg.id,
-          first_name: a["First Name"],
-          last_name: a["Last Name"],
-          email: a["Email"],
-          position: a["Job Position"],
-          designation: a["Designation"],
-          country: a["Country"],
-          trainings: a["Trainings"],
-          subtotal:
-            parseFloat((a["Subtotal"] || "").toString().replace(/[$,]/g, "")) ||
-            0,
-        }));
+      // Link trainings to registration
+      const trainingLines = splitTrainingLines(regData["Trainings"]);
+      for (const line of trainingLines) {
+        const parsed = parseTrainingLine(line);
+        if (!parsed) continue;
 
-        const { data: insertedAttendees, error: attErr } = await supabase
+        const trainingId = await upsertTrainingByNameDatePrice(
+          parsed.name,
+          parsed.date,
+          parsed.price
+        );
+        if (trainingId) {
+          await supabase.from("training_references").insert([
+            {
+              training_id: trainingId,
+              registration_id: reg.id,
+            },
+          ]);
+        }
+      }
+
+      // Handle attendees
+      for (const a of Attendees) {
+        const { data: attendee, error: attErr } = await supabase
           .from("attendees")
-          .insert(mapped)
-          .select();
+          .insert([
+            {
+              registration_id: reg.id,
+              first_name: a["First Name"],
+              last_name: a["Last Name"],
+              email: a["Email"],
+              position: a["Job Position"],
+              designation: a["Designation"],
+              country: a["Country"],
+              trainings: a["Trainings"],
+              subtotal:
+                parseFloat(
+                  (a["Subtotal"] || "").toString().replace(/[$,]/g, "")
+                ) || 0,
+            },
+          ])
+          .select()
+          .single();
 
-        if (attErr) {
+        if (attErr || !attendee) {
           console.error("Attendee insert error:", attErr);
-        } else {
-          for (const [index, a] of Attendees.entries()) {
-            const trainingLines = splitTrainingLines(a["Trainings"]);
-            for (const line of trainingLines) {
-              const parsed = parseTrainingLine(line);
-              if (!parsed) continue;
+          continue;
+        }
 
-              const trainingId = await upsertTrainingByNameDatePrice(
-                parsed.name,
-                parsed.date,
-                parsed.price
-              );
+        const attTrainingLines = splitTrainingLines(a["Trainings"]);
+        for (const line of attTrainingLines) {
+          const parsed = parseTrainingLine(line);
+          if (!parsed) continue;
 
-              const insertedAttendee = insertedAttendees[index]; // Safe because insertion was ordered
-
-              if (insertedAttendee && trainingId) {
-                await supabase.from("attendee_trainings").insert([
-                  {
-                    attendee_id: insertedAttendee.id,
-                    training_id: trainingId,
-                  },
-                ]);
-              }
-            }
+          const trainingId = await upsertTrainingByNameDatePrice(
+            parsed.name,
+            parsed.date,
+            parsed.price
+          );
+          if (trainingId) {
+            await supabase.from("training_references").insert([
+              {
+                training_id: trainingId,
+                attendee_id: attendee.id,
+              },
+            ]);
           }
         }
       }
     }
-  }
-
-  // Split string into training lines
-  function splitTrainingLines(cell) {
-    return (cell || "")
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-  }
-
-  // Parse "Nov 18-19: Training Name ($1234)" into { date, name, price }
-  function parseTrainingLine(line) {
-    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
-    if (!match) return null;
-    return {
-      date: match[1].trim(),
-      name: match[2].trim(),
-      price: parseFloat(match[3]),
-    };
-  }
-
-  // Upsert into trainings table
-  async function upsertTrainingByNameDatePrice(name, date, price) {
-    const { data: existing, error: fetchError } = await supabase
-      .from("trainings")
-      .select("id")
-      .eq("name", name)
-      .eq("date", date)
-      .eq("price", price)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error("Fetch error:", fetchError);
-      return null;
-    }
-
-    if (existing) {
-      return existing.id;
-    }
-
-    const { data: inserted, error: insertError } = await supabase
-      .from("trainings")
-      .insert([{ name, date, price }])
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error("Insert error:", insertError);
-      return null;
-    }
-
-    return inserted.id;
   }
 
   function normalizeExcelDataFromArray(data) {
@@ -304,6 +286,58 @@ function App() {
     }
     return true;
   });
+
+  // Split string into training lines
+  function splitTrainingLines(cell) {
+    return (cell || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  // Parse "Nov 18-19: Training Name ($1234)" into { date, name, price }
+  function parseTrainingLine(line) {
+    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
+    if (!match) return null;
+    return {
+      date: match[1].trim(),
+      name: match[2].trim(),
+      price: parseFloat(match[3]),
+    };
+  }
+
+  // Upsert into trainings table
+  async function upsertTrainingByNameDatePrice(name, date, price) {
+    const { data: existing, error: fetchError } = await supabase
+      .from("trainings")
+      .select("id")
+      .eq("name", name)
+      .eq("date", date)
+      .eq("price", price)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("Fetch error:", fetchError);
+      return null;
+    }
+
+    if (existing) {
+      return existing.id;
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("trainings")
+      .insert([{ name, date, price }])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      return null;
+    }
+
+    return inserted.id;
+  }
 
   return (
     <>
@@ -406,7 +440,17 @@ function App() {
                               <td>{attendee.position}</td>
                               <td>{attendee.designation}</td>
                               <td>{attendee.country}</td>
-                              <td className='small'>{attendee.trainings}</td>
+                              <td className='small'>
+                                {(attendee.training_references || [])
+                                  .map((tr) =>
+                                    tr.trainings
+                                      ? `${tr.trainings.name} (${tr.trainings.date})`
+                                      : null
+                                  )
+                                  .filter(Boolean)
+                                  .join(", ")}
+                              </td>
+
                               <td>{formatCurrency(attendee.subtotal)}</td>
                             </tr>
                           ))}
@@ -421,7 +465,17 @@ function App() {
                           <td>{reg.position}</td>
                           <td>{reg.designation}</td>
                           <td>{reg.country}</td>
-                          <td className='small'>{reg.trainings}</td>
+                          <td className='small'>
+                            {(reg.training_references || [])
+                              .map((tr) =>
+                                tr.trainings
+                                  ? `${tr.trainings.name} (${tr.trainings.date})`
+                                  : null
+                              )
+                              .filter(Boolean)
+                              .join(", ")}
+                          </td>
+
                           <td>{formatCurrency(reg.total_cost)}</td>
                         </tr>
                       </React.Fragment>
