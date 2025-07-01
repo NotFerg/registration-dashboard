@@ -1,7 +1,10 @@
+import { useNavigate } from "react-router-dom";
+
 const Sidebar = () => {
+  const navigate = useNavigate();
   return (
     <div
-      className="d-flex flex-column flex-shrink-0 p-3 text-white"
+      className="d-flex flex-column p-3 text-white min-vh-100"
       style={{ width: "250px", backgroundColor: "#202030"}}
     >
       <h1>logo</h1>
@@ -9,28 +12,37 @@ const Sidebar = () => {
 
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item">
-          <a href="#" className="nav-link active" aria-current="page">
-            Home
+          <a
+            href="#"
+            className="nav-link active"
+            aria-current="page"
+            onClick={() => navigate("/")}
+          >
+            Registrations
+          </a>
+        </li>
+        <li>
+          <a
+            href="#"
+            className="nav-link text-white"
+            onClick={() => navigate("/trainings")}
+          >
+            Trainings
           </a>
         </li>
         <li>
           <a href="#" className="nav-link text-white">
-            Dashboard
+            Placeholder
           </a>
         </li>
         <li>
           <a href="#" className="nav-link text-white">
-            Orders
+            Placeholder
           </a>
         </li>
         <li>
           <a href="#" className="nav-link text-white">
-            Products
-          </a>
-        </li>
-        <li>
-          <a href="#" className="nav-link text-white">
-            Customers
+            Placeholder
           </a>
         </li>
       </ul>
