@@ -72,13 +72,13 @@ const Sidebar = () => {
           aria-expanded="false"
         >
           <img
-            src="https://github.com/mdo.png"
+            src="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
             alt=""
             width="32"
             height="32"
             className="rounded-circle me-2"
           />
-          <strong>mdo</strong>
+          <strong>Test</strong>
         </a>
         <ul
           className="dropdown-menu dropdown-menu-dark text-small shadow"
