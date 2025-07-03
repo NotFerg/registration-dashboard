@@ -5,6 +5,7 @@ import supabase from "./utils/supabase";
 import Sidebar from "./components/sidebar.jsx";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
+import Dashboard from "./components/Dashboard.jsx";
 
 function App() {
   const [excelData, setExcelData] = useState([]);
@@ -358,25 +359,32 @@ function App() {
     <>
       <div className="d-flex flex-row">
         <Sidebar />
-        <div className="d-flex flex-column flex-grow-1">
-          <div className="container text-end mt-3">
-            <label htmlFor="myFile" className="btn btn-success fw-bold">
-              <i className="bi bi-upload"></i> Upload File
-            </label>
-            <input
-              id="myFile"
-              className="d-none"
-              type="file"
-              accept=".xlsx, .xls"
-              onChange={handleFileUpload}
-            />
+        <div className="d-flex flex-column flex-grow-1 p-3">
+          <div className="container mt-3">
+            <div className="d-flex justify-content-between mb-3">
+              {" "}
+              <h2>Registrations</h2>
+              <div>
+                <label htmlFor="myFile" className="btn btn-success fw-bold">
+                  <i className="bi bi-upload"></i> Upload File
+                </label>
+                <input
+                  id="myFile"
+                  className="d-none"
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleFileUpload}
+                />
 
-            <button className="btn btn-primary fw-bold ms-2">
-              <i className="bi bi-download"></i> Export Data
-            </button>
+                <button className="btn btn-primary fw-bold ms-2">
+                  <i className="bi bi-download"></i> Export Data
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="container-xxl mt-3">
+            <Dashboard />
             <ul className="nav nav-tabs">
               <li className="nav-item">
                 <a
@@ -407,7 +415,7 @@ function App() {
             </ul>
             {activeTab === "group" ? (
               <div className="d-flex w-100">
-                <div className="table-responsive flex-fill">
+                <div className="table-responsive flex-fill rounded-1">
                   <table className="table table-bordered table-hover">
                     <thead className="table-dark">
                       <tr>
@@ -443,6 +451,9 @@ function App() {
                             <tr
                               onClick={() => toggleRow(idx)}
                               style={{ cursor: "pointer" }}
+                              className={
+                                expandedRows.has(idx) ? "table-secondary" : ""
+                              }
                             >
                               <td>{reg.company}</td>
                               <td>{formattedDate}</td>
@@ -531,8 +542,8 @@ function App() {
             ) : (
               /* existing individual table markup */
               <div className="d-flex">
-                <div className="table-responsive">
-                  <table className="table table-bordered table-striped table-hover">
+                <div className="table-responsive rounded-1">
+                  <table className="table table-bordered table-hover">
                     <thead className="table-dark">
                       <tr>
                         <th>Company / Institution</th>
