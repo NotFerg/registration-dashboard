@@ -31,14 +31,14 @@ function Trainings() {
   return (
     <div className="d-flex flex-row">
       <Sidebar />
-      <div className="flex-row w-100 p-3">
+      <div className="d-flex flex-column flex-grow-1 p-3">
         <div className="container mt-3">
           <div className="d-flex justify-content-between mb-3">
             {" "}
             <h2>Trainings</h2>
             <button
               type="button"
-              className="btn btn-primary "
+              className="btn btn-primary fw-bold ms-2"
               data-bs-toggle="modal"
               data-bs-target="#addModal"
             >

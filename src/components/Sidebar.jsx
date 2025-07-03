@@ -1,50 +1,66 @@
-import { useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 const Sidebar = () => {
-  const navigate = useNavigate();
   return (
     <div
       className="d-flex flex-column p-3 text-white min-vh-100"
-      style={{ width: "250px", backgroundColor: "#202030"}}
+      style={{ width: "250px", backgroundColor: "#202030" }}
     >
       <h1>logo</h1>
       <hr />
 
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item">
-          <a
-            href="#"
-            className="nav-link active"
-            aria-current="page"
-            onClick={() => navigate("/")}
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              `nav-link ${isActive ? "active" : "text-white"}`
+            }
+            end
           >
             Registrations
-          </a>
+          </NavLink>
         </li>
-        <li>
-          <a
-            href="#"
-            className="nav-link text-white"
-            onClick={() => navigate("/trainings")}
+        <li className="nav-item">
+          <NavLink
+            to="/trainings"
+            className={({ isActive }) =>
+              `nav-link ${isActive ? "active" : "text-white"}`
+            }
           >
             Trainings
-          </a>
+          </NavLink>
         </li>
-        <li>
-          <a href="#" className="nav-link text-white">
+        {/* <li className="nav-item">
+          <NavLink
+            to="/placeholder1"
+            className={({ isActive }) =>
+              `nav-link ${isActive ? "active" : "text-white"}`
+            }
+          >
             Placeholder
-          </a>
+          </NavLink>
         </li>
-        <li>
-          <a href="#" className="nav-link text-white">
+        <li className="nav-item">
+          <NavLink
+            to="/placeholder2"
+            className={({ isActive }) =>
+              `nav-link ${isActive ? "active" : "text-white"}`
+            }
+          >
             Placeholder
-          </a>
+          </NavLink>
         </li>
-        <li>
-          <a href="#" className="nav-link text-white">
+        <li className="nav-item">
+          <NavLink
+            to="/placeholder3"
+            className={({ isActive }) =>
+              `nav-link ${isActive ? "active" : "text-white"}`
+            }
+          >
             Placeholder
-          </a>
-        </li>
+          </NavLink>
+        </li> */}
       </ul>
       <hr />
       <div className="dropdown">
@@ -56,13 +72,13 @@ const Sidebar = () => {
           aria-expanded="false"
         >
           <img
-            src="https://github.com/mdo.png"
+            src="https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
             alt=""
             width="32"
             height="32"
             className="rounded-circle me-2"
           />
-          <strong>mdo</strong>
+          <strong>Test</strong>
         </a>
         <ul
           className="dropdown-menu dropdown-menu-dark text-small shadow"
