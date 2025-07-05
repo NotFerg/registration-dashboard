@@ -559,6 +559,7 @@ function App() {
                         <th>Trainings</th>
                         <th>Total Cost</th>
                         <th>Payment Status</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -602,6 +603,22 @@ function App() {
                               {formatCurrency(reg.total_cost)}
                             </td>
                             <td>{reg.payment_status}</td>
+                            <td>
+                              <div className='btn-group'>
+                                <button
+                                  className='btn btn-success text-nowrap btn-sm'
+                                  // onClick={() => setEditingGuest(guest)}
+                                >
+                                  Edit{" "}
+                                </button>
+                                <button
+                                  className='btn btn-danger text-nowrap btn-sm'
+                                  // onClick={() => deleteGuest(guest.id)}
+                                >
+                                  Delete{" "}
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })}
