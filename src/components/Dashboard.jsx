@@ -26,74 +26,74 @@ import {
 import { Line, Doughnut } from "react-chartjs-2";
 
 // Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// ChartJS.register(
+//   CategoryScale,
+//   LinearScale,
+//   PointElement,
+//   LineElement,
+//   ArcElement,
+//   Title,
+//   Tooltip,
+//   Legend
+// );
 
-// Sample data for the area (line) chart
-const areaChartData = {
-  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
-  datasets: [
-    {
-      label: "Earnings",
-      data: [40000, 60000, 80000, 55000, 65000, 75000, 90000],
-      fill: true,
-      tension: 0.4,
-    },
-  ],
-};
+// // Sample data for the area (line) chart
+// const areaChartData = {
+//   labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
+//   datasets: [
+//     {
+//       label: "Earnings",
+//       data: [40000, 60000, 80000, 55000, 65000, 75000, 90000],
+//       fill: true,
+//       tension: 0.4,
+//     },
+//   ],
+// };
 
-const areaChartOptions = {
-  responsive: true,
-  plugins: {
-    legend: { display: false },
-    title: { display: false },
-  },
-  scales: {
-    x: { grid: { display: false } },
-    y: { grid: { color: "#e9ecef" } },
-  },
-};
+// const areaChartOptions = {
+//   responsive: true,
+//   plugins: {
+//     legend: { display: false },
+//     title: { display: false },
+//   },
+//   scales: {
+//     x: { grid: { display: false } },
+//     y: { grid: { color: "#e9ecef" } },
+//   },
+// };
 
-// Sample data for the pie chart
-const pieChartData = {
-  labels: ["Direct", "Social", "Referral"],
-  datasets: [
-    {
-      data: [55, 30, 15],
-    },
-  ],
-};
+// // Sample data for the pie chart
+// const pieChartData = {
+//   labels: ["Direct", "Social", "Referral"],
+//   datasets: [
+//     {
+//       data: [55, 30, 15],
+//     },
+//   ],
+// };
 
-const pieChartOptions = {
-  responsive: true,
-  plugins: {
-    legend: { position: "bottom" },
-    title: { display: false },
-  },
-};
+// const pieChartOptions = {
+//   responsive: true,
+//   plugins: {
+//     legend: { position: "bottom" },
+//     title: { display: false },
+//   },
+// };
 
 function Dashboard() {
   return (
     <Container fluid>
       <Row>
         <Col xl={3} md={6} className="mb-4">
-          <Card className="border-left-primary shadow h-100 py-2">
+          <Card className="border-left-primary shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
                 <Col>
                   <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                    Earnings (Monthly)
+                    Total Participants
                   </div>
                   <div className="h5 mb-0 font-weight-bold text-gray-800">
-                    $40,000
+                  Placeholder
                   </div>
                 </Col>
                 <Col xs="auto">
@@ -109,7 +109,7 @@ function Dashboard() {
         </Col>
 
         <Col xl={3} md={6} className="mb-4">
-          <Card className="border-left-success shadow h-100 py-2">
+          <Card className="border-left-success shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
                 <Col>
@@ -117,7 +117,7 @@ function Dashboard() {
                     Earnings (Annual)
                   </div>
                   <div className="h5 mb-0 font-weight-bold text-gray-800">
-                    $215,000
+                    Placeholder
                   </div>
                 </Col>
                 <Col xs="auto">
@@ -133,7 +133,7 @@ function Dashboard() {
         </Col>
 
         <Col xl={3} md={6} className="mb-4">
-          <Card className="border-left-info shadow h-100 py-2">
+          <Card className="border-left-info shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
                 <Col>
@@ -164,12 +164,12 @@ function Dashboard() {
         </Col>
 
         <Col xl={3} md={6} className="mb-4">
-          <Card className="border-left-warning shadow h-100 py-2">
+          <Card className="border-left-warning shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
                 <Col>
                   <div className="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                    Pending Requests
+                    Unpaid Participants
                   </div>
                   <div className="h5 mb-0 font-weight-bold text-gray-800">
                     18
