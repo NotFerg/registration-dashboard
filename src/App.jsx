@@ -6,6 +6,7 @@ import Sidebar from "./components/sidebar.jsx";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import Dashboard from "./components/Dashboard.jsx";
+import ExportExcel from "./components/ExportExcel.jsx";
 
 function App() {
   const [excelData, setExcelData] = useState([]);
@@ -369,117 +370,41 @@ function App() {
     });
   }
 
-  function exportToExcel() {
-    // Always use the full excelData, not filteredUsers
-    // Prepare group registrations (flattened attendees)
-    const groupRows = [];
-    excelData.forEach((reg) => {
-      if (
-        reg.registration_type === "Someone Else / Group" &&
-        reg.attendees?.length
-      ) {
-        reg.attendees.forEach((att) => {
-          groupRows.push({
-            "Company / Institution": reg.company,
-            "Submission Date": reg.submission_date,
-            "First Name": att.first_name,
-            "Last Name": att.last_name,
-            Email: att.email,
-            Position: att.position,
-            Designation: att.designation,
-            Country: att.country,
-            Trainings: (att.training_references || [])
-              .map((tr) =>
-                tr.trainings
-                  ? `${tr.trainings.name} (${tr.trainings.date})`
-                  : ""
-              )
-              .filter(Boolean)
-              .join(", "),
-            Subtotal: att.subtotal,
-            "Total Cost": reg.total_cost,
-            "Payment Status": reg.payment_status,
-            "Registration Type": reg.registration_type,
-          });
-        });
-      }
-    });
-
-    // Prepare individual registrations
-    const individualRows = excelData
-      .filter((reg) => reg.registration_type === "Myself")
-      .map((reg) => ({
-        "Company / Institution": reg.company,
-        "Submission Date": reg.submission_date,
-        "First Name": reg.first_name,
-        "Last Name": reg.last_name,
-        Email: reg.email,
-        Position: reg.position,
-        Designation: reg.designation,
-        Country: reg.country,
-        Trainings: (reg.training_references || [])
-          .map((tr) =>
-            tr.trainings ? `${tr.trainings.name} (${tr.trainings.date})` : ""
-          )
-          .filter(Boolean)
-          .join(", "),
-        "Total Cost": reg.total_cost,
-        "Payment Status": reg.payment_status,
-        "Registration Type": reg.registration_type,
-      }));
-
-    // Create workbook and sheets
-    const wb = XLSX.utils.book_new();
-    const wsGroup = XLSX.utils.json_to_sheet(groupRows);
-    const wsIndividual = XLSX.utils.json_to_sheet(individualRows);
-
-    XLSX.utils.book_append_sheet(wb, wsGroup, "Group Registrations");
-    XLSX.utils.book_append_sheet(wb, wsIndividual, "Individual Registrations");
-
-    XLSX.writeFile(wb, "registrations.xlsx");
-  }
-
   return (
     <>
-      <div className="row">
-        <div className="col-md-2">
+      <div className='row'>
+        <div className='col-md-2'>
           <Sidebar />
         </div>
 
-        <div className="col-md-10 p-3">
-          <div className="container mt-3">
-            <div className="d-flex justify-content-between mb-3">
+        <div className='col-md-10 p-3'>
+          <div className='container mt-3'>
+            <div className='d-flex justify-content-between mb-3'>
               {" "}
               <h2>Registrations</h2>
               <div>
-                <label htmlFor="myFile" className="btn btn-success fw-bold">
-                  <i className="bi bi-upload"></i> Upload File
+                <label htmlFor='myFile' className='btn btn-success fw-bold'>
+                  <i className='bi bi-upload'></i> Upload File
                 </label>
                 <input
-                  id="myFile"
-                  className="d-none"
-                  type="file"
-                  accept=".xlsx, .xls"
+                  id='myFile'
+                  className='d-none'
+                  type='file'
+                  accept='.xlsx, .xls'
                   onChange={handleFileUpload}
                 />
-
-                <button
-                  className="btn btn-primary fw-bold ms-2"
-                  onClick={exportToExcel}
-                >
-                  <i className="bi bi-download"></i> Export Data
-                </button>
+                <ExportExcel excelData={excelData} />
               </div>
             </div>
           </div>
 
-          <div className="container-xxl mt-3">
+          <div className='container-xxl mt-3'>
             <Dashboard />
-            <div className="card">
-              <div className="card-body">
+            <div className='card'>
+              <div className='card-body'>
                 {" "}
-                <ul className="nav nav-tabs">
-                  <li className="nav-item">
+                <ul className='nav nav-tabs'>
+                  <li className='nav-item'>
                     <a
                       className={`nav-link ${
                         activeTab === "individual"
@@ -492,7 +417,7 @@ function App() {
                       Individual
                     </a>
                   </li>
-                  <li className="nav-item">
+                  <li className='nav-item'>
                     <a
                       className={`nav-link ${
                         activeTab === "group"
@@ -507,24 +432,24 @@ function App() {
                   </li>
                 </ul>
                 <input
-                  type="text"
-                  class="form-control"
-                  id="guestSearch"
-                  placeholder="Search participants..."
+                  type='text'
+                  class='form-control'
+                  id='guestSearch'
+                  placeholder='Search participants...'
                   onChange={handleInputChange}
                 />
                 {activeTab === "group" ? (
-                  <div className="d-flex">
-                    <div className="table-responsive">
-                      <table className="table table-bordered table-hover">
-                        <thead className="table-dark">
+                  <div className='d-flex'>
+                    <div className='table-responsive'>
+                      <table className='table table-bordered table-hover'>
+                        <thead className='table-dark'>
                           <tr>
                             <th>Company / Institution</th>
                             <th>Submission Date</th>
                             <th>Admin First Name</th>
                             <th>Admin Last Name</th>
                             <th>Email</th>
-                            <th colSpan="4">Attendees</th>
+                            <th colSpan='4'>Attendees</th>
                             <th>Total Cost</th>
                             <th>Payment Status</th>
                             <th></th>
@@ -563,7 +488,7 @@ function App() {
                                   <td>{reg.first_name}</td>
                                   <td>{reg.last_name}</td>
                                   <td>{reg.email}</td>
-                                  <td colSpan="4">
+                                  <td colSpan='4'>
                                     Group Registration -{" "}
                                     {reg.attendees?.length || 0} attendees
                                   </td>
@@ -571,19 +496,19 @@ function App() {
                                   <td>{reg.payment_status}</td>
                                   <td>
                                     {expandedRows.has(idx) ? (
-                                      <i className="bi bi-caret-up-fill" />
+                                      <i className='bi bi-caret-up-fill' />
                                     ) : (
-                                      <i className="bi bi-caret-down-fill" />
+                                      <i className='bi bi-caret-down-fill' />
                                     )}
                                   </td>
                                 </tr>
                                 {expandedRows.has(idx) && (
                                   <tr>
-                                    <td colSpan="11" className="p-0">
-                                      <div className="table-responsive">
-                                        <table className="table table-bordered mb-0 table-hover">
-                                          <thead className="ps-4">
-                                            <tr className=" table-primary small">
+                                    <td colSpan='11' className='p-0'>
+                                      <div className='table-responsive'>
+                                        <table className='table table-bordered mb-0 table-hover'>
+                                          <thead className='ps-4'>
+                                            <tr className=' table-primary small'>
                                               <th>First Name</th>
                                               <th>Last Name</th>
                                               <th>Email</th>
@@ -598,27 +523,27 @@ function App() {
                                             {reg.attendees?.map((att, j) => (
                                               <tr
                                                 key={j}
-                                                className="table-light"
+                                                className='table-light'
                                               >
-                                                <td className="small">
+                                                <td className='small'>
                                                   {att.first_name}
                                                 </td>
-                                                <td className="small">
+                                                <td className='small'>
                                                   {att.last_name}
                                                 </td>
-                                                <td className="small">
+                                                <td className='small'>
                                                   {att.email}
                                                 </td>
-                                                <td className="small">
+                                                <td className='small'>
                                                   {att.position}
                                                 </td>
-                                                <td className="small">
+                                                <td className='small'>
                                                   {att.designation}
                                                 </td>
-                                                <td className="small">
+                                                <td className='small'>
                                                   {att.country}
                                                 </td>
-                                                <td className="small">
+                                                <td className='small'>
                                                   {(
                                                     att.training_references ||
                                                     []
@@ -631,7 +556,7 @@ function App() {
                                                     .filter(Boolean)
                                                     .join(", ")}
                                                 </td>
-                                                <td className="small">
+                                                <td className='small'>
                                                   {formatCurrency(att.subtotal)}
                                                 </td>
                                               </tr>
@@ -651,10 +576,10 @@ function App() {
                   </div>
                 ) : (
                   /* existing individual table markup */
-                  <div className="table-responsive">
+                  <div className='table-responsive'>
                     <div style={{ overflowX: "auto" }}>
-                      <table className="table table-bordered table-hover">
-                        <thead className="table-dark">
+                      <table className='table table-bordered table-hover'>
+                        <thead className='table-dark'>
                           <tr>
                             <th>Company</th>
                             <th>Submission Date</th>
@@ -667,7 +592,7 @@ function App() {
                             <th>Trainings</th>
                             <th>Total Cost</th>
                             <th>Payment Status</th>
-                            <th className="text-center " colSpan={2}>
+                            <th className='text-center ' colSpan={2}>
                               Actions
                             </th>
                           </tr>
@@ -691,15 +616,15 @@ function App() {
                             );
                             return (
                               <tr key={i}>
-                                <td className="small">{reg.company}</td>
-                                <td className="small">{formattedDate}</td>
-                                <td className="small">{reg.first_name}</td>
-                                <td className="small">{reg.last_name}</td>
-                                <td className="small">{reg.email}</td>
-                                <td className="small">{reg.position}</td>
-                                <td className="small">{reg.designation}</td>
-                                <td className="small">{reg.country}</td>
-                                <td className="small">
+                                <td className='small'>{reg.company}</td>
+                                <td className='small'>{formattedDate}</td>
+                                <td className='small'>{reg.first_name}</td>
+                                <td className='small'>{reg.last_name}</td>
+                                <td className='small'>{reg.email}</td>
+                                <td className='small'>{reg.position}</td>
+                                <td className='small'>{reg.designation}</td>
+                                <td className='small'>{reg.country}</td>
+                                <td className='small'>
                                   {(reg.training_references || [])
                                     .map((tr) =>
                                       tr.trainings
@@ -709,23 +634,23 @@ function App() {
                                     .filter(Boolean)
                                     .join(", ")}
                                 </td>
-                                <td className="small">
+                                <td className='small'>
                                   {formatCurrency(reg.total_cost)}
                                 </td>
                                 <td>{reg.payment_status}</td>
-                                <td colSpan={2} className="sticky-col">
-                                  <div className="btn-group">
+                                <td colSpan={2} className='sticky-col'>
+                                  <div className='btn-group'>
                                     <button
-                                      className="btn"
+                                      className='btn'
                                       // onClick={() => setEditingGuest(guest)}
                                     >
-                                      <i class="bi bi-pencil-square" />
+                                      <i class='bi bi-pencil-square' />
                                     </button>
                                     <button
-                                      className="btn"
+                                      className='btn'
                                       // onClick={() => deleteGuest(guest.id)}
                                     >
-                                      <i class="bi bi-trash-fill" />
+                                      <i class='bi bi-trash-fill' />
                                     </button>
                                   </div>
                                 </td>
