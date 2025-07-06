@@ -12,6 +12,7 @@ function App() {
   const [activeTab, setActiveTab] = useState("individual");
   const [isLoading, setIsLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchDataFromSupabase();
@@ -281,6 +282,11 @@ function App() {
     });
   }
 
+  // Search for participants
+  const handleInputChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
+
   const filteredUsers = excelData.filter((user) => {
     if (activeTab === "individual" && user.registration_type !== "Myself") {
       return false;
@@ -288,6 +294,14 @@ function App() {
     if (
       activeTab === "group" &&
       user.registration_type !== "Someone Else / Group"
+    ) {
+      return false;
+    }
+    if (
+      searchTerm !== "" &&
+      !user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !user.company.toLowerCase().includes(searchTerm.toLowerCase())
     ) {
       return false;
     }
@@ -427,279 +441,304 @@ function App() {
 
   return (
     <>
-      <div className='d-flex flex-row'>
-        <Sidebar />
-        <div className='d-flex flex-column flex-grow-1 p-3'>
-          <div className='container mt-3'>
-            <div className='d-flex justify-content-between mb-3'>
+      <div className="row">
+        <div className="col-md-2">
+          <Sidebar />
+        </div>
+
+        <div className="col-md-10 p-3">
+          <div className="container mt-3">
+            <div className="d-flex justify-content-between mb-3">
               {" "}
               <h2>Registrations</h2>
               <div>
-                <label htmlFor='myFile' className='btn btn-success fw-bold'>
-                  <i className='bi bi-upload'></i> Upload File
+                <label htmlFor="myFile" className="btn btn-success fw-bold">
+                  <i className="bi bi-upload"></i> Upload File
                 </label>
                 <input
-                  id='myFile'
-                  className='d-none'
-                  type='file'
-                  accept='.xlsx, .xls'
+                  id="myFile"
+                  className="d-none"
+                  type="file"
+                  accept=".xlsx, .xls"
                   onChange={handleFileUpload}
                 />
 
                 <button
-                  className='btn btn-primary fw-bold ms-2'
+                  className="btn btn-primary fw-bold ms-2"
                   onClick={exportToExcel}
                 >
-                  <i className='bi bi-download'></i> Export Data
+                  <i className="bi bi-download"></i> Export Data
                 </button>
               </div>
             </div>
           </div>
 
-          <div className='container-xxl mt-3'>
+          <div className="container-xxl mt-3">
             <Dashboard />
-            <ul className='nav nav-tabs'>
-              <li className='nav-item'>
-                <a
-                  className={`nav-link ${
-                    activeTab === "individual"
-                      ? "active bg-primary text-white fw-bold"
-                      : "text-black"
-                  }`}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => setActiveTab("individual")}
-                >
-                  Individual
-                </a>
-              </li>
-              <li className='nav-item'>
-                <a
-                  className={`nav-link ${
-                    activeTab === "group"
-                      ? "active bg-primary text-white fw-bold"
-                      : "text-black"
-                  }`}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => setActiveTab("group")}
-                >
-                  Group
-                </a>
-              </li>
-            </ul>
-            {activeTab === "group" ? (
-              <div className='d-flex w-100'>
-                <div className='table-responsive flex-fill rounded-1'>
-                  <table className='table table-bordered table-hover'>
-                    <thead className='table-dark'>
-                      <tr>
-                        <th>Company / Institution</th>
-                        <th>Submission Date</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Email</th>
-                        <th colSpan='4'>Attendees</th>
-                        <th>Total Cost</th>
-                        <th>Payment Status</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUsers.map((reg, idx) => {
-                        const dateObj = new Date(reg.submission_date);
+            <div className="card">
+              <div className="card-body">
+                {" "}
+                <ul className="nav nav-tabs">
+                  <li className="nav-item">
+                    <a
+                      className={`nav-link ${
+                        activeTab === "individual"
+                          ? "active bg-primary text-white fw-bold"
+                          : "text-black"
+                      }`}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setActiveTab("individual")}
+                    >
+                      Individual
+                    </a>
+                  </li>
+                  <li className="nav-item">
+                    <a
+                      className={`nav-link ${
+                        activeTab === "group"
+                          ? "active bg-primary text-white fw-bold"
+                          : "text-black"
+                      }`}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setActiveTab("group")}
+                    >
+                      Group
+                    </a>
+                  </li>
+                </ul>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="guestSearch"
+                  placeholder="Search participants..."
+                  onChange={handleInputChange}
+                />
+                {activeTab === "group" ? (
+                  <div className="d-flex">
+                    <div className="table-responsive">
+                      <table className="table table-bordered table-hover">
+                        <thead className="table-dark">
+                          <tr>
+                            <th>Company / Institution</th>
+                            <th>Submission Date</th>
+                            <th>Admin First Name</th>
+                            <th>Admin Last Name</th>
+                            <th>Email</th>
+                            <th colSpan="4">Attendees</th>
+                            <th>Total Cost</th>
+                            <th>Payment Status</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredUsers.map((reg, idx) => {
+                            const dateObj = new Date(reg.submission_date);
 
-                        const options = {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        };
+                            const options = {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            };
 
-                        const formattedDate = dateObj.toLocaleString(
-                          "en-US",
-                          options
-                        );
-                        return (
-                          <React.Fragment key={idx}>
-                            <tr
-                              onClick={() => toggleRow(idx)}
-                              style={{ cursor: "pointer" }}
-                              className={
-                                expandedRows.has(idx) ? "table-secondary" : ""
-                              }
-                            >
-                              <td>{reg.company}</td>
-                              <td>{formattedDate}</td>
-                              <td>{reg.first_name}</td>
-                              <td>{reg.last_name}</td>
-                              <td>{reg.email}</td>
-                              <td colSpan='4'>
-                                Group Registration -{" "}
-                                {reg.attendees?.length || 0} attendees
-                              </td>
-                              <td>{formatCurrency(reg.total_cost)}</td>
-                              <td>{reg.payment_status}</td>
-                              <td>
-                                {expandedRows.has(idx) ? (
-                                  <i className='bi bi-caret-up-fill' />
-                                ) : (
-                                  <i className='bi bi-caret-down-fill' />
+                            const formattedDate = dateObj.toLocaleString(
+                              "en-US",
+                              options
+                            );
+                            return (
+                              <React.Fragment key={idx}>
+                                <tr
+                                  onClick={() => toggleRow(idx)}
+                                  style={{ cursor: "pointer" }}
+                                  className={
+                                    expandedRows.has(idx)
+                                      ? "table-secondary"
+                                      : ""
+                                  }
+                                >
+                                  <td>{reg.company}</td>
+                                  <td>{formattedDate}</td>
+                                  <td>{reg.first_name}</td>
+                                  <td>{reg.last_name}</td>
+                                  <td>{reg.email}</td>
+                                  <td colSpan="4">
+                                    Group Registration -{" "}
+                                    {reg.attendees?.length || 0} attendees
+                                  </td>
+                                  <td>{formatCurrency(reg.total_cost)}</td>
+                                  <td>{reg.payment_status}</td>
+                                  <td>
+                                    {expandedRows.has(idx) ? (
+                                      <i className="bi bi-caret-up-fill" />
+                                    ) : (
+                                      <i className="bi bi-caret-down-fill" />
+                                    )}
+                                  </td>
+                                </tr>
+                                {expandedRows.has(idx) && (
+                                  <tr>
+                                    <td colSpan="11" className="p-0">
+                                      <div className="table-responsive">
+                                        <table className="table table-bordered mb-0 table-hover">
+                                          <thead className="ps-4">
+                                            <tr className=" table-primary small">
+                                              <th>First Name</th>
+                                              <th>Last Name</th>
+                                              <th>Email</th>
+                                              <th>Position</th>
+                                              <th>Designation</th>
+                                              <th>Country</th>
+                                              <th>Trainings</th>
+                                              <th>Subtotal</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {reg.attendees?.map((att, j) => (
+                                              <tr
+                                                key={j}
+                                                className="table-light"
+                                              >
+                                                <td className="small">
+                                                  {att.first_name}
+                                                </td>
+                                                <td className="small">
+                                                  {att.last_name}
+                                                </td>
+                                                <td className="small">
+                                                  {att.email}
+                                                </td>
+                                                <td className="small">
+                                                  {att.position}
+                                                </td>
+                                                <td className="small">
+                                                  {att.designation}
+                                                </td>
+                                                <td className="small">
+                                                  {att.country}
+                                                </td>
+                                                <td className="small">
+                                                  {(
+                                                    att.training_references ||
+                                                    []
+                                                  )
+                                                    .map((tr) =>
+                                                      tr.trainings
+                                                        ? `${tr.trainings.name} (${tr.trainings.date})`
+                                                        : null
+                                                    )
+                                                    .filter(Boolean)
+                                                    .join(", ")}
+                                                </td>
+                                                <td className="small">
+                                                  {formatCurrency(att.subtotal)}
+                                                </td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </td>
+                                  </tr>
                                 )}
-                              </td>
-                            </tr>
-                            {expandedRows.has(idx) && (
-                              <tr>
-                                <td colSpan='11' className='p-0'>
-                                  <div className='table-responsive'>
-                                    <table className='table table-bordered mb-0 table-hover'>
-                                      <thead className='ps-4'>
-                                        <tr className=' table-primary small'>
-                                          <th>First Name</th>
-                                          <th>Last Name</th>
-                                          <th>Email</th>
-                                          <th>Position</th>
-                                          <th>Designation</th>
-                                          <th>Country</th>
-                                          <th>Trainings</th>
-                                          <th>Subtotal</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {reg.attendees?.map((att, j) => (
-                                          <tr key={j} className='table-light'>
-                                            <td className='small'>
-                                              {att.first_name}
-                                            </td>
-                                            <td className='small'>
-                                              {att.last_name}
-                                            </td>
-                                            <td className='small'>
-                                              {att.email}
-                                            </td>
-                                            <td className='small'>
-                                              {att.position}
-                                            </td>
-                                            <td className='small'>
-                                              {att.designation}
-                                            </td>
-                                            <td className='small'>
-                                              {att.country}
-                                            </td>
-                                            <td className='small'>
-                                              {(att.training_references || [])
-                                                .map((tr) =>
-                                                  tr.trainings
-                                                    ? `${tr.trainings.name} (${tr.trainings.date})`
-                                                    : null
-                                                )
-                                                .filter(Boolean)
-                                                .join(", ")}
-                                            </td>
-                                            <td className='small'>
-                                              {formatCurrency(att.subtotal)}
-                                            </td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
+                              </React.Fragment>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  /* existing individual table markup */
+                  <div className="table-responsive">
+                    <div style={{ overflowX: "auto" }}>
+                      <table className="table table-bordered table-hover">
+                        <thead className="table-dark">
+                          <tr>
+                            <th>Company</th>
+                            <th>Submission Date</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Position</th>
+                            <th>Designation</th>
+                            <th>Country</th>
+                            <th>Trainings</th>
+                            <th>Total Cost</th>
+                            <th>Payment Status</th>
+                            <th className="text-center " colSpan={2}>
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredUsers.map((reg, i) => {
+                            const dateObj = new Date(reg.submission_date);
+
+                            const options = {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            };
+
+                            const formattedDate = dateObj.toLocaleString(
+                              "en-US",
+                              options
+                            );
+                            return (
+                              <tr key={i}>
+                                <td className="small">{reg.company}</td>
+                                <td className="small">{formattedDate}</td>
+                                <td className="small">{reg.first_name}</td>
+                                <td className="small">{reg.last_name}</td>
+                                <td className="small">{reg.email}</td>
+                                <td className="small">{reg.position}</td>
+                                <td className="small">{reg.designation}</td>
+                                <td className="small">{reg.country}</td>
+                                <td className="small">
+                                  {(reg.training_references || [])
+                                    .map((tr) =>
+                                      tr.trainings
+                                        ? `${tr.trainings.name} (${tr.trainings.date})`
+                                        : null
+                                    )
+                                    .filter(Boolean)
+                                    .join(", ")}
+                                </td>
+                                <td className="small">
+                                  {formatCurrency(reg.total_cost)}
+                                </td>
+                                <td>{reg.payment_status}</td>
+                                <td colSpan={2} className="sticky-col">
+                                  <div className="btn-group">
+                                    <button
+                                      className="btn"
+                                      // onClick={() => setEditingGuest(guest)}
+                                    >
+                                      <i class="bi bi-pencil-square" />
+                                    </button>
+                                    <button
+                                      className="btn"
+                                      // onClick={() => deleteGuest(guest.id)}
+                                    >
+                                      <i class="bi bi-trash-fill" />
+                                    </button>
                                   </div>
                                 </td>
                               </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              /* existing individual table markup */
-              <div className='d-flex'>
-                <div className='table-responsive rounded-1'>
-                  <table className='table table-bordered table-hover'>
-                    <thead className='table-dark'>
-                      <tr>
-                        <th>Company / Institution</th>
-                        <th>Submission Date</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Email</th>
-                        <th>Position</th>
-                        <th>Designation</th>
-                        <th>Country</th>
-                        <th>Trainings</th>
-                        <th>Total Cost</th>
-                        <th>Payment Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUsers.map((reg, i) => {
-                        const dateObj = new Date(reg.submission_date);
-
-                        const options = {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        };
-
-                        const formattedDate = dateObj.toLocaleString(
-                          "en-US",
-                          options
-                        );
-                        return (
-                          <tr key={i}>
-                            <td className='small'>{reg.company}</td>
-                            <td className='small'>{formattedDate}</td>
-                            <td className='small'>{reg.first_name}</td>
-                            <td className='small'>{reg.last_name}</td>
-                            <td className='small'>{reg.email}</td>
-                            <td className='small'>{reg.position}</td>
-                            <td className='small'>{reg.designation}</td>
-                            <td className='small'>{reg.country}</td>
-                            <td className='small'>
-                              {(reg.training_references || [])
-                                .map((tr) =>
-                                  tr.trainings
-                                    ? `${tr.trainings.name} (${tr.trainings.date})`
-                                    : null
-                                )
-                                .filter(Boolean)
-                                .join(", ")}
-                            </td>
-                            <td className='small'>
-                              {formatCurrency(reg.total_cost)}
-                            </td>
-                            <td>{reg.payment_status}</td>
-                            <td>
-                              <div className='btn-group'>
-                                <button
-                                  className='btn btn-success text-nowrap btn-sm'
-                                  // onClick={() => setEditingGuest(guest)}
-                                >
-                                  Edit{" "}
-                                </button>
-                                <button
-                                  className='btn btn-danger text-nowrap btn-sm'
-                                  // onClick={() => deleteGuest(guest.id)}
-                                >
-                                  Delete{" "}
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
