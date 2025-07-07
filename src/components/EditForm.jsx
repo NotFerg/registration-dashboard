@@ -12,8 +12,9 @@ const EditForm = ({ reg: initialReg }) => {
     position: "",
     designation: "",
     country: "",
-    trainings: "",
+    trainings: [],
     total_cost: "",
+    payment_options: "",
     payment_status: "",
   });
 
@@ -24,17 +25,28 @@ const EditForm = ({ reg: initialReg }) => {
     }
   }, [initialReg]);
 
-  const handleSubmit = () => {
-    console.log("AA");
-  };
-
   const handleChange = (e) => {
-    setReg((prevFormData) => {
-      return {
+    const { id, value, type, checked } = e.target;
+
+    if (type === "checkbox") {
+      const trainingName = value;
+      setReg((prev) => {
+        const prevTrainings = Array.isArray(prev.trainings)
+          ? prev.trainings
+          : [];
+        return {
+          ...prev,
+          trainings: checked
+            ? [...prevTrainings, trainingName]
+            : prevTrainings.filter((t) => t !== trainingName),
+        };
+      });
+    } else {
+      setReg((prevFormData) => ({
         ...prevFormData,
-        [e.target.id]: e.target.value,
-      };
-    });
+        [id]: value,
+      }));
+    }
   };
 
   async function fetchTrainings() {
@@ -42,9 +54,106 @@ const EditForm = ({ reg: initialReg }) => {
       .from("trainings")
       .select("*")
       .order("id", { ascending: true });
-    console.log("Data edit form", data);
     setTrainings(data);
-    console.log("Trainings", trainings);
+  }
+
+  function parseTrainingLine(line) {
+    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
+    if (!match) return null;
+    return {
+      date: match[1].trim(),
+      name: match[2].trim(),
+      price: parseFloat(match[3]),
+    };
+  }
+
+  async function upsertTrainingByNameDatePrice(name, date, price) {
+    const { data: existing, error: fetchError } = await supabase
+      .from("trainings")
+      .select("id")
+      .eq("name", name)
+      .eq("date", date)
+      .eq("price", price)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("Fetch error:", fetchError);
+      return null;
+    }
+
+    if (existing) {
+      return existing.id;
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("trainings")
+      .insert([{ name, date, price }])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      return null;
+    }
+
+    return inserted.id;
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    console.log("REG", reg);
+
+    if (initialReg) {
+      // 1. Update the registration fields (excluding `trainings` if you're handling it relationally)
+      const { error: updateError } = await supabase
+        .from("registrations")
+        .update({
+          submission_date: reg.submission_date,
+          first_name: reg.first_name,
+          last_name: reg.last_name,
+          email: reg.email,
+          position: reg.position,
+          designation: reg.designation,
+          country: reg.country,
+          total_cost: reg.total_cost,
+          payment_options: reg.payment_options,
+          payment_status: reg.payment_status,
+          trainings: reg.trainings,
+        })
+        .eq("id", initialReg.id);
+
+      if (updateError) {
+        console.error("Update error:", updateError);
+        return;
+      }
+
+      // 2. Delete old training references
+      await supabase
+        .from("training_references")
+        .delete()
+        .eq("registration_id", initialReg.id);
+
+      // 3. Re-insert new ones
+      for (const line of reg.trainings) {
+        const parsed = parseTrainingLine(line);
+        if (!parsed) continue;
+
+        const trainingId = await upsertTrainingByNameDatePrice(
+          parsed.name,
+          parsed.date,
+          parsed.price
+        );
+
+        if (trainingId) {
+          await supabase.from("training_references").insert([
+            {
+              training_id: trainingId,
+              registration_id: initialReg.id,
+            },
+          ]);
+        }
+      }
+    }
   }
 
   return (
@@ -187,20 +296,26 @@ const EditForm = ({ reg: initialReg }) => {
         </div>
 
         <div className='mb-3'>
-          {trainings.map((trainings, i) => (
-            <div key={trainings.id}>
-              <input
-                type='checkbox'
-                class='btn-check'
-                id={`btn-check-${i}`}
-                autocomplete='off'
-                checked={reg.trainings.includes(trainings.name)}
-              />
-              <label class='btn' for={`btn-check-${i}`}>
-                {`${trainings.name}`}
-              </label>
-            </div>
-          ))}
+          {trainings.map((training, i) => {
+            const trainingString = `${training.date}: ${training.name} ($${training.price})`;
+
+            return (
+              <React.Fragment key={training.id}>
+                <input
+                  type='checkbox'
+                  className='btn-check'
+                  id={`btn-check-${i}`}
+                  autoComplete='off'
+                  checked={reg.trainings.includes(trainingString)}
+                  value={trainingString}
+                  onChange={handleChange}
+                />
+                <label className='btn' htmlFor={`btn-check-${i}`}>
+                  {training.name}
+                </label>
+              </React.Fragment>
+            );
+          })}
         </div>
 
         <div className='mb-3'>
@@ -220,6 +335,24 @@ const EditForm = ({ reg: initialReg }) => {
           />
         </div>
 
+        <div className='mb-3'>
+          <label htmlFor='payment_options' className='form-label'>
+            payment_options <span style={{ color: "red" }}> * </span>
+          </label>
+          <input
+            type='text'
+            className='form-control'
+            id='payment_options'
+            name='payment_options'
+            placeholder='Enter Full payment_options'
+            aria-describedby='payment_options'
+            onChange={handleChange}
+            value={reg.payment_options}
+            required
+          />
+        </div>
+
+        {/* mAKE rADIO */}
         <div className='mb-3'>
           <label htmlFor='payment_status' className='form-label'>
             payment_status <span style={{ color: "red" }}> * </span>
