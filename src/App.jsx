@@ -7,11 +7,13 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import Dashboard from "./components/Dashboard.jsx";
 import ExportExcel from "./components/ExportExcel.jsx";
+import EditForm from "./components/EditForm.jsx";
 
 function App() {
   const [excelData, setExcelData] = useState([]);
   const [activeTab, setActiveTab] = useState("individual");
   const [isLoading, setIsLoading] = useState(false);
+  const [editRegistration, setEditRegistration] = useState(null);
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -642,7 +644,9 @@ function App() {
                                   <div className='btn-group'>
                                     <button
                                       className='btn'
-                                      // onClick={() => setEditingGuest(guest)}
+                                      data-bs-toggle='modal'
+                                      data-bs-target='#editModal'
+                                      onClick={() => setEditRegistration(reg)}
                                     >
                                       <i class='bi bi-pencil-square' />
                                     </button>
@@ -662,6 +666,40 @@ function App() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div
+            className='modal fade'
+            id='editModal'
+            tabIndex='-1'
+            aria-labelledby='editModalLabel'
+            aria-hidden='true'
+          >
+            <div className='modal-dialog modal-dialog-centered'>
+              <div className='modal-content'>
+                <div className='modal-header'>
+                  <h1
+                    className='modal-title fs-5'
+                    id='editModalLabel'
+                    style={{ fontWeight: 700 }}
+                  >
+                    Edit Registration
+                  </h1>
+                  <button
+                    type='button'
+                    className='btn-close'
+                    data-bs-dismiss='modal'
+                    aria-label='Close'
+                    onClick={() => setEditRegistration(null)}
+                  ></button>
+                </div>
+                <div className='modal-body'>
+                  <EditForm reg={editRegistration} />
+                </div>
               </div>
             </div>
           </div>
