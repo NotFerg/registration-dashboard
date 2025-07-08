@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 const Sidebar = () => {
   return (
     <div
-      className="d-flex flex-column p-3 text-white min-vh-100"
+      className="d-flex flex-column p-3 text-white h-100 w-100 min-vh-100"
       style={{ width: "250px", backgroundColor: "#202030" }}
     >
       <h1>logo</h1>
