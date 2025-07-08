@@ -1,18 +1,20 @@
 import React, { useState } from "react";
-import EditFormGroup from "../EditFormGroup";
+import MultiPageModal from "../MultiPageModal"; // import the multi-page modal component
 
 const Group = ({ filteredUsers = [] }) => {
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [editRegistration, setEditRegistration] = useState(null);
+  const [showModal, setShowModal] = useState(false); // control MultiPageModal visibility
+
   function formatCurrency(amount) {
     const num = parseFloat(amount);
     if (isNaN(num)) return "$0.00";
-
     return num.toLocaleString("en-US", {
       style: "currency",
       currency: "USD",
     });
   }
+
   function toggleRow(idx) {
     setExpandedRows((prev) => {
       const next = new Set(prev);
@@ -21,6 +23,7 @@ const Group = ({ filteredUsers = [] }) => {
       return next;
     });
   }
+
   return (
     <>
       <div className="d-flex">
@@ -42,7 +45,6 @@ const Group = ({ filteredUsers = [] }) => {
             <tbody>
               {filteredUsers.map((reg, idx) => {
                 const dateObj = new Date(reg.submission_date);
-
                 const options = {
                   year: "numeric",
                   month: "long",
@@ -51,8 +53,8 @@ const Group = ({ filteredUsers = [] }) => {
                   minute: "2-digit",
                   hour12: true,
                 };
-
                 const formattedDate = dateObj.toLocaleString("en-US", options);
+
                 return (
                   <React.Fragment key={idx}>
                     <tr
@@ -79,6 +81,7 @@ const Group = ({ filteredUsers = [] }) => {
                         )}
                       </td>
                     </tr>
+
                     {expandedRows.has(idx) && (
                       <tr>
                         <td colSpan="12" className="p-0">
@@ -119,23 +122,19 @@ const Group = ({ filteredUsers = [] }) => {
                                     <td className="small">
                                       {formatCurrency(att.subtotal)}
                                     </td>
-                                    <td colSpan={2} className="sticky-col">
+                                    <td className="sticky-col">
                                       <div className="btn-group">
                                         <button
                                           className="btn"
-                                          data-bs-toggle="modal"
-                                          data-bs-target="#editModal"
-                                          onClick={() =>
-                                            setEditRegistration(reg)
-                                          }
+                                          onClick={() => {
+                                            setEditRegistration(reg);
+                                            setShowModal(true);
+                                          }}
                                         >
-                                          <i class="bi bi-pencil-square" />
+                                          <i className="bi bi-pencil-square" />
                                         </button>
-                                        <button
-                                          className="btn"
-                                          // onClick={() => deleteGuest(guest.id)}
-                                        >
-                                          <i class="bi bi-trash-fill" />
+                                        <button className="btn">
+                                          <i className="bi bi-trash-fill" />
                                         </button>
                                       </div>
                                     </td>
@@ -154,39 +153,12 @@ const Group = ({ filteredUsers = [] }) => {
           </table>
         </div>
       </div>
-      <div>
-        <div
-          className="modal fade"
-          id="editModal"
-          tabIndex="-1"
-          aria-labelledby="editModalLabel"
-          aria-hidden="true"
-        >
-          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h1
-                  className="modal-title fs-5"
-                  id="editModalLabel"
-                  style={{ fontWeight: 700 }}
-                >
-                  Edit Registration
-                </h1>
-                <button
-                  type="button"
-                  className="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"
-                  onClick={() => setEditRegistration(null)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <EditFormGroup reg={editRegistration} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
+      <MultiPageModal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        initialReg={editRegistration}
+      />
     </>
   );
 };
