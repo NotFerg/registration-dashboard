@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 import supabase from "../utils/supabase.js";
-import Sidebar from "../components/sidebar.jsx";
+import Sidebar from "../components/Sidebar.jsx";
 import "../App.css";
 
 function Trainings() {
