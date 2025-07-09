@@ -402,10 +402,15 @@ function App() {
             </div>
 
             <div className="container-xxl mt-3">
-              <Dashboard />
+              <Dashboard excelData={excelData} />
               <div className="card">
                 <div className="card-body">
                   {" "}
+                  <div className="d-flex justify-content-end">
+                    <button className="btn btn-primary fw-bold">
+                      Add Registration
+                    </button>
+                  </div>
                   <ul className="nav nav-tabs">
                     <li className="nav-item">
                       <a
