@@ -16,6 +16,7 @@ function App() {
   const [activeTab, setActiveTab] = useState("individual");
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [individualRegistration, setIndividualRegistration] = useState(false);
 
   useEffect(() => {
     fetchDataFromSupabase();
@@ -372,28 +373,32 @@ function App() {
     });
   }
 
+  const handleAddRegistration = () => {
+    setIndividualRegistration(!individualRegistration);
+  };
+
   return (
     <>
-      <div className="overflow-hidden">
-        <div className="row min-vh-100">
-          <div className="col-md-2">
+      <div className='overflow-hidden'>
+        <div className='row min-vh-100'>
+          <div className='col-md-2'>
             <Sidebar />
           </div>
 
-          <div className="col-md-10 p-3">
-            <div className="container mt-3">
-              <div className="d-flex justify-content-between mb-3">
+          <div className='col-md-10 p-3'>
+            <div className='container mt-3'>
+              <div className='d-flex justify-content-between mb-3'>
                 {" "}
                 <h2>Registrations</h2>
                 <div>
-                  <label htmlFor="myFile" className="btn btn-success fw-bold">
-                    <i className="bi bi-upload"></i> Upload File
+                  <label htmlFor='myFile' className='btn btn-success fw-bold'>
+                    <i className='bi bi-upload'></i> Upload File
                   </label>
                   <input
-                    id="myFile"
-                    className="d-none"
-                    type="file"
-                    accept=".xlsx, .xls"
+                    id='myFile'
+                    className='d-none'
+                    type='file'
+                    accept='.xlsx, .xls'
                     onChange={handleFileUpload}
                   />
                   <ExportExcel excelData={excelData} />
@@ -401,18 +406,22 @@ function App() {
               </div>
             </div>
 
-            <div className="container-xxl mt-3">
+            <div className='container-xxl mt-3'>
               <Dashboard excelData={excelData} />
-              <div className="card">
-                <div className="card-body">
+              <div className='card'>
+                <div className='card-body'>
                   {" "}
-                  <div className="d-flex justify-content-end">
-                    <button className="btn btn-primary fw-bold">
+                  <div className='d-flex justify-content-end'>
+                    <button
+                      className='btn btn-primary fw-bold'
+                      data-bs-toggle='modal'
+                      data-bs-target='#addModal'
+                    >
                       Add Registration
                     </button>
                   </div>
-                  <ul className="nav nav-tabs">
-                    <li className="nav-item">
+                  <ul className='nav nav-tabs'>
+                    <li className='nav-item'>
                       <a
                         className={`nav-link ${
                           activeTab === "individual"
@@ -425,7 +434,7 @@ function App() {
                         Individual
                       </a>
                     </li>
-                    <li className="nav-item">
+                    <li className='nav-item'>
                       <a
                         className={`nav-link ${
                           activeTab === "group"
@@ -440,10 +449,10 @@ function App() {
                     </li>
                   </ul>
                   <input
-                    type="text"
-                    className="form-control"
-                    id="guestSearch"
-                    placeholder="Search participants..."
+                    type='text'
+                    className='form-control'
+                    id='guestSearch'
+                    placeholder='Search participants...'
                     onChange={handleInputChange}
                     style={{ marginTop: 12, marginBottom: 1 }}
                   />
@@ -453,6 +462,40 @@ function App() {
                     <Individual filteredUsers={filteredUsers} />
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Add Modal */}
+      <div>
+        <div
+          className='modal fade'
+          id='addModal'
+          tabIndex='1'
+          aria-labelledby='addModalLabel'
+          aria-hidden='true'
+        >
+          <div className='modal-dialog modal-dialog-centered modal-dialog-scrollable'>
+            <div className='modal-content'>
+              <div className='modal-header'>
+                <h1
+                  className='modal-title fs-5'
+                  id='addModalLabel'
+                  style={{ fontWeight: 700 }}
+                >
+                  Add Registration
+                </h1>
+                <button
+                  type='button'
+                  className='btn-close'
+                  data-bs-dismiss='modal'
+                  aria-label='Close'
+                ></button>
+              </div>
+              <div className='modal-body'>
+                <EditForm />
               </div>
             </div>
           </div>

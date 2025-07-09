@@ -65,16 +65,6 @@ const EditForm = ({ reg: initialReg }) => {
     }
   };
 
-  // const computeTotal = (training) => {
-  //   let price = Number(
-  //     training.substring(training.indexOf("(") + 2, training.lastIndexOf(")"))
-  //   );
-  //   setReg((prevReg) => ({
-  //     ...prevReg,
-  //     total_cost: price,
-  //   }));
-  // };
-
   async function fetchTrainings() {
     const { data } = await supabase
       .from("trainings")
@@ -144,7 +134,7 @@ const EditForm = ({ reg: initialReg }) => {
           total_cost: reg.total_cost,
           payment_options: reg.payment_options,
           payment_status: reg.payment_status,
-          trainings: reg.trainings,
+          trainings: reg.trainings, // optional depending on schema
         })
         .eq("id", initialReg.id);
 
@@ -175,6 +165,53 @@ const EditForm = ({ reg: initialReg }) => {
             {
               training_id: trainingId,
               registration_id: initialReg.id,
+            },
+          ]);
+        }
+      }
+    } else {
+      // INSERT CASE
+      const { data: insertedRegistration, error: insertError } = await supabase
+        .from("registrations")
+        .insert({
+          submission_date: reg.submission_date,
+          first_name: reg.first_name,
+          last_name: reg.last_name,
+          email: reg.email,
+          position: reg.position,
+          designation: reg.designation,
+          country: reg.country,
+          total_cost: reg.total_cost,
+          payment_options: reg.payment_options,
+          payment_status: reg.payment_status,
+          trainings: reg.trainings, // optional depending on schema
+        })
+        .select()
+        .single(); // get the inserted row including its ID
+
+      if (insertError) {
+        console.error("Insert error:", insertError);
+        return;
+      }
+
+      const newRegistrationId = insertedRegistration.id;
+
+      // Add training references
+      for (const line of reg.trainings) {
+        const parsed = parseTrainingLine(line);
+        if (!parsed) continue;
+
+        const trainingId = await upsertTrainingByNameDatePrice(
+          parsed.name,
+          parsed.date,
+          parsed.price
+        );
+
+        if (trainingId) {
+          await supabase.from("training_references").insert([
+            {
+              training_id: trainingId,
+              registration_id: newRegistrationId,
             },
           ]);
         }
