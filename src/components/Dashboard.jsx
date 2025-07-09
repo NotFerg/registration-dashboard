@@ -3,84 +3,29 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, Card, ProgressBar, Image } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faCalendar,
+  faPeopleArrows,
   faDollarSign,
   faClipboardList,
-  faComments,
-  faEllipsisV,
-  faCircle,
+  faWallet,
 } from "@fortawesome/free-solid-svg-icons";
+import { faMoneyBill } from "@fortawesome/free-solid-svg-icons/faMoneyBill";
 
-// Chart.js and react-chartjs-2 imports
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { Line, Doughnut } from "react-chartjs-2";
+function Dashboard({ excelData: data }) {
+  console.log(data);
 
-// Register Chart.js components
-// ChartJS.register(
-//   CategoryScale,
-//   LinearScale,
-//   PointElement,
-//   LineElement,
-//   ArcElement,
-//   Title,
-//   Tooltip,
-//   Legend
-// );
+  const unpaidCount = data.filter(
+    (registration) => registration.payment_status === "Unpaid"
+  ).length;
 
-// // Sample data for the area (line) chart
-// const areaChartData = {
-//   labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
-//   datasets: [
-//     {
-//       label: "Earnings",
-//       data: [40000, 60000, 80000, 55000, 65000, 75000, 90000],
-//       fill: true,
-//       tension: 0.4,
-//     },
-//   ],
-// };
+  const participantCount = data.reduce((count, registration) => {
+    if (registration.registration_type === "Myself") {
+      count += 1;
+    } else {
+      count += registration.attendees?.length || 0;
+    }
+    return count;
+  }, 0);
 
-// const areaChartOptions = {
-//   responsive: true,
-//   plugins: {
-//     legend: { display: false },
-//     title: { display: false },
-//   },
-//   scales: {
-//     x: { grid: { display: false } },
-//     y: { grid: { color: "#e9ecef" } },
-//   },
-// };
-
-// // Sample data for the pie chart
-// const pieChartData = {
-//   labels: ["Direct", "Social", "Referral"],
-//   datasets: [
-//     {
-//       data: [55, 30, 15],
-//     },
-//   ],
-// };
-
-// const pieChartOptions = {
-//   responsive: true,
-//   plugins: {
-//     legend: { position: "bottom" },
-//     title: { display: false },
-//   },
-// };
-
-function Dashboard() {
   return (
     <Container fluid>
       <Row>
@@ -93,12 +38,12 @@ function Dashboard() {
                     Total Participants
                   </div>
                   <div className="h5 mb-0 font-weight-bold text-gray-800">
-                  Placeholder
+                    {participantCount}
                   </div>
                 </Col>
                 <Col xs="auto">
                   <FontAwesomeIcon
-                    icon={faCalendar}
+                    icon={faPeopleArrows}
                     size="2x"
                     className="text-gray-300"
                   />
@@ -169,15 +114,17 @@ function Dashboard() {
               <Row className="no-gutters align-items-center">
                 <Col>
                   <div className="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                    Unpaid Participants
+                    Unpaid Registrations
                   </div>
                   <div className="h5 mb-0 font-weight-bold text-gray-800">
-                    18
+                    <div className="h5 mb-0 font-weight-bold text-gray-800">
+                      {unpaidCount}
+                    </div>
                   </div>
                 </Col>
                 <Col xs="auto">
                   <FontAwesomeIcon
-                    icon={faComments}
+                    icon={faWallet}
                     size="2x"
                     className="text-gray-300"
                   />
