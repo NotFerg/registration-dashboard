@@ -35,26 +35,19 @@ const EditForm = ({ reg: initialReg }) => {
         const prevTrainings = Array.isArray(prev.trainings)
           ? prev.trainings
           : [];
-
-        // Add or remove the training from the array
         const updatedTrainings = checked
           ? [...prevTrainings, trainingName]
           : prevTrainings.filter((t) => t !== trainingName);
 
-        // Recalculate total cost from updatedTrainings
-        const updatedTotal = updatedTrainings.reduce((sum, trainingStr) => {
-          const priceStr = trainingStr.substring(
-            trainingStr.indexOf("(") + 2,
-            trainingStr.lastIndexOf(")")
-          );
-          const price = Number(priceStr);
-          return sum + (isNaN(price) ? 0 : price);
+        const totalCost = updatedTrainings.reduce((acc, training) => {
+          const parsedTraining = parseTrainingLine(training);
+          return acc + (parsedTraining ? parsedTraining.price : 0);
         }, 0);
 
         return {
           ...prev,
           trainings: updatedTrainings,
-          total_cost: updatedTotal,
+          total_cost: totalCost,
         };
       });
     } else {
@@ -366,7 +359,7 @@ const EditForm = ({ reg: initialReg }) => {
                     className='btn btn-outline-success m-1'
                     htmlFor={`btn-check-${i}`}
                   >
-                    {training.name} - {training.price}
+                    {training.name} - ${training.price}
                   </label>
                 </React.Fragment>
               );
