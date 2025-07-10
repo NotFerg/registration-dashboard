@@ -17,6 +17,7 @@ const Form = ({}) => {
     payment_options: "",
     registration_type: "Myself",
     payment_status: "",
+    company: "",
   });
 
   const handleChange = (e) => {
@@ -33,7 +34,7 @@ const Form = ({}) => {
           : prevTrainings.filter((t) => t !== trainingName);
 
         const totalCost = updatedTrainings.reduce((acc, training) => {
-          const match = training.match(/\((\d+(?:\.\d{1,2})?)\)/);
+          const match = training.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
           const price = match ? parseFloat(match[1]) : 0;
           return acc + price;
         }, 0);
@@ -50,7 +51,6 @@ const Form = ({}) => {
         [id]: value,
       }));
     }
-    console.log("REG", reg);
   };
 
   useEffect(() => {
@@ -109,7 +109,6 @@ const Form = ({}) => {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    console.log("REG", reg);
 
     // Insert new registration
     const { data: newReg, error: insertError } = await supabase
@@ -126,7 +125,9 @@ const Form = ({}) => {
           total_cost: reg.total_cost,
           payment_options: reg.payment_options,
           payment_status: reg.payment_status,
-          trainings: reg.trainings,
+          trainings: reg.trainings.join(", "),
+          company: reg.company,
+          registration_type: reg.registration_type,
         },
       ])
       .select()
@@ -289,7 +290,7 @@ const Form = ({}) => {
           <br />
           <div className='border rounded p-2'>
             {trainings.map((training, i) => {
-              const trainingString = `${training.date}: ${training.name} (${training.price})`;
+              const trainingString = `${training.date}: ${training.name} ($${training.price})`;
               const isChecked = reg.trainings.includes(trainingString);
 
               return (

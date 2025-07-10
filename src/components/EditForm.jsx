@@ -40,8 +40,9 @@ const EditForm = ({ reg: initialReg }) => {
           : prevTrainings.filter((t) => t !== trainingName);
 
         const totalCost = updatedTrainings.reduce((acc, training) => {
-          const parsedTraining = parseTrainingLine(training);
-          return acc + (parsedTraining ? parsedTraining.price : 0);
+          const match = training.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+          const price = match ? parseFloat(match[1]) : 0;
+          return acc + price;
         }, 0);
 
         return {
@@ -127,7 +128,8 @@ const EditForm = ({ reg: initialReg }) => {
           total_cost: reg.total_cost,
           payment_options: reg.payment_options,
           payment_status: reg.payment_status,
-          trainings: reg.trainings, // optional depending on schema
+          trainings: reg.trainings.join(", "),
+          company: reg.company,
         })
         .eq("id", initialReg.id);
 
@@ -177,8 +179,10 @@ const EditForm = ({ reg: initialReg }) => {
           total_cost: reg.total_cost,
           payment_options: reg.payment_options,
           payment_status: reg.payment_status,
-          trainings: reg.trainings, // optional depending on schema
+          trainings: reg.trainings.join(", "),
+          company: reg.company,
         })
+
         .select()
         .single(); // get the inserted row including its ID
 
