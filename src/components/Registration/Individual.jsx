@@ -76,9 +76,9 @@ const Individual = ({ filteredUsers = [] }) => {
                 <th>Position</th>
                 <th>Designation</th>
                 <th>Country</th>
-                <div className="dropdown w-100 text-center">
+                <th className="dropdown w-100 text-center">
                   <button
-                    className="dropdown-toggle"
+                    className="dropdown-toggle fw-bold"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                     style={{
@@ -87,7 +87,7 @@ const Individual = ({ filteredUsers = [] }) => {
                       border: "none",
                     }}
                   >
-                    <th> Trainings</th>
+                     Trainings
                   </button>
                   <ul className="dropdown-menu dropdown-menu-dark ">
                     {[
@@ -107,11 +107,11 @@ const Individual = ({ filteredUsers = [] }) => {
                       </li>
                     ))}
                   </ul>
-                </div>
+                </th>
                 <th>Total Cost</th>
                 <div className="dropdown">
                   <button
-                    class="dropdown-toggle"
+                    className="dropdown-toggle fw-bold"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                     style={{
@@ -120,7 +120,7 @@ const Individual = ({ filteredUsers = [] }) => {
                       border: "none",
                     }}
                   >
-                    <th>Payment Status</th>
+                    Payment Status
                   </button>
                   <ul className="dropdown-menu dropdown-menu-dark">
                     <li>

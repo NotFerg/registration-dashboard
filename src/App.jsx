@@ -7,7 +7,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import Dashboard from "./components/Dashboard.jsx";
 import ExportExcel from "./components/ExportExcel.jsx";
-import EditForm from "./components/EditForm.jsx";
+import Form from "./components/Registration/Form.jsx";
 import Group from "./components/Registration/Group.jsx";
 import Individual from "./components/Registration/Individual.jsx";
 
@@ -363,15 +363,6 @@ function App() {
     return inserted.id;
   }
 
-  function toggleRow(idx) {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
-      return next;
-    });
-  }
-
   return (
     <>
       <div className="overflow-hidden">
@@ -407,7 +398,11 @@ function App() {
                 <div className="card-body">
                   {" "}
                   <div className="d-flex justify-content-end">
-                    <button className="btn btn-primary fw-bold">
+                    <button
+                      className="btn btn-primary fw-bold"
+                      data-bs-toggle="modal"
+                      data-bs-target="#addRegistrationModal"
+                    >
                       Add Registration
                     </button>
                   </div>
@@ -453,6 +448,40 @@ function App() {
                     <Individual filteredUsers={filteredUsers} />
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Insert Modal */}
+      <div>
+        <div
+          className="modal fade"
+          id="addRegistrationModal"
+          tabIndex="-1"
+          aria-labelledby="addModalLabel"
+          aria-hidden="true"
+        >
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h1
+                  className="modal-title fs-5"
+                  id="editModalLabel"
+                  style={{ fontWeight: 700 }}
+                >
+                  Add Registration
+                </h1>
+                <button
+                  type="button"
+                  className="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body">
+                <Form />
               </div>
             </div>
           </div>
