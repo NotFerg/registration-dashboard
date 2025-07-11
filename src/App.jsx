@@ -11,6 +11,7 @@ import Form from "./components/Registration/Form.jsx";
 import Group from "./components/Registration/Group.jsx";
 import Individual from "./components/Registration/Individual.jsx";
 import EditForm from "./components/EditForm.jsx";
+import AddFormGroup from "./components/AddFormGroup.jsx";
 
 function App() {
   const [excelData, setExcelData] = useState([]);
@@ -411,6 +412,13 @@ function App() {
                     >
                       Add Registration
                     </button>
+                    <button
+                      className='btn btn-primary fw-bold'
+                      data-bs-toggle='modal'
+                      data-bs-target='#addGroupModal'
+                    >
+                      Add Group Registration
+                    </button>
                   </div>
                   <ul className='nav nav-tabs'>
                     <li className='nav-item'>
@@ -488,6 +496,39 @@ function App() {
               </div>
               <div className='modal-body'>
                 <Form />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div
+          className='modal fade'
+          id='addGroupModal'
+          tabIndex='-1'
+          aria-labelledby='addGroupModal'
+          aria-hidden='true'
+        >
+          <div className='modal-dialog modal-dialog-centered modal-dialog-scrollable'>
+            <div className='modal-content'>
+              <div className='modal-header'>
+                <h1
+                  className='modal-title fs-5'
+                  id='editModalLabel'
+                  style={{ fontWeight: 700 }}
+                >
+                  Add Registration
+                </h1>
+                <button
+                  type='button'
+                  className='btn-close'
+                  data-bs-dismiss='modal'
+                  aria-label='Close'
+                ></button>
+              </div>
+              <div className='modal-body'>
+                <AddFormGroup />
               </div>
             </div>
           </div>
