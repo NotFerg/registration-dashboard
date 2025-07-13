@@ -11,8 +11,6 @@ import {
 import { faMoneyBill } from "@fortawesome/free-solid-svg-icons/faMoneyBill";
 
 function Dashboard({ excelData: data }) {
-  console.log(data);
-
   const unpaidCount = data.filter(
     (registration) => registration.payment_status === "Unpaid"
   ).length;
