@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import supabase from "../../utils/supabase";
+import Swal from "sweetalert2";
 
 const Form = ({}) => {
   const [trainings, setTrainings] = useState([]);
@@ -158,6 +159,16 @@ const Form = ({}) => {
         ]);
       }
     }
+
+    Swal.fire({
+      text: "Registration added successfully",
+      icon: "success",
+      confirmButtonText: "OK",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.reload();
+      }
+    });
   }
 
   return (
