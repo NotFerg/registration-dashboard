@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button } from "react-bootstrap";
+import { Modal, Button, Form } from "react-bootstrap";
 import EditFormGroup from "./EditFormGroup";
 
 const MultiPageModal = ({ show, onHide, initialReg }) => {
@@ -8,11 +8,10 @@ const MultiPageModal = ({ show, onHide, initialReg }) => {
     ? initialReg.attendees
     : [];
 
-  const isFirst = step === 0;
-  const isLast = step === attendees.length;
-
-  const next = () => setStep((prev) => Math.min(prev + 1, attendees.length));
-  const prev = () => setStep((prev) => Math.max(prev - 1, 0));
+  const handleSelect = (e) => {
+    const value = parseInt(e.target.value, 10);
+    setStep(value);
+  };
 
   const renderAttendeeForm = () => {
     if (step === 0) return <p>Select an attendee to edit.</p>;
@@ -28,8 +27,11 @@ const MultiPageModal = ({ show, onHide, initialReg }) => {
       total_cost: attendee.subtotal,
       id: initialReg.id,
     };
+    console.log(combinedReg);
     return <EditFormGroup reg={combinedReg} />;
   };
+
+  console.log(initialReg);
 
   if (!initialReg) return null;
 
@@ -42,7 +44,56 @@ const MultiPageModal = ({ show, onHide, initialReg }) => {
       </Modal.Header>
       <Modal.Body>
         {/* Admin overview (read-only) */}
-        <section className="mb-4">
+        <h4 style={{ marginBottom: 12 }}>Admin Information</h4>
+        <div className="d-flex flex-row justify-content-between mb-2">
+          <div className="card">
+            <div className="card-body">
+              <h3 className="card-title">
+                <i class="bi bi-building"></i>
+              </h3>
+              <h6 className="card-title">
+                <strong>Company</strong>
+              </h6>
+              <p className="card-text">{initialReg.company}</p>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
+              <h3 className="card-title">
+                <i class="bi bi-person-circle"></i>
+              </h3>
+              <h6 className="card-title">
+                <strong>Name</strong>
+              </h6>
+              <p className="card-text">
+                {initialReg.first_name} {initialReg.last_name}
+              </p>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
+              <h3 className="card-title">
+                <i class="bi bi-envelope-at-fill"></i>
+              </h3>
+              <h6 className="card-title">
+                <strong>E-Mail</strong>
+              </h6>
+              <p className="card-text">{initialReg.email}</p>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
+              <h3 className="card-title">
+                <i class="bi bi-cash"></i>
+              </h3>
+              <h6 className="card-title">
+                <strong>Total Cost</strong>
+              </h6>
+              <p className="card-text">${initialReg.total_cost}</p>
+            </div>
+          </div>
+        </div>
+        {/* <section className="mb-4">
           <h4 style={{ marginBottom: 20 }}>Admin Information</h4>
           <p>
             <strong>Company:</strong> {initialReg.company}
@@ -57,23 +108,28 @@ const MultiPageModal = ({ show, onHide, initialReg }) => {
           <p>
             <strong>Total Cost:</strong> ${initialReg.total_cost}
           </p>
-        </section>
+        </section> */}
         <hr />
-        <h4 style={{ marginBottom: 20 }}>Attendees Information</h4>
+        <h4 style={{ marginBottom: 12 }}>Select Attendee:</h4>
+        <Form.Group controlId="attendeeSelect" className="mb-3">
+          <Form.Label>Attendee Name: </Form.Label>
+          <Form.Select value={step} onChange={handleSelect} className="mb-3">
+            <option value={0}>-- Select an attendee --</option>
+            {attendees.map((att, idx) => (
+              <option key={idx + 1} value={idx + 1}>
+                {att.first_name} {att.last_name}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+        <hr />
+        <h4 style={{ marginBottom: 12 }}>Attendees Information</h4>
         {renderAttendeeForm()}
       </Modal.Body>
       <Modal.Footer>
-        <div className="w-100 d-flex justify-content-between">
-          <Button variant="secondary" onClick={prev} disabled={isFirst}>
-            Previous
-          </Button>
-          <small>
-            Attendee {step} of {attendees.length}
-          </small>
-          <Button variant="primary" onClick={next} disabled={isLast}>
-            Next
-          </Button>
-        </div>
+        <Button variant="secondary" onClick={onHide}>
+          Close
+        </Button>
       </Modal.Footer>
     </Modal>
   );
