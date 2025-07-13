@@ -1,11 +1,14 @@
 import { useState } from "react";
 import supabase from "../utils/supabase";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import "../App.css";
 
 export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -18,71 +21,107 @@ export function Login() {
         password,
       });
       if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
+      // Redirect to an authenticated route here
     } catch (error) {
-      setError(error ? error.message : "An error occurred");
+      setError(error.message || "An error occurred");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="d-flex align-items-center justify-content-center min-vh-100" style={{ backgroundColor: "#202030" }}>
-      <div className="card w-50">
-        <div className="card-header">
-          <h2 className="card-title h4 mb-0">Login</h2>
+    <>
+      {isLoading ? (
+        <div
+          className="container-fluid d-flex justify-content-center align-items-center vh-100"
+          style={{ backgroundColor: "#202030", color: "white" }}
+        >
+          <div
+            className="spinner-border text-primary"
+            role="status"
+            style={{ width: "3rem", height: "3rem" }}
+          >
+            <span className="visually-hidden">Loading...</span>
+          </div>
         </div>
-        <div className="card-body">
-          <form onSubmit={handleLogin}>
-            <div className="d-flex flex-column gap-3">
-              <div className="mb-3">
-                <label htmlFor="email" className="form-label">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  className="form-control"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="mb-3">
-                <div className="d-flex justify-content-between align-items-center">
-                  <label htmlFor="password" className="form-label mb-0">
-                    Password
-                  </label>
-                  <a
-                    href="/forgot-password"
-                    className="text-decoration-underline text-sm text-white-50"
-                  >
-                    Forgot your password?
-                  </a>
+      ) : (
+        <div
+          className="container-fluid"
+          style={{ backgroundColor: "#202030", color: "white" }}
+        >
+          <section className="vh-100">
+            <div className="container py-5 h-100">
+              <div className="row d-flex align-items-center justify-content-center h-100">
+                <div className="col-md-8 col-lg-7 col-xl-6">
+                  <img
+                    src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-login-form/draw2.svg"
+                    className="img-fluid"
+                    alt="Phone image"
+                  />
                 </div>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  className="form-control"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="col-md-7 col-lg-5 col-xl-5 offset-xl-1 p-5">
+                  <div className="text-center mb-4">
+                    <h1 style={{ fontWeight: 700 }}>Welcome Back!</h1>
+                    <p>Please enter your details below.</p>
+                  </div>
+                  <form onSubmit={handleLogin}>
+                    <div className="mb-3">
+                      <input
+                        type="email"
+                        id="form1Example13"
+                        className="form-control p-2"
+                        placeholder="Username / E-Mail Address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-password mb-3 position-relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        id="form1Example23"
+                        className="form-control p-2"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      <span
+                        className="position-absolute"
+                        style={{
+                          top: "50%",
+                          right: "15px",
+                          transform: "translateY(-50%)",
+                          cursor: "pointer",
+                          color: "#6c757d",
+                        }}
+                        onClick={() => setShowPassword((prev) => !prev)}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </span>
+                    </div>
+
+                    {error && <div className="text-danger mb-3">{error}</div>}
+
+                    <div className="d-grid gap-2">
+                      <button
+                        type="submit"
+                        className="btn btn-primary btn-md btn-block"
+                        style={{ fontWeight: 700 }}
+                        disabled={isLoading}
+                      >
+                        Sign In
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
-              {error && <p className="text-danger small">{error}</p>}
-              <button
-                type="submit"
-                className="btn btn-primary w-100"
-                disabled={isLoading}
-              >
-                {isLoading ? "Logging in..." : "Login"}
-              </button>
             </div>
-          </form>
+          </section>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 
