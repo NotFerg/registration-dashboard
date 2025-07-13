@@ -2,6 +2,7 @@ import { useState } from "react";
 import supabase from "../utils/supabase";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import "../App.css";
+import { useNavigate } from "react-router-dom";
 
 export function Login() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,7 @@ export function Login() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,10 +22,15 @@ export function Login() {
         email,
         password,
       });
-      if (error) throw error;
-      // Redirect to an authenticated route here
+      if (error) {
+        setError("Invalid credentials");
+        return false;
+      }
+      navigate("/");
+      return true;
     } catch (error) {
       setError(error.message || "An error occurred");
+      return false;
     } finally {
       setIsLoading(false);
     }
