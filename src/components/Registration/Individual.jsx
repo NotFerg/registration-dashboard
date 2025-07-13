@@ -213,13 +213,13 @@ const Individual = ({ filteredUsers = [] }) => {
                             data-bs-target="#editModal"
                             onClick={() => setEditRegistration(reg)}
                           >
-                            <i class="bi bi-pencil-square" />
+                            <i className="bi bi-pencil-square" />
                           </button>
                           <button
                             className="btn"
                             onClick={() => handleDelete(reg.id)}
                           >
-                            <i class="bi bi-trash-fill" />
+                            <i className="bi bi-trash-fill" />
                           </button>
                         </div>
                       </td>
