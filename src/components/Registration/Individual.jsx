@@ -76,79 +76,71 @@ const Individual = ({ filteredUsers = [] }) => {
                 <th>Position</th>
                 <th>Designation</th>
                 <th>Country</th>
-                <div className="dropdown w-100 text-center">
-                  <button
-                    className="dropdown-toggle"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    style={{
-                      backgroundColor: "transparent",
-                      height: "55px",
-                      border: "none",
-                    }}
-                  >
-                    <th> Trainings</th>
-                  </button>
-                  <ul className="dropdown-menu dropdown-menu-dark ">
-                    {[
-                      "Annual Pacific Region Investment Conference",
-                      "Applied Responsible Investment for Fiduciaries",
-                      "Accredited Investment Fiduciary Training",
-                      "Responsible Investment Essentials",
-                      "Investment Governance Essentials",
-                    ].map((training, index) => (
-                      <li key={index}>
-                        <a
-                          className="dropdown-item"
-                          onClick={() => setActiveTraining(training)}
-                        >
-                          {training}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <th className="text-center">
+                  <div className="dropdown w-100">
+                    <button
+                      className="dropdown-toggle"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      style={{
+                        backgroundColor: "transparent",
+                        height: "55px",
+                        border: "none",
+                      }}
+                    >
+                      Trainings
+                    </button>
+                    <ul className="dropdown-menu dropdown-menu-dark">
+                      {[
+                        "Annual Pacific Region Investment Conference",
+                        "Applied Responsible Investment for Fiduciaries",
+                        // …
+                      ].map((training, index) => (
+                        <li key={training + index}>
+                          <a
+                            className="dropdown-item"
+                            onClick={() => setActiveTraining(training)}
+                          >
+                            {training}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </th>
                 <th>Total Cost</th>
-                <div className="dropdown">
-                  <button
-                    class="dropdown-toggle"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    style={{
-                      backgroundColor: "transparent",
-                      height: "55px",
-                      border: "none",
-                    }}
-                  >
-                    <th>Payment Status</th>
-                  </button>
-                  <ul className="dropdown-menu dropdown-menu-dark">
-                    <li>
-                      <a
-                        className="dropdown-item"
-                        onClick={() => setActivePaymentStatus("Unpaid")}
-                      >
-                        Unpaid
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        className="dropdown-item"
-                        onClick={() => setActivePaymentStatus("Paid")}
-                      >
-                        Paid
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        className="dropdown-item"
-                        onClick={() => setActivePaymentStatus("")}
-                      >
-                        No Filter
-                      </a>
-                    </li>
-                  </ul>
-                </div>
+                <th className="text-center">
+                  <div className="dropdown w-100">
+                    <button
+                      className="dropdown-toggle"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      style={{
+                        backgroundColor: "transparent",
+                        height: "55px",
+                        border: "none",
+                      }}
+                    >
+                      Payment Status
+                    </button>
+                    <ul className="dropdown-menu dropdown-menu-dark">
+                      {["Unpaid", "Paid", "No Filter"].map((status, i) => (
+                        <li key={status + i}>
+                          <a
+                            className="dropdown-item"
+                            onClick={() =>
+                              setActivePaymentStatus(
+                                status === "No Filter" ? "" : status
+                              )
+                            }
+                          >
+                            {status}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </th>
                 <th className="text-center " colSpan={2}>
                   Actions
                 </th>
@@ -213,13 +205,13 @@ const Individual = ({ filteredUsers = [] }) => {
                             data-bs-target="#editModal"
                             onClick={() => setEditRegistration(reg)}
                           >
-                            <i class="bi bi-pencil-square" />
+                            <i className="bi bi-pencil-square" />
                           </button>
                           <button
                             className="btn"
                             onClick={() => handleDelete(reg.id)}
                           >
-                            <i class="bi bi-trash-fill" />
+                            <i className="bi bi-trash-fill" />
                           </button>
                         </div>
                       </td>
