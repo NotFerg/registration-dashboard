@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import supabase from "../utils/supabase";
+import supabase from "../../utils/supabase";
 
-const EditForm = ({ reg: initialReg }) => {
+const Form = ({}) => {
   const [trainings, setTrainings] = useState([]);
   const [reg, setReg] = useState({
     company: "",
-    submission_date: "",
+    submission_date: new Date().toISOString().slice(0, 19).replace("T", " "),
     first_name: "",
     last_name: "",
     email: "",
@@ -13,24 +13,18 @@ const EditForm = ({ reg: initialReg }) => {
     designation: "",
     country: "",
     trainings: [],
-    total_cost: "",
+    total_cost: 0,
     payment_options: "",
+    registration_type: "Myself",
     payment_status: "",
+    company: "",
   });
-
-  useEffect(() => {
-    fetchTrainings();
-    if (initialReg) {
-      setReg(initialReg);
-    }
-  }, [initialReg]);
 
   const handleChange = (e) => {
     const { id, value, type, checked } = e.target;
 
     if (type === "checkbox") {
       const trainingName = value;
-
       setReg((prev) => {
         const prevTrainings = Array.isArray(prev.trainings)
           ? prev.trainings
@@ -59,12 +53,16 @@ const EditForm = ({ reg: initialReg }) => {
     }
   };
 
+  useEffect(() => {
+    fetchTrainings().then((data) => setTrainings(data));
+  }, []);
+
   async function fetchTrainings() {
     const { data } = await supabase
       .from("trainings")
       .select("*")
       .order("id", { ascending: true });
-    setTrainings(data);
+    return data;
   }
 
   function parseTrainingLine(line) {
@@ -111,13 +109,12 @@ const EditForm = ({ reg: initialReg }) => {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    console.log("REG", reg);
 
-    if (initialReg) {
-      // 1. Update the registration fields (excluding `trainings` if you're handling it relationally)
-      const { error: updateError } = await supabase
-        .from("registrations")
-        .update({
+    // Insert new registration
+    const { data: newReg, error: insertError } = await supabase
+      .from("registrations")
+      .insert([
+        {
           submission_date: reg.submission_date,
           first_name: reg.first_name,
           last_name: reg.last_name,
@@ -130,88 +127,35 @@ const EditForm = ({ reg: initialReg }) => {
           payment_status: reg.payment_status,
           trainings: reg.trainings.join(", "),
           company: reg.company,
-        })
-        .eq("id", initialReg.id);
+          registration_type: reg.registration_type,
+        },
+      ])
+      .select()
+      .single();
 
-      if (updateError) {
-        console.error("Update error:", updateError);
-        return;
-      }
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      return;
+    }
 
-      // 2. Delete old training references
-      await supabase
-        .from("training_references")
-        .delete()
-        .eq("registration_id", initialReg.id);
+    // Insert new training references
+    for (const line of reg.trainings) {
+      const parsed = parseTrainingLine(line);
+      if (!parsed) continue;
 
-      // 3. Re-insert new ones
-      for (const line of reg.trainings) {
-        const parsed = parseTrainingLine(line);
-        if (!parsed) continue;
+      const trainingId = await upsertTrainingByNameDatePrice(
+        parsed.name,
+        parsed.date,
+        parsed.price
+      );
 
-        const trainingId = await upsertTrainingByNameDatePrice(
-          parsed.name,
-          parsed.date,
-          parsed.price
-        );
-
-        if (trainingId) {
-          await supabase.from("training_references").insert([
-            {
-              training_id: trainingId,
-              registration_id: initialReg.id,
-            },
-          ]);
-        }
-      }
-    } else {
-      // INSERT CASE
-      const { data: insertedRegistration, error: insertError } = await supabase
-        .from("registrations")
-        .insert({
-          submission_date: reg.submission_date,
-          first_name: reg.first_name,
-          last_name: reg.last_name,
-          email: reg.email,
-          position: reg.position,
-          designation: reg.designation,
-          country: reg.country,
-          total_cost: reg.total_cost,
-          payment_options: reg.payment_options,
-          payment_status: reg.payment_status,
-          trainings: reg.trainings.join(", "),
-          company: reg.company,
-        })
-
-        .select()
-        .single(); // get the inserted row including its ID
-
-      if (insertError) {
-        console.error("Insert error:", insertError);
-        return;
-      }
-
-      const newRegistrationId = insertedRegistration.id;
-
-      // Add training references
-      for (const line of reg.trainings) {
-        const parsed = parseTrainingLine(line);
-        if (!parsed) continue;
-
-        const trainingId = await upsertTrainingByNameDatePrice(
-          parsed.name,
-          parsed.date,
-          parsed.price
-        );
-
-        if (trainingId) {
-          await supabase.from("training_references").insert([
-            {
-              training_id: trainingId,
-              registration_id: newRegistrationId,
-            },
-          ]);
-        }
+      if (trainingId) {
+        await supabase.from("training_references").insert([
+          {
+            training_id: trainingId,
+            registration_id: newReg.id,
+          },
+        ]);
       }
     }
   }
@@ -228,7 +172,7 @@ const EditForm = ({ reg: initialReg }) => {
             className='form-control'
             id='company'
             name='company'
-            placeholder='Enter Full company'
+            placeholder='Enter Company Name'
             aria-describedby='company'
             onChange={handleChange}
             value={reg.company}
@@ -245,7 +189,7 @@ const EditForm = ({ reg: initialReg }) => {
               className='form-control'
               id='first_name'
               name='first_name'
-              placeholder='Enter Full first_name'
+              placeholder='Enter First Name'
               aria-describedby='first_name'
               onChange={handleChange}
               value={reg.first_name}
@@ -262,7 +206,7 @@ const EditForm = ({ reg: initialReg }) => {
               className='form-control'
               id='last_name'
               name='last_name'
-              placeholder='Enter Full last_name'
+              placeholder='Enter Last Name'
               aria-describedby='last_name'
               onChange={handleChange}
               value={reg.last_name}
@@ -280,7 +224,7 @@ const EditForm = ({ reg: initialReg }) => {
             className='form-control'
             id='email'
             name='email'
-            placeholder='Enter Full email'
+            placeholder='Enter Email'
             aria-describedby='email'
             onChange={handleChange}
             value={reg.email}
@@ -297,7 +241,7 @@ const EditForm = ({ reg: initialReg }) => {
             className='form-control'
             id='position'
             name='position'
-            placeholder='Enter Full position'
+            placeholder='Enter Position'
             aria-describedby='position'
             onChange={handleChange}
             value={reg.position}
@@ -314,7 +258,7 @@ const EditForm = ({ reg: initialReg }) => {
             className='form-control'
             id='designation'
             name='designation'
-            placeholder='Enter Full designation'
+            placeholder='Enter Designation'
             aria-describedby='designation'
             onChange={handleChange}
             value={reg.designation}
@@ -331,7 +275,7 @@ const EditForm = ({ reg: initialReg }) => {
             className='form-control'
             id='country'
             name='country'
-            placeholder='Enter Full country'
+            placeholder='Enter Country'
             aria-describedby='country'
             onChange={handleChange}
             value={reg.country}
@@ -347,21 +291,24 @@ const EditForm = ({ reg: initialReg }) => {
           <div className='border rounded p-2'>
             {trainings.map((training, i) => {
               const trainingString = `${training.date}: ${training.name} ($${training.price})`;
+              const isChecked = reg.trainings.includes(trainingString);
 
               return (
-                <React.Fragment key={training.id}>
+                <React.Fragment key={training.id || i}>
                   <input
                     type='checkbox'
                     className='btn-check'
-                    id={`btn-check-${i}`}
-                    autoComplete='off'
-                    checked={reg.trainings.includes(trainingString)}
+                    id={`btn-check-${training.id || i}`}
+                    name='trainings'
                     value={trainingString}
-                    onChange={handleChange}
+                    checked={isChecked}
+                    onChange={(e) => {
+                      handleChange(e);
+                    }}
                   />
                   <label
                     className='btn btn-outline-success m-1'
-                    htmlFor={`btn-check-${i}`}
+                    htmlFor={`btn-check-${training.id || i}`}
                   >
                     {training.name} - ${training.price}
                   </label>
@@ -380,11 +327,11 @@ const EditForm = ({ reg: initialReg }) => {
             className='form-control'
             id='total_cost'
             name='total_cost'
-            placeholder='Enter Full total_cost'
+            placeholder='Enter Total Cost'
             aria-describedby='total_cost'
-            readOnly
             onChange={handleChange}
             value={reg.total_cost}
+            readOnly
             required
           />
         </div>
@@ -398,7 +345,7 @@ const EditForm = ({ reg: initialReg }) => {
             className='form-control'
             id='payment_options'
             name='payment_options'
-            placeholder='Enter Full payment_options'
+            placeholder='Enter Full Payment Options'
             aria-describedby='payment_options'
             onChange={handleChange}
             value={reg.payment_options}
@@ -435,4 +382,4 @@ const EditForm = ({ reg: initialReg }) => {
   );
 };
 
-export default EditForm;
+export default Form;
