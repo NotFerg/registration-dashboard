@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "react-bootstrap";
-import AddAttendees from "./AddAttendees.jsx";
+import AddAttendees from "./AddAttendees";
 
 const AddMultiPageModal = ({ show, onHide }) => {
   const [step, setStep] = useState(0);
