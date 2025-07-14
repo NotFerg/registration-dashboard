@@ -151,6 +151,7 @@ const AddAttendees = ({ attendee = {}, onSave }) => {
           />
         </div>
 
+        {/* FIX CHECKED VALUE LATER */}
         <div className='mb-3'>
           <label htmlFor='trainings' className='form-label'>
             Trainings <span style={{ color: "red" }}> * </span>

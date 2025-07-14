@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "react-bootstrap";
 import AddAttendees from "./addAttendees";
+import supabase from "../utils/supabase";
 const AddMultiPageModal = ({ show, onHide }) => {
   const [step, setStep] = useState(0);
   const [attendees, setAttendees] = useState([]);
@@ -24,9 +25,30 @@ const AddMultiPageModal = ({ show, onHide }) => {
     setAttendees((prev) => {
       const updated = [...prev];
       updated[step] = attendeeData;
+      // Calculate total cost for all attendees
+      const totalCost = updated.reduce((acc, att) => {
+        if (att && Array.isArray(att.trainings)) {
+          return (
+            acc +
+            att.trainings.reduce((sum, training) => {
+              const match = training.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+              const price = match ? parseFloat(match[1]) : 0;
+              return sum + price;
+            }, 0)
+          );
+        }
+        return acc;
+      }, 0);
+
+      setReg((prev) => ({
+        ...prev,
+        total_cost: totalCost,
+      }));
+
       return updated;
     });
-    // Optionally, update total cost here
+
+    // console.log("Attendee Data", attendeeData);
   }
 
   function handleNext() {
@@ -43,12 +65,82 @@ const AddMultiPageModal = ({ show, onHide }) => {
     setStep(Math.max(step - 1, 0));
   }
 
-  function handleSaveGroup(e) {
+  // function handleSaveGroup(e) {
+  //   // e.preventDefault();
+  //   // console.log("Registration Info:", reg);
+  //   // console.log("Attendees:", attendees);
+  //   // console.log("Full Group Registration:", { ...reg, attendees });
+  //   // onHide();
+
+  // }
+
+  async function handleSaveGroup(e) {
     e.preventDefault();
-    console.log("Registration Info:", reg);
-    console.log("Attendees:", attendees);
     console.log("Full Group Registration:", { ...reg, attendees });
-    onHide();
+
+    try {
+      // 1. Insert into registrations table
+      const { data: registration, error: regError } = await supabase
+        .from("registrations")
+        .insert([
+          {
+            first_name: reg.first_name,
+            last_name: reg.last_name,
+            email: reg.email,
+            company: reg.company,
+            total_cost: reg.total_cost,
+            payment_options: reg.payment_options,
+            registration_type: reg.registration_type,
+            payment_status: reg.payment_status,
+          },
+        ])
+        .select()
+        .single();
+
+      if (regError) throw regError;
+
+      const registrationId = registration.id;
+
+      // 2. Insert attendees with foreign key
+      const attendeesWithSubtotal = attendees.map((att) => {
+        const trainingsArray = Array.isArray(att.trainings)
+          ? att.trainings
+          : [];
+
+        const subtotal = trainingsArray.reduce((acc, training) => {
+          const match = training.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+          const price = match ? parseFloat(match[1]) : 0;
+          return acc + price;
+        }, 0);
+
+        return {
+          registration_id: registrationId,
+          first_name: att.first_name,
+          last_name: att.last_name,
+          email: att.email,
+          position: att.position,
+          designation: att.designation,
+          country: att.country,
+          trainings: att.trainings.join(", "), // or keep as array if using text[]
+          subtotal: subtotal,
+        };
+      });
+
+      const { error: attendeeError } = await supabase
+        .from("attendees")
+        .insert(attendeesWithSubtotal);
+
+      if (attendeeError) throw attendeeError;
+
+      console.log("✅ Group registration successfully saved.");
+      onHide(); // close modal
+    } catch (error) {
+      console.error("❌ Error saving registration:", error);
+      alert(
+        "There was an error saving the registration. Please try again.",
+        error
+      );
+    }
   }
 
   return (
@@ -180,7 +272,8 @@ const AddMultiPageModal = ({ show, onHide }) => {
             Previous
           </Button>
           <small>
-            Attendee {attendees.length || 1} of {step + 1}
+            {/* Attendee {attendees.length || 1} of {step + 1} */}
+            Attendee {step + 1} of {attendees.length || 1}
           </small>
           <Button variant='primary' onClick={handleNext}>
             Next
