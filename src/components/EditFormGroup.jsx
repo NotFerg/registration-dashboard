@@ -159,24 +159,42 @@ const EditFormGroup = ({ reg: initialReg }) => {
   return (
     <>
       <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label htmlFor="company" className="form-label">
-            Company <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="company"
-            name="company"
-            placeholder="Enter Full company"
-            aria-describedby="company"
-            onChange={handleChange}
-            value={reg.company}
-            required
-          />
+        <div className="d-flex flex-row justify-content-between mb-2">
+          <div className="w-50 p-1">
+            <label htmlFor="company" className="form-label">
+              Company <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="company"
+              name="company"
+              placeholder="Enter Full company"
+              aria-describedby="company"
+              onChange={handleChange}
+              value={reg.company}
+              required
+            />
+          </div>
+          <div className="w-50 p-1">
+            <label htmlFor="email" className="form-label">
+              Email <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type="email"
+              className="form-control"
+              id="email"
+              name="email"
+              placeholder="Enter Full email"
+              aria-describedby="email"
+              onChange={handleChange}
+              value={reg.email}
+              required
+            />
+          </div>
         </div>
-        <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3">
+        <div className="d-flex flex-row justify-content-between mb-2">
+          <div className="w-50 p-1">
             <label htmlFor="first_name" className="form-label">
               First Name <span style={{ color: "red" }}> * </span>
             </label>
@@ -193,7 +211,7 @@ const EditFormGroup = ({ reg: initialReg }) => {
             />
           </div>
 
-          <div className="mb-3">
+          <div className="w-50 p-1">
             <label htmlFor="last_name" className="form-label">
               Last Name <span style={{ color: "red" }}> * </span>
             </label>
@@ -210,59 +228,42 @@ const EditFormGroup = ({ reg: initialReg }) => {
             />
           </div>
         </div>
+        <div className="d-flex flex-row justify-content-between mb-2">
+          <div className="w-50 p-1">
+            <label htmlFor="position" className="form-label">
+              Position <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="position"
+              name="position"
+              placeholder="Enter Full position"
+              aria-describedby="position"
+              onChange={handleChange}
+              value={reg.position}
+              required
+            />
+          </div>
 
-        <div className="mb-3">
-          <label htmlFor="email" className="form-label">
-            Email <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="email"
-            className="form-control"
-            id="email"
-            name="email"
-            placeholder="Enter Full email"
-            aria-describedby="email"
-            onChange={handleChange}
-            value={reg.email}
-            required
-          />
+          <div className="w-50 p-1">
+            <label htmlFor="designation" className="form-label">
+              Designation <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="designation"
+              name="designation"
+              placeholder="Enter Full designation"
+              aria-describedby="designation"
+              onChange={handleChange}
+              value={reg.designation}
+              required
+            />
+          </div>
         </div>
-
-        <div className="mb-3">
-          <label htmlFor="position" className="form-label">
-            Position <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="position"
-            name="position"
-            placeholder="Enter Full position"
-            aria-describedby="position"
-            onChange={handleChange}
-            value={reg.position}
-            required
-          />
-        </div>
-
-        <div className="mb-3">
-          <label htmlFor="designation" className="form-label">
-            Designation <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="designation"
-            name="designation"
-            placeholder="Enter Full designation"
-            aria-describedby="designation"
-            onChange={handleChange}
-            value={reg.designation}
-            required
-          />
-        </div>
-
-        <div className="mb-3">
+        <div className="mb-2 p-1">
           <label htmlFor="country" className="form-label">
             Country <span style={{ color: "red" }}> * </span>
           </label>
@@ -279,14 +280,14 @@ const EditFormGroup = ({ reg: initialReg }) => {
           />
         </div>
 
-        <div className="mb-3">
+        <div className="mb-2 p-1">
           <label htmlFor="trainings" className="form-label">
             Trainings <span style={{ color: "red" }}> * </span>
           </label>
           <br />
           <div className="border rounded p-2">
             {trainings.map((training, i) => {
-              const trainingString = `${training.date}: ${training.name} ($${training.price})`;
+              const trainingString = `${training.name}: ${training.date} ($${training.price})`;
 
               return (
                 <React.Fragment key={training.id}>
@@ -311,41 +312,43 @@ const EditFormGroup = ({ reg: initialReg }) => {
           </div>
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="total_cost" className="form-label">
-            Total Cost <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="number"
-            className="form-control"
-            id="total_cost"
-            name="total_cost"
-            placeholder="Enter Full total_cost"
-            aria-describedby="total_cost"
-            onChange={handleChange}
-            value={reg.total_cost}
-            required
-          />
+        <div className="d-flex flex-row justify-content-between mb-2">
+          <div className="w-50 p-1">
+            <label htmlFor="total_cost" className="form-label">
+              Total Cost <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type="number"
+              className="form-control"
+              id="total_cost"
+              name="total_cost"
+              placeholder="Enter Full total_cost"
+              aria-describedby="total_cost"
+              onChange={handleChange}
+              value={reg.total_cost}
+              required
+            />
+          </div>
+
+          <div className="w-50 p-1">
+            <label htmlFor="payment_options" className="form-label">
+              Payment Options <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="payment_options"
+              name="payment_options"
+              placeholder="Enter Full payment_options"
+              aria-describedby="payment_options"
+              onChange={handleChange}
+              value={reg.payment_options}
+              required
+            />
+          </div>
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="payment_options" className="form-label">
-            Payment Options <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="payment_options"
-            name="payment_options"
-            placeholder="Enter Full payment_options"
-            aria-describedby="payment_options"
-            onChange={handleChange}
-            value={reg.payment_options}
-            required
-          />
-        </div>
-
-        <div className="mb-3">
+        <div className="mb-2 p-1">
           <label htmlFor="payment_status" className="form-label">
             Payment Status <span style={{ color: "red" }}> * </span>
           </label>
@@ -364,7 +367,7 @@ const EditFormGroup = ({ reg: initialReg }) => {
           </select>
         </div>
 
-        <div className="mt-3">
+        <div className="mt-2 p-1">
           <button type="submit" className="btn btn-primary w-100">
             Submit
           </button>
