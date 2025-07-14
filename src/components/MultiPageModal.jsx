@@ -1,40 +1,162 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "react-bootstrap";
 import EditFormGroup from "./EditFormGroup";
+import supabase from "../utils/supabase";
 
 const MultiPageModal = ({ show, onHide, initialReg }) => {
+  // Step is attendee index (0-based)
   const [step, setStep] = useState(0);
-  const attendees = Array.isArray(initialReg?.attendees)
-    ? initialReg.attendees
-    : [];
+  const [attendees, setAttendees] = useState([]);
+  const [reg, setReg] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    company: "",
+    total_cost: 0,
+    payment_options: "",
+    payment_status: "",
+  });
 
+  // Load initial data when modal opens or initialReg changes
+  useEffect(() => {
+    if (initialReg) {
+      setReg({
+        first_name: initialReg.first_name,
+        last_name: initialReg.last_name,
+        email: initialReg.email,
+        company: initialReg.company,
+        total_cost: initialReg.total_cost,
+        payment_options: initialReg.payment_options,
+        payment_status: initialReg.payment_status,
+      });
+      setAttendees(
+        Array.isArray(initialReg.attendees)
+          ? initialReg.attendees.map((att) => ({
+              ...att,
+              trainings: Array.isArray(att.trainings)
+                ? att.trainings
+                : typeof att.trainings === "string"
+                ? att.trainings.split(",").map((t) => t.trim())
+                : [],
+            }))
+          : []
+      );
+      setStep(0);
+    }
+  }, [initialReg, show]);
+
+  // Navigation
   const isFirst = step === 0;
-  const isLast = step === attendees.length;
+  const isLast = step === attendees.length - 1;
 
-  const next = () => setStep((prev) => Math.min(prev + 1, attendees.length));
-  const prev = () => setStep((prev) => Math.max(prev - 1, 0));
+  const next = () => {
+    if (step < attendees.length - 1) setStep(step + 1);
+  };
 
+  const prev = () => {
+    if (step > 0) setStep(step - 1);
+  };
+
+  // Save changes for current attendee
+  function handleAttendeeSave(updatedAttendee) {
+    setAttendees((prev) => {
+      const copy = [...prev];
+      copy[step] = updatedAttendee;
+      // Update total cost for reg
+      const totalCost = copy.reduce((acc, att) => {
+        const cost = (att.trainings || []).reduce((sum, t) => {
+          const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+          return sum + (match ? parseFloat(match[1]) : 0);
+        }, 0);
+        return acc + cost;
+      }, 0);
+      setReg((r) => ({ ...r, total_cost: totalCost }));
+      return copy;
+    });
+  }
+
+  // Save all changes to backend
+  async function handleSubmitGroup(e) {
+    e.preventDefault();
+    try {
+      // Update registration info
+      const { error: regError } = await supabase
+        .from("registrations")
+        .update({
+          first_name: reg.first_name,
+          last_name: reg.last_name,
+          email: reg.email,
+          company: reg.company,
+          total_cost: reg.total_cost,
+          payment_options: reg.payment_options,
+          payment_status: reg.payment_status,
+        })
+        .eq("id", initialReg.id);
+
+      if (regError) throw regError;
+
+      // Update each attendee
+      for (const attendee of attendees) {
+        const trainingsText = Array.isArray(attendee.trainings)
+          ? attendee.trainings.join(", ")
+          : attendee.trainings;
+
+        const subtotal = (attendee.trainings || []).reduce((acc, t) => {
+          const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+          return acc + (match ? parseFloat(match[1]) : 0);
+        }, 0);
+
+        const { error: attError } = await supabase
+          .from("attendees")
+          .update({
+            first_name: attendee.first_name,
+            last_name: attendee.last_name,
+            email: attendee.email,
+            position: attendee.position,
+            designation: attendee.designation,
+            country: attendee.country,
+            trainings: trainingsText,
+            subtotal,
+          })
+          .eq("id", attendee.id);
+
+        if (attError) console.error("Attendee update failed:", attError);
+      }
+
+      console.log("✅ Group updated successfully");
+      onHide();
+    } catch (err) {
+      console.error("❌ Error updating group:", err);
+      alert("There was an error updating the group. Please try again.");
+    }
+  }
+
+  // Render attendee form for current step
   const renderAttendeeForm = () => {
-    if (step === 0) return <p>Select an attendee to edit.</p>;
-    const attendee = attendees[step - 1];
+    if (attendees.length === 0) return <p>No attendee data.</p>;
+    const attendee = attendees[step];
     if (!attendee) return <p>No attendee data.</p>;
-    const combinedReg = {
-      ...initialReg,
-      ...attendee,
-      trainings: (attendee.training_references || []).map(
-        (tr) =>
-          `${tr.trainings.name}: ${tr.trainings.date} ($${tr.trainings.price})`
-      ),
-      total_cost: attendee.subtotal,
-      id: initialReg.id,
-    };
-    return <EditFormGroup reg={combinedReg} />;
+    return (
+      <EditFormGroup
+        reg={{
+          ...initialReg,
+          ...attendee,
+          trainings: Array.isArray(attendee.trainings)
+            ? attendee.trainings
+            : typeof attendee.trainings === "string"
+            ? attendee.trainings.split(",").map((t) => t.trim())
+            : [],
+          total_cost: attendee.subtotal,
+        }}
+        onSave={handleAttendeeSave}
+      />
+    );
   };
 
   if (!initialReg) return null;
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
+    <Modal show={show} onHide={onHide} size='lg'>
       <Modal.Header closeButton>
         <Modal.Title>
           <h3>Registration Details</h3>
@@ -42,20 +164,19 @@ const MultiPageModal = ({ show, onHide, initialReg }) => {
       </Modal.Header>
       <Modal.Body>
         {/* Admin overview (read-only) */}
-        <section className="mb-4">
+        <section className='mb-4'>
           <h4 style={{ marginBottom: 20 }}>Admin Information</h4>
           <p>
-            <strong>Company:</strong> {initialReg.company}
+            <strong>Company:</strong> {reg.company}
           </p>
           <p>
-            <strong>Name:</strong> {initialReg.first_name}{" "}
-            {initialReg.last_name}
+            <strong>Name:</strong> {reg.first_name} {reg.last_name}
           </p>
           <p>
-            <strong>Email:</strong> {initialReg.email}
+            <strong>Email:</strong> {reg.email}
           </p>
           <p>
-            <strong>Total Cost:</strong> ${initialReg.total_cost}
+            <strong>Total Cost:</strong> ${reg.total_cost}
           </p>
         </section>
         <hr />
@@ -63,15 +184,19 @@ const MultiPageModal = ({ show, onHide, initialReg }) => {
         {renderAttendeeForm()}
       </Modal.Body>
       <Modal.Footer>
-        <div className="w-100 d-flex justify-content-between">
-          <Button variant="secondary" onClick={prev} disabled={isFirst}>
+        <div className='w-100 d-flex justify-content-between'>
+          <Button variant='secondary' onClick={prev} disabled={isFirst}>
             Previous
           </Button>
           <small>
-            Attendee {step} of {attendees.length}
+            Attendee {attendees.length === 0 ? 0 : step + 1} of{" "}
+            {attendees.length}
           </small>
-          <Button variant="primary" onClick={next} disabled={isLast}>
+          <Button variant='primary' onClick={next} disabled={isLast}>
             Next
+          </Button>
+          <Button variant='success' onClick={handleSubmitGroup}>
+            Save Group
           </Button>
         </div>
       </Modal.Footer>
