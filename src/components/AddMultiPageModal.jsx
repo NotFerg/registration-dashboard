@@ -264,6 +264,25 @@ const AddMultiPageModal = ({ show, onHide }) => {
             required
           />
         </div>
+
+        <div className='mb-3'>
+          <label htmlFor='payment_status' className='form-label'>
+            Payment Status <span style={{ color: "red" }}> * </span>
+          </label>
+          <select
+            className='form-select'
+            id='payment_status'
+            name='payment_status'
+            aria-describedby='payment_status'
+            onChange={handleChange}
+            value={reg.payment_status}
+            required
+          >
+            <option value=''>Select Payment Status</option>
+            <option value='Paid'>Paid</option>
+            <option value='Unpaid'>Unpaid</option>
+          </select>
+        </div>
         <hr />
         <h4 style={{ marginBottom: 20 }}>Attendees Information</h4>
         <AddAttendees
