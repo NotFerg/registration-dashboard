@@ -41,7 +41,9 @@ const AddAttendees = ({ attendee = {}, onSave }) => {
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (onSave) onSave(form);
+    if (onSave) {
+      onSave(form);
+    }
   }
 
   return (

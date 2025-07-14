@@ -3,8 +3,17 @@ import { Modal, Button } from "react-bootstrap";
 import AddAttendees from "./addAttendees";
 import supabase from "../utils/supabase";
 const AddMultiPageModal = ({ show, onHide }) => {
+  const attendeeTemplate = {
+    first_name: "",
+    last_name: "",
+    email: "",
+    position: "",
+    designation: "",
+    country: "",
+    trainings: [],
+  };
   const [step, setStep] = useState(0);
-  const [attendees, setAttendees] = useState([]);
+  const [attendees, setAttendees] = useState([{ ...attendeeTemplate }]);
   const [reg, setReg] = useState({
     first_name: "",
     last_name: "",
@@ -52,11 +61,11 @@ const AddMultiPageModal = ({ show, onHide }) => {
   }
 
   function handleNext() {
-    if (step < attendees.length) {
+    if (step < attendees.length - 1) {
       setStep(step + 1);
     } else {
-      // Add a new attendee slot
-      setAttendees([...attendees, {}]);
+      // Add a new attendee slot with template
+      setAttendees([...attendees, { ...attendeeTemplate }]);
       setStep(step + 1);
     }
   }
