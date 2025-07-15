@@ -7,6 +7,7 @@ const Group = ({ filteredUsers = [] }) => {
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [editRegistration, setEditRegistration] = useState(null);
   const [showModal, setShowModal] = useState(false); // control MultiPageModal visibility
+  const [activeStep, setActiveStep] = useState(0);
 
   function formatCurrency(amount) {
     const num = parseFloat(amount);
@@ -85,7 +86,10 @@ const Group = ({ filteredUsers = [] }) => {
           await supabase
             .from("attendees")
             .delete()
-            .in("id", attendees.map((a) => a.id));
+            .in(
+              "id",
+              attendees.map((a) => a.id)
+            );
         }
         supabase
           .from("registrations")
@@ -228,6 +232,9 @@ const Group = ({ filteredUsers = [] }) => {
                                         <button
                                           className="btn"
                                           onClick={() => {
+                                            setActiveStep(
+                                              reg.attendees.indexOf(att)
+                                            );
                                             setEditRegistration(reg);
                                             setShowModal(true);
                                           }}
@@ -259,6 +266,7 @@ const Group = ({ filteredUsers = [] }) => {
       </div>
 
       <MultiPageModal
+        stepProp={activeStep}
         show={showModal}
         onHide={() => setShowModal(false)}
         initialReg={editRegistration}
