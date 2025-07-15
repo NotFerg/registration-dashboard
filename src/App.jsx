@@ -12,6 +12,7 @@ import Group from "./components/Registration/Group.jsx";
 import Individual from "./components/Registration/Individual.jsx";
 import EditForm from "./components/EditForm.jsx";
 import AddFormGroup from "./components/AddFormGroup.jsx";
+import AddMultiPageModal from "./components/AddMultiPageModal.jsx";
 
 function App() {
   const [excelData, setExcelData] = useState([]);
@@ -19,6 +20,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [individualRegistration, setIndividualRegistration] = useState(false);
+  const [showAddGroupModal, setShowAddGroupModal] = useState(false);
 
   useEffect(() => {
     fetchDataFromSupabase();
@@ -131,45 +133,7 @@ function App() {
         continue;
       }
 
-      // // --- Handle trainings for registration ---
-      // const trainingLines = splitTrainingLines(regData["Trainings"]);
-      // for (const line of trainingLines) {
-      //   const parsed = parseTrainingLine(line);
-      //   if (!parsed) continue;
-
-      //   const trainingId = await upsertTrainingByNameDatePrice(
-      //     parsed.name,
-      //     parsed.date,
-      //     parsed.price
-      //   );
-
-      //   if (trainingId) {
-      //     await supabase
-      //       .from("registration_trainings")
-      //       .insert([{ registration_id: reg.id, training_id: trainingId }]);
-      //   }
-      // }
-
-      // // Link trainings to registration
-      // const trainingLines = splitTrainingLines(regData["Trainings"]);
-      // for (const line of trainingLines) {
-      //   const parsed = parseTrainingLine(line);
-      //   if (!parsed) continue;
-
-      //   const trainingId = await upsertTrainingByNameDatePrice(
-      //     parsed.name,
-      //     parsed.date,
-      //     parsed.price
-      //   );
-      //   if (trainingId) {
-      //     await supabase.from("training_references").insert([
-      //       {
-      //         training_id: trainingId,
-      //         registration_id: reg.id,
-      //       },
-      //     ]);
-      //   }
-      // }
+  
 
       // Handle attendees
       for (const a of Attendees) {
@@ -372,26 +336,26 @@ function App() {
 
   return (
     <>
-      <div className="overflow-hidden">
-        <div className="row min-vh-100">
-          <div className="col-md-2">
+      <div className='overflow-hidden'>
+        <div className='row min-vh-100'>
+          <div className='col-md-2'>
             <Sidebar />
           </div>
 
-          <div className="col-md-10 p-3">
-            <div className="container mt-3">
-              <div className="d-flex justify-content-between mb-3">
+          <div className='col-md-10 p-3'>
+            <div className='container mt-3'>
+              <div className='d-flex justify-content-between mb-3'>
                 {" "}
                 <h2>Registrations</h2>
                 <div>
-                  <label htmlFor="myFile" className="btn btn-success fw-bold">
-                    <i className="bi bi-upload" /> Upload File
+                  <label htmlFor='myFile' className='btn btn-success fw-bold'>
+                    <i className='bi bi-upload' /> Upload File
                   </label>
                   <input
-                    id="myFile"
-                    className="d-none"
-                    type="file"
-                    accept=".xlsx, .xls"
+                    id='myFile'
+                    className='d-none'
+                    type='file'
+                    accept='.xlsx, .xls'
                     onChange={handleFileUpload}
                   />
                   <ExportExcel excelData={excelData} />
@@ -399,31 +363,30 @@ function App() {
               </div>
             </div>
 
-            <div className="container-xxl mt-3">
+            <div className='container-xxl mt-3'>
               <Dashboard excelData={excelData} />
-              <div className="card">
-                <div className="card-body">
+              <div className='card'>
+                <div className='card-body'>
                   {" "}
-                  <div className="d-flex justify-content-end">
+                  <div className='d-flex justify-content-end'>
                     <button
-                      className="btn btn-primary text-white fw-bold mx-3"
-                      data-bs-toggle="modal"
-                      data-bs-target="#addRegistrationModal"
+                      className='btn btn-primary text-white fw-bold mx-3'
+                      data-bs-toggle='modal'
+                      data-bs-target='#addRegistrationModal'
                     >
-                      <i class="bi bi-person-plus-fill" />
-                      <span className="ms-2">Add Registration</span>
+                      <i class='bi bi-person-plus-fill' />
+                      <span className='ms-2'>Add Registration</span>
                     </button>
                     <button
-                      className="btn btn-primary text-white fw-bold"
-                      data-bs-toggle="modal"
-                      data-bs-target="#addGroupModal"
+                      className='btn btn-primary text-white fw-bold'
+                      onClick={() => setShowAddGroupModal(true)}
                     >
-                      <i class="bi bi-person-lines-fill" />
-                      <span className="ms-2">Add Group Registration</span>
+                      <i className='bi bi-person-lines-fill' />
+                      <span className='ms-2'>Add Group Registration</span>
                     </button>
                   </div>
-                  <ul className="nav nav-tabs">
-                    <li className="nav-item">
+                  <ul className='nav nav-tabs'>
+                    <li className='nav-item'>
                       <a
                         className={`nav-link ${
                           activeTab === "individual"
@@ -436,7 +399,7 @@ function App() {
                         Individual
                       </a>
                     </li>
-                    <li className="nav-item">
+                    <li className='nav-item'>
                       <a
                         className={`nav-link ${
                           activeTab === "group"
@@ -451,10 +414,10 @@ function App() {
                     </li>
                   </ul>
                   <input
-                    type="text"
-                    className="form-control"
-                    id="guestSearch"
-                    placeholder="Search participants..."
+                    type='text'
+                    className='form-control'
+                    id='guestSearch'
+                    placeholder='Search participants...'
                     onChange={handleInputChange}
                     style={{ marginTop: 12, marginBottom: 1 }}
                   />
@@ -473,30 +436,30 @@ function App() {
       {/* Insert Modal */}
       <div>
         <div
-          className="modal fade"
-          id="addRegistrationModal"
-          tabIndex="-1"
-          aria-labelledby="addModalLabel"
-          aria-hidden="true"
+          className='modal fade'
+          id='addRegistrationModal'
+          tabIndex='-1'
+          aria-labelledby='addModalLabel'
+          aria-hidden='true'
         >
-          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
+          <div className='modal-dialog modal-dialog-centered modal-dialog-scrollable'>
+            <div className='modal-content'>
+              <div className='modal-header'>
                 <h1
-                  className="modal-title fs-5"
-                  id="editModalLabel"
+                  className='modal-title fs-5'
+                  id='editModalLabel'
                   style={{ fontWeight: 700 }}
                 >
                   Add Registration
                 </h1>
                 <button
-                  type="button"
-                  className="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"
+                  type='button'
+                  className='btn-close'
+                  data-bs-dismiss='modal'
+                  aria-label='Close'
                 ></button>
               </div>
-              <div className="modal-body">
+              <div className='modal-body'>
                 <Form />
               </div>
             </div>
@@ -504,41 +467,13 @@ function App() {
         </div>
       </div>
 
-      <div>
-        <div
-          className="modal fade"
-          id="addGroupModal"
-          tabIndex="-1"
-          aria-labelledby="addGroupModal"
-          aria-hidden="true"
-        >
-          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h1
-                  className="modal-title fs-5"
-                  id="editModalLabel"
-                  style={{ fontWeight: 700 }}
-                >
-                  Add Registration
-                </h1>
-                <button
-                  type="button"
-                  className="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"
-                ></button>
-              </div>
-              <div className="modal-body">
-                <AddFormGroup />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AddMultiPageModal
+        show={showAddGroupModal}
+        onHide={() => setShowAddGroupModal(false)}
+        initialReg={undefined}
+      />
     </>
   );
 }
 
 export default App;
-

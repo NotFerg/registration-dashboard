@@ -80,13 +80,11 @@ function Trainings() {
     console.log(activeTraining);
     const { error } = await supabase
       .from("trainings")
-      .update(
-        {
-          name: activeTraining.name,
-          date: activeTraining.date,
-          price: activeTraining.price,
-        }
-      )
+      .update({
+        name: activeTraining.name,
+        date: activeTraining.date,
+        price: activeTraining.price,
+      })
       .eq("id", activeTraining.id);
     if (error) {
       console.error("Error updating training:", error);
@@ -131,7 +129,6 @@ function Trainings() {
         }
       });
   }
-
 
   return (
     <div className="overflow-hidden">
@@ -284,6 +281,7 @@ function Trainings() {
                       <div className="mb-3">
                         <label className="form-label">Name</label>
                         <input
+                          id="name"
                           type="text"
                           className="form-control"
                           defaultValue={activeTraining?.name}
@@ -293,6 +291,7 @@ function Trainings() {
                       <div className="mb-3">
                         <label className="form-label">Date/s</label>
                         <input
+                          id="date"
                           type="text"
                           className="form-control"
                           defaultValue={activeTraining?.date}
@@ -302,6 +301,7 @@ function Trainings() {
                       <div className="mb-3">
                         <label className="form-label">Price</label>
                         <input
+                          id="price"
                           type="number"
                           className="form-control"
                           defaultValue={activeTraining?.price}
@@ -323,7 +323,6 @@ function Trainings() {
       </div>
     </div>
   );
-};
-
+}
 
 export default Trainings;
