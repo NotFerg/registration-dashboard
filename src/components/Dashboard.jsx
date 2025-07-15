@@ -7,6 +7,7 @@ import {
   faDollarSign,
   faClipboardList,
   faWallet,
+  faCalendarWeek,
 } from "@fortawesome/free-solid-svg-icons";
 import { faMoneyBill } from "@fortawesome/free-solid-svg-icons/faMoneyBill";
 
@@ -27,14 +28,17 @@ function Dashboard({ excelData: data }) {
   return (
     <Container fluid>
       <Row>
-        <Col xl={3} md={6} className="mb-4">
+        <Col xl={5} md={5} sm={12} className="mb-4">
           <Card className="border-left-primary shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
                 <Col>
-                  <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                  <h4
+                    className="text-primary text-uppercase mb-1"
+                    style={{ fontWeight: 600 }}
+                  >
                     Total Participants
-                  </div>
+                  </h4>
                   <div className="h5 mb-0 font-weight-bold text-gray-800">
                     {participantCount}
                   </div>
@@ -51,38 +55,17 @@ function Dashboard({ excelData: data }) {
           </Card>
         </Col>
 
-        <Col xl={3} md={6} className="mb-4">
-          <Card className="border-left-success shadow-sm h-100 py-2">
-            <Card.Body>
-              <Row className="no-gutters align-items-center">
-                <Col>
-                  <div className="text-xs font-weight-bold text-success text-uppercase mb-1">
-                    Earnings (Annual)
-                  </div>
-                  <div className="h5 mb-0 font-weight-bold text-gray-800">
-                    Placeholder
-                  </div>
-                </Col>
-                <Col xs="auto">
-                  <FontAwesomeIcon
-                    icon={faDollarSign}
-                    size="2x"
-                    className="text-gray-300"
-                  />
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col xl={3} md={6} className="mb-4">
+        <Col xl={7} md={7} sm={12} className="mb-4">
           <Card className="border-left-info shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
                 <Col>
-                  <div className="text-xs font-weight-bold text-info text-uppercase mb-1">
+                  <h4
+                    className="text-info text-uppercase mb-1"
+                    style={{ fontWeight: 600 }}
+                  >
                     Tasks
-                  </div>
+                  </h4>
                   <Row className="no-gutters align-items-center">
                     <Col xs="auto">
                       <div className="h5 mb-0 mr-3 font-weight-bold text-gray-800">
@@ -105,15 +88,19 @@ function Dashboard({ excelData: data }) {
             </Card.Body>
           </Card>
         </Col>
-
-        <Col xl={3} md={6} className="mb-4">
+      </Row>
+      <Row>
+        <Col xl={4} md={6} sm={12} className="mb-4">
           <Card className="border-left-warning shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
                 <Col>
-                  <div className="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                  <h4
+                    className="text-warning text-uppercase mb-1"
+                    style={{ fontWeight: 600 }}
+                  >
                     Unpaid Registrations
-                  </div>
+                  </h4>
                   <div className="h5 mb-0 font-weight-bold text-gray-800">
                     <div className="h5 mb-0 font-weight-bold text-gray-800">
                       {unpaidCount}
@@ -123,6 +110,59 @@ function Dashboard({ excelData: data }) {
                 <Col xs="auto">
                   <FontAwesomeIcon
                     icon={faWallet}
+                    size="2x"
+                    className="text-gray-300"
+                  />
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xl={4} md={6} sm={12} className="mb-4">
+          <Card className="border-left-primary shadow-sm h-100 py-2">
+            <Card.Body>
+              <Row className="no-gutters align-items-center">
+                <Col>
+                  <h4
+                    className="text-secondary text-uppercase mb-1"
+                    style={{ fontWeight: 600 }}
+                  >
+                    Total Trainings
+                  </h4>
+                  <div className="h5 mb-0 font-weight-bold text-gray-800">
+                    5
+                  </div>
+                </Col>
+                <Col xs="auto">
+                  <FontAwesomeIcon
+                    icon={faCalendarWeek}
+                    size="2x"
+                    className="text-gray-300"
+                  />
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col xl={4} md={6} sm={12} className="mb-4">
+          <Card className="border-left-success shadow-sm h-100 py-2">
+            <Card.Body>
+              <Row className="no-gutters align-items-center">
+                <Col>
+                  <h4
+                    className="text-success text-uppercase mb-1"
+                    style={{ fontWeight: 600 }}
+                  >
+                    Earnings (Annual)
+                  </h4>
+                  <div className="h5 mb-0 font-weight-bold text-gray-800">
+                    Placeholder
+                  </div>
+                </Col>
+                <Col xs="auto">
+                  <FontAwesomeIcon
+                    icon={faDollarSign}
                     size="2x"
                     className="text-gray-300"
                   />
