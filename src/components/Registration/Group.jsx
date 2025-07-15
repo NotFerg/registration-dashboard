@@ -27,70 +27,63 @@ const Group = ({ filteredUsers = [] }) => {
     });
   }
 
-  async function handleDelete(id) {
+  async function handleDeleteAttendee(attendeeId, registrationId) {
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: "Do you really want to delete this registration?",
+      text: "Do you want to delete this attendee?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, delete it!",
+      confirmButtonText: "Yes, delete",
     });
 
-    if (result.isConfirmed) {
-      try {
-        // 1. Delete training_references
-        const { error: trainRefError } = await supabase
-          .from("training_references")
-          .delete()
-          .eq("registration_id", id);
+    if (!result.isConfirmed) return;
 
-        if (trainRefError) {
-          console.error("Failed to delete training_references:", trainRefError);
-          throw trainRefError;
-        }
+    try {
+      // Step 1: Delete training references for the attendee
+      const { error: trainRefError } = await supabase
+        .from("training_references")
+        .delete()
+        .eq("registration_id", registrationId)
+        .eq("attendee_id", attendeeId);
 
-        // 2. Delete attendees
-        const { error: attendeeError } = await supabase
-          .from("attendees")
-          .delete()
-          .eq("registration_id", id);
-
-        if (attendeeError) {
-          console.error("Failed to delete attendees:", attendeeError);
-          throw attendeeError;
-        }
-
-        // 3. Delete registration
-        const { error: regError } = await supabase
-          .from("registrations")
-          .delete()
-          .eq("id", id);
-
-        if (regError) {
-          console.error("Failed to delete registration:", regError);
-          throw regError;
-        }
-
-        Swal.fire({
-          text: "Registration deleted successfully",
-          icon: "success",
-          confirmButtonText: "OK",
+      if (trainRefError) {
+        console.error("Error deleting training references:", trainRefError);
+        return Swal.fire({
+          title: "Error!",
+          text: `Could not delete training references: ${trainRefError.message}`,
+          icon: "error",
         });
-        // .then((result) => {
-        //   if (result.isConfirmed) {
-        //     window.location.reload();
-        //   }
-        // });
-      } catch (err) {
-        console.error("Delete failed:", err);
-        Swal.fire(
-          "Error!",
-          "There was a problem deleting the registration.",
-          "error"
-        );
       }
+
+      // Step 2: Delete the attendee
+      const { error: attendeeDeleteError } = await supabase
+        .from("attendees")
+        .delete()
+        .eq("id", attendeeId);
+
+      if (attendeeDeleteError) {
+        console.error("Error deleting attendee:", attendeeDeleteError);
+        return Swal.fire({
+          title: "Error!",
+          text: `Could not delete attendee: ${attendeeDeleteError.message}`,
+          icon: "error",
+        });
+      }
+
+      // Step 3: Success
+      Swal.fire({
+        icon: "success",
+        text: "Attendee deleted successfully.",
+      }).then(() => window.location.reload());
+    } catch (err) {
+      console.error("Unexpected error during deletion:", err);
+      Swal.fire({
+        title: "Unexpected Error!",
+        text: "Something went wrong while deleting the attendee.",
+        icon: "error",
+      });
     }
   }
 
@@ -270,7 +263,9 @@ const Group = ({ filteredUsers = [] }) => {
                                         </button>
                                         <button
                                           className='btn'
-                                          onClick={() => handleDelete(att.id)}
+                                          onClick={() =>
+                                            handleDeleteAttendee(att.id, reg.id)
+                                          }
                                         >
                                           <i className='bi bi-trash-fill' />
                                         </button>
