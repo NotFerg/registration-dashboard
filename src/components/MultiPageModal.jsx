@@ -17,6 +17,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
     payment_status: "",
   });
 
+
   // Load initial data when modal opens or initialReg changes
   useEffect(() => {
     if (initialReg) {
@@ -136,6 +137,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
     if (attendees.length === 0) return <p>No attendee data.</p>;
     const attendee = attendees[step];
     if (!attendee) return <p>No attendee data.</p>;
+
     return (
       <EditFormGroup
         reg={{
@@ -151,7 +153,11 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         onSave={handleAttendeeSave}
       />
     );
+
+
   };
+
+  console.log(initialReg);
 
   if (!initialReg) return null;
 
