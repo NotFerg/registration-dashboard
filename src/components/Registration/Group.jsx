@@ -39,32 +39,57 @@ const Group = ({ filteredUsers = [] }) => {
     });
 
     if (result.isConfirmed) {
-      const { error: trainRefError } = await supabase
-        .from("training_references")
-        .delete()
-        .eq("registration_id", id);
+      try {
+        // 1. Delete training_references
+        const { error: trainRefError } = await supabase
+          .from("training_references")
+          .delete()
+          .eq("registration_id", id);
 
-      const { error: regError } = await supabase
-        .from("registrations")
-        .delete()
-        .eq("id", id);
+        if (trainRefError) {
+          console.error("Failed to delete training_references:", trainRefError);
+          throw trainRefError;
+        }
 
-      if (regError || trainRefError) {
+        // 2. Delete attendees
+        const { error: attendeeError } = await supabase
+          .from("attendees")
+          .delete()
+          .eq("registration_id", id);
+
+        if (attendeeError) {
+          console.error("Failed to delete attendees:", attendeeError);
+          throw attendeeError;
+        }
+
+        // 3. Delete registration
+        const { error: regError } = await supabase
+          .from("registrations")
+          .delete()
+          .eq("id", id);
+
+        if (regError) {
+          console.error("Failed to delete registration:", regError);
+          throw regError;
+        }
+
+        Swal.fire({
+          text: "Registration deleted successfully",
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+        // .then((result) => {
+        //   if (result.isConfirmed) {
+        //     window.location.reload();
+        //   }
+        // });
+      } catch (err) {
+        console.error("Delete failed:", err);
         Swal.fire(
           "Error!",
           "There was a problem deleting the registration.",
           "error"
         );
-      } else {
-        Swal.fire({
-          text: "Registration deleted successfully",
-          icon: "success",
-          confirmButtonText: "OK",
-        }).then((result) => {
-          if (result.isConfirmed) {
-            window.location.reload();
-          }
-        });
       }
     }
   }
