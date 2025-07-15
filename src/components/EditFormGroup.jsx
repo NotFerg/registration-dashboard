@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from "react";
 import supabase from "../utils/supabase";
 
-const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
+const EditFormGroup = ({
+  reg: initialReg,
+  onSave = () => {},
+  handleSubmitGroup = () => {},
+  isFirst,
+  isLast,
+  next,
+  prev,
+  attendees,
+  step,
+}) => {
   const [trainings, setTrainings] = useState([]);
   const [reg, setReg] = useState({
     company: "",
@@ -112,7 +122,6 @@ const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    console.log("REG", reg);
 
     if (initialReg) {
       // 1. Update REGISTRATION-level fields (if needed)
@@ -319,7 +328,7 @@ const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
           <br />
           <div className="border rounded p-2">
             {trainings.map((training, i) => {
-              const trainingString = `${training.name}: ${training.date} ($${training.price})`;
+              const trainingString = `${training.date}: ${training.name} ($${training.price})`;
 
               return (
                 <React.Fragment key={training.id}>
@@ -336,6 +345,9 @@ const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
                     className="btn btn-outline-success m-1"
                     htmlFor={`btn-check-${i}`}
                   >
+                    {reg.trainings.includes(trainingString) && (
+                      <i class="bi bi-check-lg"></i>
+                    )}{" "}
                     {training.name}
                   </label>
                 </React.Fragment>
@@ -397,13 +409,53 @@ const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
           </select>
         </div> */}
 
-        <button
-          type="button"
-          className="btn btn-success w-100 mt-3"
-          onClick={() => onSave && onSave(reg)}
-        >
-          Save Attendee
-        </button>
+        <div className="text-center mt-4 mb-4">
+          <button
+            className="btn btn-outline-primary btn-sm"
+            onClick={prev}
+            disabled={isFirst}
+          >
+            <i className="bi bi-caret-left"></i>
+          </button>
+          <small className="mx-3 text-muted">
+            Attendee {attendees.length === 0 ? 0 : step + 1} of{" "}
+            {attendees.length}
+          </small>
+          <button
+            className="btn btn-outline-primary btn-sm"
+            onClick={next}
+            disabled={isLast}
+          >
+            <i className="bi bi-caret-right"></i>
+          </button>
+        </div>
+
+        <hr />
+
+        <div className="vstack gap-2">
+          <div className="d-flex">
+            <div className="px-1 w-100">
+              <button
+                type="button"
+                className="btn btn-success w-100"
+                onClick={() => onSave && onSave(reg)}
+              >
+                <i className="bi bi-person-fill"></i> Save Attendee
+              </button>
+            </div>
+            <div className="px-1 w-100">
+              <button
+                className="btn btn-primary w-100"
+                onClick={handleSubmitGroup}
+              >
+                <i className="bi bi-people-fill"></i> Save Group
+              </button>
+            </div>
+          </div>
+          <div className="px-1 w-100">
+            <button className="btn btn-outline-secondary w-100">Cancel</button>
+          </div>
+        </div>
       </form>
     </>
   );
