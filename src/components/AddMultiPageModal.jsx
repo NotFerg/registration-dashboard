@@ -122,16 +122,44 @@ const AddMultiPageModal = ({ show, onHide }) => {
           position: att.position,
           designation: att.designation,
           country: att.country,
-          trainings: att.trainings.join(", "), // or keep as array if using text[]
+          trainings: trainingsArray.join(", "),
           subtotal: subtotal,
         };
       });
 
-      const { error: attendeeError } = await supabase
+      const { data: insertedAttendees, error: attendeeError } = await supabase
         .from("attendees")
-        .insert(attendeesWithSubtotal);
+        .insert(attendeesWithSubtotal)
+        .select(); // we need the returned attendees to get their IDs
 
       if (attendeeError) throw attendeeError;
+
+      // 3. Insert training_references for each attendee
+      for (let i = 0; i < insertedAttendees.length; i++) {
+        const attendee = insertedAttendees[i];
+        const trainings = attendees[i].trainings;
+
+        for (const trainingString of trainings) {
+          const parsed = parseTrainingLine(trainingString);
+          if (!parsed) continue;
+
+          const trainingId = await upsertTrainingByNameDatePrice(
+            parsed.name,
+            parsed.date,
+            parsed.price
+          );
+
+          if (!trainingId) continue;
+
+          await supabase.from("training_references").insert([
+            {
+              training_id: trainingId,
+              registration_id: registrationId,
+              attendee_id: attendee.id,
+            },
+          ]);
+        }
+      }
 
       Swal.fire({
         title: "Group registration successfully saved!",
@@ -143,6 +171,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
         }
       });
     } catch (error) {
+      console.error("Save failed:", error);
       Swal.fire({
         title: "Error!",
         text: "There was an error saving the registration. Please try again.",
@@ -153,6 +182,48 @@ const AddMultiPageModal = ({ show, onHide }) => {
         }
       });
     }
+  }
+
+  function parseTrainingLine(line) {
+    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
+    if (!match) return null;
+    return {
+      date: match[1].trim(),
+      name: match[2].trim(),
+      price: parseFloat(match[3]),
+    };
+  }
+
+  async function upsertTrainingByNameDatePrice(name, date, price) {
+    const { data: existing, error: fetchError } = await supabase
+      .from("trainings")
+      .select("id")
+      .eq("name", name)
+      .eq("date", date)
+      .eq("price", price)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("Fetch error:", fetchError);
+      return null;
+    }
+
+    if (existing) {
+      return existing.id;
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("trainings")
+      .insert([{ name, date, price }])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      return null;
+    }
+
+    return inserted.id;
   }
 
   return (

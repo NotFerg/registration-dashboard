@@ -50,11 +50,17 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   const isLast = step === attendees.length - 1;
 
   const next = () => {
-    if (step < attendees.length - 1) setStep(step + 1);
+    if (step < attendees.length - 1) {
+      handleAttendeeSave(attendees[step]); // Save current step before moving
+      setStep(step + 1);
+    }
   };
 
   const prev = () => {
-    if (step > 0) setStep(step - 1);
+    if (step > 0) {
+      handleAttendeeSave(attendees[step]);
+      setStep(step - 1);
+    }
   };
 
   // Save changes for current attendee
@@ -79,7 +85,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   async function handleSubmitGroup(e) {
     e.preventDefault();
     try {
-      // Update registration info
+      // 1. Update registration
       const { error: regError } = await supabase
         .from("registrations")
         .update({
@@ -95,7 +101,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
 
       if (regError) throw regError;
 
-      // Update each attendee
+      // 2. Update each attendee and their trainings
       for (const attendee of attendees) {
         const trainingsText = Array.isArray(attendee.trainings)
           ? attendee.trainings.join(", ")
@@ -120,7 +126,39 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
           })
           .eq("id", attendee.id);
 
-        if (attError) console.error("Attendee update failed:", attError);
+        if (attError) {
+          console.error("Attendee update failed:", attError);
+          continue;
+        }
+
+        // 3. Delete old training_references
+        await supabase
+          .from("training_references")
+          .delete()
+          .eq("registration_id", initialReg.id)
+          .eq("attendee_id", attendee.id);
+
+        // 4. Insert new training_references
+        for (const line of attendee.trainings || []) {
+          const parsed = parseTrainingLine(line);
+          if (!parsed) continue;
+
+          const trainingId = await upsertTrainingByNameDatePrice(
+            parsed.name,
+            parsed.date,
+            parsed.price
+          );
+
+          if (!trainingId) continue;
+
+          await supabase.from("training_references").insert([
+            {
+              training_id: trainingId,
+              registration_id: initialReg.id,
+              attendee_id: attendee.id,
+            },
+          ]);
+        }
       }
 
       console.log("✅ Group updated successfully");
@@ -129,6 +167,36 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
       console.error("❌ Error updating group:", err);
       alert("There was an error updating the group. Please try again.");
     }
+  }
+
+  function parseTrainingLine(line) {
+    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
+    if (!match) return null;
+    return {
+      date: match[1].trim(),
+      name: match[2].trim(),
+      price: parseFloat(match[3]),
+    };
+  }
+
+  async function upsertTrainingByNameDatePrice(name, date, price) {
+    const { data: existing } = await supabase
+      .from("trainings")
+      .select("id")
+      .eq("name", name)
+      .eq("date", date)
+      .eq("price", price)
+      .maybeSingle();
+
+    if (existing) return existing.id;
+
+    const { data: inserted } = await supabase
+      .from("trainings")
+      .insert([{ name, date, price }])
+      .select()
+      .single();
+
+    return inserted?.id;
   }
 
   // Render attendee form for current step
@@ -230,34 +298,23 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
           >
             Previous
           </Button>
-          <small className="mx-3 text-muted">
+          <small className='mx-3 text-muted'>
             Attendee {attendees.length === 0 ? 0 : step + 1} of{" "}
             {attendees.length}
           </small>
-          <Button variant='primary' onClick={next} disabled={isLast}>
           <Button
-            variant="outline-primary"
+            variant='outline-primary'
             onClick={next}
             disabled={isLast}
             style={{ width: "100px" }}
           >
             Next
           </Button>
-          <Button variant='success' onClick={handleSubmitGroup}>
-            Save Group
-          </Button>
         </div>
       </Modal.Body>
       <Modal.Footer>
         <div className='w-100 d-flex justify-content-end'>
           <Button variant='success' onClick={handleSubmitGroup}>
-            Save Group
-          </Button>
-        </div>
-      </Modal.Body>
-      <Modal.Footer>
-        <div className="w-100 d-flex justify-content-end">
-          <Button variant="success" onClick={handleSubmitGroup}>
             Save Group
           </Button>
         </div>
