@@ -26,45 +26,47 @@ const Group = ({ filteredUsers = [] }) => {
       return next;
     });
   }
-  function handleDelete(id) {
-    Swal.fire({
+
+  async function handleDelete(id) {
+    const result = await Swal.fire({
       title: "Are you sure?",
-      text: "You won't be able to revert this!",
+      text: "Do you really want to delete this registration?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, delete it!",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        supabase
-          .from("attendees")
-          .delete()
-          .match({ id })
-          .then((data) => {
-            if (data.error) {
-              Swal.fire({
-                title: "Error",
-                text: data.error.message,
-                icon: "error",
-              });
-            } else {
-              Swal.fire(
-                "Deleted!",
-                "Group Attendee has been deleted.",
-                "success"
-              );
-            }
-          })
-          .catch((error) => {
-            Swal.fire({
-              title: "Error",
-              text: error.message,
-              icon: "error",
-            });
-          });
-      }
     });
+
+    if (result.isConfirmed) {
+      const { error: trainRefError } = await supabase
+        .from("training_references")
+        .delete()
+        .eq("registration_id", id);
+
+      const { error: regError } = await supabase
+        .from("registrations")
+        .delete()
+        .eq("id", id);
+
+      if (regError || trainRefError) {
+        Swal.fire(
+          "Error!",
+          "There was a problem deleting the registration.",
+          "error"
+        );
+      } else {
+        Swal.fire({
+          text: "Registration deleted successfully",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.location.reload();
+          }
+        });
+      }
+    }
   }
 
   async function handleRegDelete(id) {
@@ -123,17 +125,17 @@ const Group = ({ filteredUsers = [] }) => {
 
   return (
     <>
-      <div className="d-flex">
-        <div className="table-responsive">
-          <table className="table table-bordered table-hover">
-            <thead className="table-dark">
+      <div className='d-flex'>
+        <div className='table-responsive'>
+          <table className='table table-bordered table-hover'>
+            <thead className='table-dark'>
               <tr>
                 <th>Company / Institution</th>
                 <th>Submission Date</th>
                 <th>Admin First Name</th>
                 <th>Admin Last Name</th>
                 <th>Email</th>
-                <th colSpan="3">Attendees</th>
+                <th colSpan='3'>Attendees</th>
                 <th>Total Cost</th>
                 <th>Payment Status</th>
                 <th colSpan={2}>Actions</th>
@@ -164,36 +166,36 @@ const Group = ({ filteredUsers = [] }) => {
                       <td>{reg.first_name}</td>
                       <td>{reg.last_name}</td>
                       <td>{reg.email}</td>
-                      <td colSpan="3">
+                      <td colSpan='3'>
                         Group Registration - {reg.attendees?.length || 0}{" "}
                         attendees
                       </td>
                       <td>{formatCurrency(reg.total_cost)}</td>
                       <td>{reg.payment_status}</td>
-                      <td className="text-center">
+                      <td className='text-center'>
                         <button
-                          className="btn"
+                          className='btn'
                           onClick={() => handleRegDelete(reg.id)}
                         >
-                          <i className="bi bi-trash-fill" />
+                          <i className='bi bi-trash-fill' />
                         </button>
                       </td>
                       <td>
                         {expandedRows.has(idx) ? (
-                          <i className="bi bi-caret-up-fill" />
+                          <i className='bi bi-caret-up-fill' />
                         ) : (
-                          <i className="bi bi-caret-down-fill" />
+                          <i className='bi bi-caret-down-fill' />
                         )}
                       </td>
                     </tr>
 
                     {expandedRows.has(idx) && (
                       <tr>
-                        <td colSpan="12" className="p-0">
-                          <div className="table-responsive">
-                            <table className="table table-bordered mb-0 table-hover">
-                              <thead className="ps-4">
-                                <tr className=" table-primary small">
+                        <td colSpan='12' className='p-0'>
+                          <div className='table-responsive'>
+                            <table className='table table-bordered mb-0 table-hover'>
+                              <thead className='ps-4'>
+                                <tr className=' table-primary small'>
                                   <th>First Name</th>
                                   <th>Last Name</th>
                                   <th>Email</th>
@@ -207,14 +209,14 @@ const Group = ({ filteredUsers = [] }) => {
                               </thead>
                               <tbody>
                                 {reg.attendees?.map((att, j) => (
-                                  <tr key={j} className="table-light">
-                                    <td className="small">{att.first_name}</td>
-                                    <td className="small">{att.last_name}</td>
-                                    <td className="small">{att.email}</td>
-                                    <td className="small">{att.position}</td>
-                                    <td className="small">{att.designation}</td>
-                                    <td className="small">{att.country}</td>
-                                    <td className="small">
+                                  <tr key={j} className='table-light'>
+                                    <td className='small'>{att.first_name}</td>
+                                    <td className='small'>{att.last_name}</td>
+                                    <td className='small'>{att.email}</td>
+                                    <td className='small'>{att.position}</td>
+                                    <td className='small'>{att.designation}</td>
+                                    <td className='small'>{att.country}</td>
+                                    <td className='small'>
                                       {(att.training_references || [])
                                         .map((tr) =>
                                           tr.trainings
@@ -224,13 +226,13 @@ const Group = ({ filteredUsers = [] }) => {
                                         .filter(Boolean)
                                         .join(", ")}
                                     </td>
-                                    <td className="small">
+                                    <td className='small'>
                                       {formatCurrency(att.subtotal)}
                                     </td>
-                                    <td className="sticky-col">
-                                      <div className="btn-group">
+                                    <td className='sticky-col'>
+                                      <div className='btn-group'>
                                         <button
-                                          className="btn"
+                                          className='btn'
                                           onClick={() => {
                                             setActiveStep(
                                               reg.attendees.indexOf(att)
@@ -239,13 +241,13 @@ const Group = ({ filteredUsers = [] }) => {
                                             setShowModal(true);
                                           }}
                                         >
-                                          <i className="bi bi-pencil-square" />
+                                          <i className='bi bi-pencil-square' />
                                         </button>
                                         <button
-                                          className="btn"
+                                          className='btn'
                                           onClick={() => handleDelete(att.id)}
                                         >
-                                          <i className="bi bi-trash-fill" />
+                                          <i className='bi bi-trash-fill' />
                                         </button>
                                       </div>
                                     </td>
