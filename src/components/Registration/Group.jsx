@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import MultiPageModal from "../MultiPageModal"; // import the multi-page modal component
+import Swal from "sweetalert2";
+import supabase from "../../utils/supabase";
 
 const Group = ({ filteredUsers = [] }) => {
   const [expandedRows, setExpandedRows] = useState(new Set());
@@ -23,6 +25,97 @@ const Group = ({ filteredUsers = [] }) => {
       return next;
     });
   }
+  function handleDelete(id) {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        supabase
+          .from("attendees")
+          .delete()
+          .match({ id })
+          .then((data) => {
+            if (data.error) {
+              Swal.fire({
+                title: "Error",
+                text: data.error.message,
+                icon: "error",
+              });
+            } else {
+              Swal.fire(
+                "Deleted!",
+                "Group Attendee has been deleted.",
+                "success"
+              );
+            }
+          })
+          .catch((error) => {
+            Swal.fire({
+              title: "Error",
+              text: error.message,
+              icon: "error",
+            });
+          });
+      }
+    });
+  }
+
+  async function handleRegDelete(id) {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const { data: attendees } = await supabase
+          .from("attendees")
+          .select("id")
+          .match({ registration_id: id });
+        if (attendees.length > 0) {
+          await supabase
+            .from("attendees")
+            .delete()
+            .in("id", attendees.map((a) => a.id));
+        }
+        supabase
+          .from("registrations")
+          .delete()
+          .match({ id })
+          .then((data) => {
+            if (data.error) {
+              Swal.fire({
+                title: "Error",
+                text: data.error.message,
+                icon: "error",
+              });
+            } else {
+              Swal.fire(
+                "Deleted!",
+                "Group Attendee has been deleted.",
+                "success"
+              );
+            }
+          })
+          .catch((error) => {
+            Swal.fire({
+              title: "Error",
+              text: error.message,
+              icon: "error",
+            });
+          });
+      }
+    });
+  }
 
   return (
     <>
@@ -36,10 +129,10 @@ const Group = ({ filteredUsers = [] }) => {
                 <th>Admin First Name</th>
                 <th>Admin Last Name</th>
                 <th>Email</th>
-                <th colSpan="4">Attendees</th>
+                <th colSpan="3">Attendees</th>
                 <th>Total Cost</th>
                 <th>Payment Status</th>
-                <th></th>
+                <th colSpan={2}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -67,12 +160,20 @@ const Group = ({ filteredUsers = [] }) => {
                       <td>{reg.first_name}</td>
                       <td>{reg.last_name}</td>
                       <td>{reg.email}</td>
-                      <td colSpan="4">
+                      <td colSpan="3">
                         Group Registration - {reg.attendees?.length || 0}{" "}
                         attendees
                       </td>
                       <td>{formatCurrency(reg.total_cost)}</td>
                       <td>{reg.payment_status}</td>
+                      <td className="text-center">
+                        <button
+                          className="btn"
+                          onClick={() => handleRegDelete(reg.id)}
+                        >
+                          <i className="bi bi-trash-fill" />
+                        </button>
+                      </td>
                       <td>
                         {expandedRows.has(idx) ? (
                           <i className="bi bi-caret-up-fill" />
@@ -133,7 +234,10 @@ const Group = ({ filteredUsers = [] }) => {
                                         >
                                           <i className="bi bi-pencil-square" />
                                         </button>
-                                        <button className="btn">
+                                        <button
+                                          className="btn"
+                                          onClick={() => handleDelete(att.id)}
+                                        >
                                           <i className="bi bi-trash-fill" />
                                         </button>
                                       </div>
