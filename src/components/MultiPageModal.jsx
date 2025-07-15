@@ -17,7 +17,6 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
     payment_status: "",
   });
 
-
   // Load initial data when modal opens or initialReg changes
   useEffect(() => {
     if (initialReg) {
@@ -51,11 +50,17 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   const isLast = step === attendees.length - 1;
 
   const next = () => {
-    if (step < attendees.length - 1) setStep(step + 1);
+    if (step < attendees.length - 1) {
+      handleAttendeeSave(attendees[step]); // Save current step before moving
+      setStep(step + 1);
+    }
   };
 
   const prev = () => {
-    if (step > 0) setStep(step - 1);
+    if (step > 0) {
+      handleAttendeeSave(attendees[step]);
+      setStep(step - 1);
+    }
   };
 
   // Save changes for current attendee
@@ -80,7 +85,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   async function handleSubmitGroup(e) {
     e.preventDefault();
     try {
-      // Update registration info
+      // 1. Update registration
       const { error: regError } = await supabase
         .from("registrations")
         .update({
@@ -96,7 +101,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
 
       if (regError) throw regError;
 
-      // Update each attendee
+      // 2. Update each attendee and their trainings
       for (const attendee of attendees) {
         const trainingsText = Array.isArray(attendee.trainings)
           ? attendee.trainings.join(", ")
@@ -121,7 +126,39 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
           })
           .eq("id", attendee.id);
 
-        if (attError) console.error("Attendee update failed:", attError);
+        if (attError) {
+          console.error("Attendee update failed:", attError);
+          continue;
+        }
+
+        // 3. Delete old training_references
+        await supabase
+          .from("training_references")
+          .delete()
+          .eq("registration_id", initialReg.id)
+          .eq("attendee_id", attendee.id);
+
+        // 4. Insert new training_references
+        for (const line of attendee.trainings || []) {
+          const parsed = parseTrainingLine(line);
+          if (!parsed) continue;
+
+          const trainingId = await upsertTrainingByNameDatePrice(
+            parsed.name,
+            parsed.date,
+            parsed.price
+          );
+
+          if (!trainingId) continue;
+
+          await supabase.from("training_references").insert([
+            {
+              training_id: trainingId,
+              registration_id: initialReg.id,
+              attendee_id: attendee.id,
+            },
+          ]);
+        }
       }
 
       console.log("✅ Group updated successfully");
@@ -130,6 +167,36 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
       console.error("❌ Error updating group:", err);
       alert("There was an error updating the group. Please try again.");
     }
+  }
+
+  function parseTrainingLine(line) {
+    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
+    if (!match) return null;
+    return {
+      date: match[1].trim(),
+      name: match[2].trim(),
+      price: parseFloat(match[3]),
+    };
+  }
+
+  async function upsertTrainingByNameDatePrice(name, date, price) {
+    const { data: existing } = await supabase
+      .from("trainings")
+      .select("id")
+      .eq("name", name)
+      .eq("date", date)
+      .eq("price", price)
+      .maybeSingle();
+
+    if (existing) return existing.id;
+
+    const { data: inserted } = await supabase
+      .from("trainings")
+      .insert([{ name, date, price }])
+      .select()
+      .single();
+
+    return inserted?.id;
   }
 
   // Render attendee form for current step
@@ -153,8 +220,6 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         onSave={handleAttendeeSave}
       />
     );
-
-
   };
 
   console.log(initialReg);
@@ -162,7 +227,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   if (!initialReg) return null;
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
+    <Modal show={show} onHide={onHide} size='lg'>
       <Modal.Header closeButton>
         <Modal.Title>
           <h3>Registration Details</h3>
@@ -170,52 +235,52 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
       </Modal.Header>
       <Modal.Body>
         {/* Admin overview (read-only) */}
-        <section className="mb-4">
+        <section className='mb-4'>
           {/* Admin overview (read-only) */}
           <h4 style={{ marginBottom: 12 }}>Admin Information</h4>
-          <div className="card w-100">
-            <div className="card-body">
-              <div className="d-flex flex-row">
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i class="bi bi-building"></i>
+          <div className='card w-100'>
+            <div className='card-body'>
+              <div className='d-flex flex-row'>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i class='bi bi-building'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>Company</strong>
                   </h6>
-                  <p className="card-text">{initialReg.company}</p>
+                  <p className='card-text'>{initialReg.company}</p>
                 </div>
-                <div className="vr mx-3"></div>
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i class="bi bi-person-circle"></i>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i class='bi bi-person-circle'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>Name</strong>
                   </h6>
-                  <p className="card-text">
+                  <p className='card-text'>
                     {initialReg.first_name} {initialReg.last_name}
                   </p>
                 </div>
-                <div className="vr mx-3"></div>
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i class="bi bi-envelope-at-fill"></i>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i class='bi bi-envelope-at-fill'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>E-Mail</strong>
                   </h6>
-                  <p className="card-text">{initialReg.email}</p>
+                  <p className='card-text'>{initialReg.email}</p>
                 </div>
-                <div className="vr mx-3"></div>
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i class="bi bi-cash"></i>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i class='bi bi-cash'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>Total Cost</strong>
                   </h6>
-                  <p className="card-text">${initialReg.total_cost}</p>
+                  <p className='card-text'>${initialReg.total_cost}</p>
                 </div>
               </div>
             </div>
@@ -224,21 +289,21 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         <hr />
         <h4 style={{ marginBottom: 12 }}>Attendees Information</h4>
         {renderAttendeeForm()}
-        <div className="text-center my-3">
+        <div className='text-center my-3'>
           <Button
-            variant="outline-primary"
+            variant='outline-primary'
             onClick={prev}
             disabled={isFirst}
             style={{ width: "100px" }}
           >
             Previous
           </Button>
-          <small className="mx-3 text-muted">
+          <small className='mx-3 text-muted'>
             Attendee {attendees.length === 0 ? 0 : step + 1} of{" "}
             {attendees.length}
           </small>
           <Button
-            variant="outline-primary"
+            variant='outline-primary'
             onClick={next}
             disabled={isLast}
             style={{ width: "100px" }}
@@ -248,8 +313,8 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         </div>
       </Modal.Body>
       <Modal.Footer>
-        <div className="w-100 d-flex justify-content-end">
-          <Button variant="success" onClick={handleSubmitGroup}>
+        <div className='w-100 d-flex justify-content-end'>
+          <Button variant='success' onClick={handleSubmitGroup}>
             Save Group
           </Button>
         </div>

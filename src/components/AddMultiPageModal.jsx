@@ -122,16 +122,44 @@ const AddMultiPageModal = ({ show, onHide }) => {
           position: att.position,
           designation: att.designation,
           country: att.country,
-          trainings: att.trainings.join(", "), // or keep as array if using text[]
+          trainings: trainingsArray.join(", "),
           subtotal: subtotal,
         };
       });
 
-      const { error: attendeeError } = await supabase
+      const { data: insertedAttendees, error: attendeeError } = await supabase
         .from("attendees")
-        .insert(attendeesWithSubtotal);
+        .insert(attendeesWithSubtotal)
+        .select(); // we need the returned attendees to get their IDs
 
       if (attendeeError) throw attendeeError;
+
+      // 3. Insert training_references for each attendee
+      for (let i = 0; i < insertedAttendees.length; i++) {
+        const attendee = insertedAttendees[i];
+        const trainings = attendees[i].trainings;
+
+        for (const trainingString of trainings) {
+          const parsed = parseTrainingLine(trainingString);
+          if (!parsed) continue;
+
+          const trainingId = await upsertTrainingByNameDatePrice(
+            parsed.name,
+            parsed.date,
+            parsed.price
+          );
+
+          if (!trainingId) continue;
+
+          await supabase.from("training_references").insert([
+            {
+              training_id: trainingId,
+              registration_id: registrationId,
+              attendee_id: attendee.id,
+            },
+          ]);
+        }
+      }
 
       Swal.fire({
         title: "Group registration successfully saved!",
@@ -143,6 +171,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
         }
       });
     } catch (error) {
+      console.error("Save failed:", error);
       Swal.fire({
         title: "Error!",
         text: "There was an error saving the registration. Please try again.",
@@ -155,60 +184,102 @@ const AddMultiPageModal = ({ show, onHide }) => {
     }
   }
 
+  function parseTrainingLine(line) {
+    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
+    if (!match) return null;
+    return {
+      date: match[1].trim(),
+      name: match[2].trim(),
+      price: parseFloat(match[3]),
+    };
+  }
+
+  async function upsertTrainingByNameDatePrice(name, date, price) {
+    const { data: existing, error: fetchError } = await supabase
+      .from("trainings")
+      .select("id")
+      .eq("name", name)
+      .eq("date", date)
+      .eq("price", price)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("Fetch error:", fetchError);
+      return null;
+    }
+
+    if (existing) {
+      return existing.id;
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("trainings")
+      .insert([{ name, date, price }])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      return null;
+    }
+
+    return inserted.id;
+  }
+
   return (
-    <Modal show={show} onHide={onHide} size="lg">
+    <Modal show={show} onHide={onHide} size='lg'>
       <Modal.Header closeButton>
         <Modal.Title>
           <h3>Add Group Registration</h3>
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <div className="mb-3">
-          <label htmlFor="company" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='company' className='form-label'>
             Company <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type="text"
-            className="form-control"
-            id="company"
-            name="company"
-            placeholder="Enter Company Name"
-            aria-describedby="company"
+            type='text'
+            className='form-control'
+            id='company'
+            name='company'
+            placeholder='Enter Company Name'
+            aria-describedby='company'
             onChange={handleChange}
             value={reg.company}
             required
           />
         </div>
 
-        <div className="d-flex flex-row justify-content-between">
-          <div className="w-50 p-1 ">
-            <label htmlFor="first_name" className="form-label">
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='w-50 p-1 '>
+            <label htmlFor='first_name' className='form-label'>
               First Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type="text"
-              className="form-control"
-              id="first_name"
-              name="first_name"
-              placeholder="Enter First Name"
-              aria-describedby="first_name"
+              type='text'
+              className='form-control'
+              id='first_name'
+              name='first_name'
+              placeholder='Enter First Name'
+              aria-describedby='first_name'
               onChange={handleChange}
               value={reg.first_name}
               required
             />
           </div>
 
-          <div className="w-50 mb-3">
-            <label htmlFor="last_name" className="form-label">
+          <div className='w-50 mb-3'>
+            <label htmlFor='last_name' className='form-label'>
               Last Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type="text"
-              className="form-control"
-              id="last_name"
-              name="last_name"
-              placeholder="Enter Last Name"
-              aria-describedby="last_name"
+              type='text'
+              className='form-control'
+              id='last_name'
+              name='last_name'
+              placeholder='Enter Last Name'
+              aria-describedby='last_name'
               onChange={handleChange}
               value={reg.last_name}
               required
@@ -216,34 +287,34 @@ const AddMultiPageModal = ({ show, onHide }) => {
           </div>
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="email" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='email' className='form-label'>
             Email <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type="email"
-            className="form-control"
-            id="email"
-            name="email"
-            placeholder="Enter Email"
-            aria-describedby="email"
+            type='email'
+            className='form-control'
+            id='email'
+            name='email'
+            placeholder='Enter Email'
+            aria-describedby='email'
             onChange={handleChange}
             value={reg.email}
             required
           />
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="total_cost" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='total_cost' className='form-label'>
             Total Cost <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type="number"
-            className="form-control"
-            id="total_cost"
-            name="total_cost"
-            placeholder="Enter Total Cost"
-            aria-describedby="total_cost"
+            type='number'
+            className='form-control'
+            id='total_cost'
+            name='total_cost'
+            placeholder='Enter Total Cost'
+            aria-describedby='total_cost'
             onChange={handleChange}
             value={reg.total_cost}
             readOnly
@@ -251,39 +322,39 @@ const AddMultiPageModal = ({ show, onHide }) => {
           />
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="payment_options" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='payment_options' className='form-label'>
             Payment Options <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type="text"
-            className="form-control"
-            id="payment_options"
-            name="payment_options"
-            placeholder="Enter Full Payment Options"
-            aria-describedby="payment_options"
+            type='text'
+            className='form-control'
+            id='payment_options'
+            name='payment_options'
+            placeholder='Enter Full Payment Options'
+            aria-describedby='payment_options'
             onChange={handleChange}
             value={reg.payment_options}
             required
           />
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="payment_status" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='payment_status' className='form-label'>
             Payment Status <span style={{ color: "red" }}> * </span>
           </label>
           <select
-            className="form-select"
-            id="payment_status"
-            name="payment_status"
-            aria-describedby="payment_status"
+            className='form-select'
+            id='payment_status'
+            name='payment_status'
+            aria-describedby='payment_status'
             onChange={handleChange}
             value={reg.payment_status}
             required
           >
-            <option value="">Select Payment Status</option>
-            <option value="Paid">Paid</option>
-            <option value="Unpaid">Unpaid</option>
+            <option value=''>Select Payment Status</option>
+            <option value='Paid'>Paid</option>
+            <option value='Unpaid'>Unpaid</option>
           </select>
         </div>
         <hr />
@@ -294,9 +365,9 @@ const AddMultiPageModal = ({ show, onHide }) => {
         />
       </Modal.Body>
       <Modal.Footer>
-        <div className="w-100 d-flex justify-content-between">
+        <div className='w-100 d-flex justify-content-between'>
           <Button
-            variant="secondary"
+            variant='secondary'
             onClick={handlePrev}
             disabled={step === 0}
           >
@@ -306,10 +377,10 @@ const AddMultiPageModal = ({ show, onHide }) => {
             {/* Attendee {attendees.length || 1} of {step + 1} */}
             Attendee {step + 1} of {attendees.length || 1}
           </small>
-          <Button variant="primary" onClick={handleNext}>
+          <Button variant='primary' onClick={handleNext}>
             Next
           </Button>
-          <Button variant="success" onClick={handleSaveGroup}>
+          <Button variant='success' onClick={handleSaveGroup}>
             Save Group Registration
           </Button>
         </div>
