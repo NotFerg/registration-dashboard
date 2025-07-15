@@ -18,7 +18,6 @@ const Form = ({}) => {
     payment_options: "",
     registration_type: "Myself",
     payment_status: "",
-    company: "",
   });
 
   const handleChange = (e) => {
