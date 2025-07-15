@@ -72,12 +72,10 @@ function Trainings() {
       ...prevFormData,
       [id]: value,
     }));
-    console.log(activeTraining);
   };
 
   async function handleUpdate(e) {
     e.preventDefault();
-    console.log(activeTraining);
     const { error } = await supabase
       .from("trainings")
       .update({
