@@ -73,14 +73,14 @@ const Individual = ({ filteredUsers = [] }) => {
         );
       } else {
         Swal.fire({
-            text: "Registration deleted successfully",
-            icon: "success",
-            confirmButtonText: "OK",
-          }).then((result) => {
-            if (result.isConfirmed) {
-              window.location.reload();
-            }
-          });
+          text: "Registration deleted successfully",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.location.reload();
+          }
+        });
       }
     }
   }
@@ -88,189 +88,195 @@ const Individual = ({ filteredUsers = [] }) => {
   return (
     <>
       <div className="d-flex justify-content-between align-items-center my-3">
-        <div className="dropdown ms-2" id="companyDropdown">
-          <button
-            className="btn btn-outline-dark dropdown-toggle border 
+        <div className="d-flex flex-column flex-md-row flex-wrap gap-2 mb-3 align-items-start align-items-center">
+          <div className="dropdown" id="companyDropdown">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border 
             "
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            data-bs-auto-close="outside"
-          >
-            <i class="bi bi-building-fill" /> Company:{" "}
-            <span className="fw-bold">{activeCompany}</span>
-          </button>
-          <ul
-            className="dropdown-menu"
-            style={{ maxHeight: "300px", overflowY: "scroll" }}
-          >
-            {filteredUsers
-              .map((user) => user.company)
-              .filter((company, index, self) => self.indexOf(company) === index)
-              .map((company, index) => (
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              data-bs-auto-close="outside"
+            >
+              <i class="bi bi-building-fill" /> Company:{" "}
+              <span className="fw-bold">{activeCompany}</span>
+            </button>
+            <ul
+              className="dropdown-menu"
+              style={{ maxHeight: "300px", overflowY: "scroll" }}
+            >
+              {filteredUsers
+                .map((user) => user.company)
+                .filter(
+                  (company, index, self) => self.indexOf(company) === index
+                )
+                .map((company, index) => (
+                  <li key={index}>
+                    <div
+                      className="dropdown-item"
+                      onClick={() => setActiveCompany(company)}
+                    >
+                      {company}
+                    </div>
+                    <hr className="dropdown-divider" />
+                  </li>
+                ))}
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => setActiveCompany("")}
+              >
+                Clear Filter
+              </li>
+            </ul>
+          </div>
+
+          <div className="dropdown ps-2" id="countryDropdown">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border 
+            "
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              data-bs-auto-close="outside"
+            >
+              <i class="bi bi-globe-americas-fill" /> Country:{" "}
+              <span className="fw-bold">{activeCountry}</span>
+            </button>
+            <ul
+              className="dropdown-menu"
+              style={{ maxHeight: "300px", overflowY: "scroll" }}
+            >
+              {filteredUsers
+                .map((user) => user.country)
+                .filter(
+                  (country, index, self) => self.indexOf(country) === index
+                )
+                .map((country, index) => (
+                  <li key={index}>
+                    <div
+                      className="dropdown-item"
+                      onClick={() => setActiveCountry(country)}
+                    >
+                      {country}
+                    </div>
+                    <hr className="dropdown-divider" />
+                  </li>
+                ))}
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => setActiveCountry("")}
+              >
+                Clear Filter
+              </li>
+            </ul>
+          </div>
+
+          <div className="dropdown ps-2" id="trainingDropdown">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border 
+            "
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              data-bs-auto-close="outside"
+            >
+              <i class="bi bi-funnel-fill"></i> Training:{" "}
+              {activeTraining && activeTraining.length != 0 ? (
+                <span className="badge bg-success ms-2">
+                  {activeTraining.length}
+                </span>
+              ) : (
+                ""
+              )}
+            </button>
+            <ul
+              className="dropdown-menu p-2"
+              style={{ maxHeight: "300px", overflowY: "scroll" }}
+            >
+              {[
+                "Annual Pacific Region Investment Conference",
+                "Applied Responsible Investment for Fiduciaries",
+                "Accredited Investment Fiduciary Training",
+                "Responsible Investment Essentials",
+                "Investment Governance Essentials",
+              ].map((training, index) => (
                 <li key={index}>
-                  <div
-                    className="dropdown-item"
-                    onClick={() => setActiveCompany(company)}
-                  >
-                    {company}
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      value={training}
+                      id={`training-${index}`}
+                      checked={activeTraining.includes(training)}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        if (e.target.checked) {
+                          setActiveTraining((prev) => [...prev, newValue]);
+                        } else {
+                          setActiveTraining((prev) =>
+                            prev.filter((item) => item !== newValue)
+                          );
+                        }
+                      }}
+                    />
+                    <label
+                      className="form-check-label"
+                      htmlFor={`training-${index}`}
+                    >
+                      {training}
+                    </label>
                   </div>
                   <hr className="dropdown-divider" />
                 </li>
               ))}
-            <li
-              className="dropdown-item text-center fw-bold"
-              onClick={() => setActiveCompany("")}
-            >
-              Clear Filter
-            </li>
-          </ul>
-        </div>
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => setActiveTraining([])}
+              >
+                Clear Filter
+              </li>
+            </ul>
+          </div>
 
-        <div className="dropdown ms-2" id="countryDropdown">
-          <button
-            className="btn btn-outline-dark dropdown-toggle border 
+          <div className="dropdown ps-2" id="paymentStatusDropdown">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border 
             "
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            data-bs-auto-close="outside"
-          >
-            <i class="bi bi-globe-americas-fill" /> Country:{" "}
-            <span className="fw-bold">{activeCountry}</span>
-          </button>
-          <ul
-            className="dropdown-menu"
-            style={{ maxHeight: "300px", overflowY: "scroll" }}
-          >
-            {filteredUsers
-              .map((user) => user.country)
-              .filter((country, index, self) => self.indexOf(country) === index)
-              .map((country, index) => (
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              data-bs-auto-close="outside"
+            >
+              <i class="bi bi-wallet-fill"></i> Payment Status:{" "}
+              <span className="fw-bold">{activePaymentStatus}</span>
+            </button>
+            <ul
+              className="dropdown-menu"
+              style={{ maxHeight: "300px", overflowY: "scroll" }}
+            >
+              {["Paid", "Unpaid"].map((payment_status, index) => (
                 <li key={index}>
                   <div
                     className="dropdown-item"
-                    onClick={() => setActiveCountry(country)}
+                    onClick={() => setActivePaymentStatus(payment_status)}
                   >
-                    {country}
+                    {payment_status}
                   </div>
                   <hr className="dropdown-divider" />
                 </li>
               ))}
-            <li
-              className="dropdown-item text-center fw-bold"
-              onClick={() => setActiveCountry("")}
-            >
-              Clear Filter
-            </li>
-          </ul>
-        </div>
-
-        <div className="dropdown" id="trainingDropdown">
-          <button
-            className="btn btn-outline-dark dropdown-toggle border 
-            "
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            data-bs-auto-close="outside"
-          >
-            <i class="bi bi-funnel-fill"></i> Training:{" "}
-            {activeTraining && activeTraining.length != 0 ? (
-              <span className="badge bg-success ms-2">
-                {activeTraining.length}
-              </span>
-            ) : (
-              ""
-            )}
-          </button>
-          <ul
-            className="dropdown-menu p-2"
-            style={{ maxHeight: "300px", overflowY: "scroll" }}
-          >
-            {[
-              "Annual Pacific Region Investment Conference",
-              "Applied Responsible Investment for Fiduciaries",
-              "Accredited Investment Fiduciary Training",
-              "Responsible Investment Essentials",
-              "Investment Governance Essentials",
-            ].map((training, index) => (
-              <li key={index}>
-                <div className="form-check">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value={training}
-                    id={`training-${index}`}
-                    checked={activeTraining.includes(training)}
-                    onChange={(e) => {
-                      const newValue = e.target.value;
-                      if (e.target.checked) {
-                        setActiveTraining((prev) => [...prev, newValue]);
-                      } else {
-                        setActiveTraining((prev) =>
-                          prev.filter((item) => item !== newValue)
-                        );
-                      }
-                    }}
-                  />
-                  <label
-                    className="form-check-label"
-                    htmlFor={`training-${index}`}
-                  >
-                    {training}
-                  </label>
-                </div>
-                <hr className="dropdown-divider" />
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => setActivePaymentStatus("")}
+              >
+                Clear Filter
               </li>
-            ))}
-            <li
-              className="dropdown-item text-center fw-bold"
-              onClick={() => setActiveTraining([])}
-            >
-              Clear Filter
-            </li>
-          </ul>
+            </ul>
+          </div>
         </div>
 
-        <div className="dropdown" id="paymentStatusDropdown">
-          <button
-            className="btn btn-outline-dark dropdown-toggle border 
-            "
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            data-bs-auto-close="outside"
-          >
-            <i class="bi bi-wallet-fill"></i> Payment Status:{" "}
-            <span className="fw-bold">{activePaymentStatus}</span>
-          </button>
-          <ul
-            className="dropdown-menu"
-            style={{ maxHeight: "300px", overflowY: "scroll" }}
-          >
-            {["Paid", "Unpaid"].map((payment_status, index) => (
-              <li key={index}>
-                <div
-                  className="dropdown-item"
-                  onClick={() => setActivePaymentStatus(payment_status)}
-                >
-                  {payment_status}
-                </div>
-                <hr className="dropdown-divider" />
-              </li>
-            ))}
-            <li
-              className="dropdown-item text-center fw-bold"
-              onClick={() => setActivePaymentStatus("")}
-            >
-              Clear Filter
-            </li>
-          </ul>
-        </div>
-
-        <button className="btn btn-dark" onClick={clearFilters}>
-          Clear Filters
+        <button className="btn btn-outline-danger" onClick={clearFilters}>
+          <i class="bi bi-x-circle"></i> Clear Filters
         </button>
       </div>
 

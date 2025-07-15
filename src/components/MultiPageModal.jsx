@@ -161,10 +161,9 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         }
       }
 
-      console.log("✅ Group updated successfully");
       onHide();
     } catch (err) {
-      console.error("❌ Error updating group:", err);
+      console.error("Error updating group:", err);
       alert("There was an error updating the group. Please try again.");
     }
   }
@@ -217,12 +216,12 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
             : [],
           total_cost: attendee.subtotal,
         }}
+        {...{ isFirst, isLast, next, prev, attendees, step }}
         onSave={handleAttendeeSave}
+        handleSubmitGroup={handleSubmitGroup}
       />
     );
   };
-
-  console.log(initialReg);
 
   if (!initialReg) return null;
 
@@ -230,20 +229,28 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
     <Modal show={show} onHide={onHide} size='lg'>
       <Modal.Header closeButton>
         <Modal.Title>
-          <h3>Registration Details</h3>
+          <h1
+            className="modal-title fs-3"
+            id="editModalLabel"
+            style={{ fontWeight: 700 }}
+          >
+            Edit Group Registration
+          </h1>
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {/* Admin overview (read-only) */}
         <section className='mb-4'>
           {/* Admin overview (read-only) */}
-          <h4 style={{ marginBottom: 12 }}>Admin Information</h4>
-          <div className='card w-100'>
-            <div className='card-body'>
-              <div className='d-flex flex-row'>
-                <div className='flex-fill'>
-                  <h3 className='card-title'>
-                    <i class='bi bi-building'></i>
+          <h4 style={{ marginBottom: 12 }} className="fs-5">
+            Admin Information
+          </h4>
+          <div className="card w-100">
+            <div className="card-body">
+              <div className="d-flex flex-row">
+                <div className="flex-fill">
+                  <h3 className="card-title">
+                    <i class="bi bi-building"></i>
                   </h3>
                   <h6 className='card-title'>
                     <strong>Company</strong>
@@ -287,38 +294,11 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
           </div>
         </section>
         <hr />
-        <h4 style={{ marginBottom: 12 }}>Attendees Information</h4>
+        <h4 style={{ marginBottom: 12 }} className="fs-5">
+          Attendees Information
+        </h4>
         {renderAttendeeForm()}
-        <div className='text-center my-3'>
-          <Button
-            variant='outline-primary'
-            onClick={prev}
-            disabled={isFirst}
-            style={{ width: "100px" }}
-          >
-            Previous
-          </Button>
-          <small className='mx-3 text-muted'>
-            Attendee {attendees.length === 0 ? 0 : step + 1} of{" "}
-            {attendees.length}
-          </small>
-          <Button
-            variant='outline-primary'
-            onClick={next}
-            disabled={isLast}
-            style={{ width: "100px" }}
-          >
-            Next
-          </Button>
-        </div>
       </Modal.Body>
-      <Modal.Footer>
-        <div className='w-100 d-flex justify-content-end'>
-          <Button variant='success' onClick={handleSubmitGroup}>
-            Save Group
-          </Button>
-        </div>
-      </Modal.Footer>
     </Modal>
   );
 };

@@ -57,8 +57,6 @@ const AddMultiPageModal = ({ show, onHide }) => {
 
       return updated;
     });
-
-    // console.log("Attendee Data", attendeeData);
   }
 
   function handleNext() {
@@ -230,12 +228,21 @@ const AddMultiPageModal = ({ show, onHide }) => {
     <Modal show={show} onHide={onHide} size='lg'>
       <Modal.Header closeButton>
         <Modal.Title>
-          <h3>Add Group Registration</h3>
+          <h1
+            className="modal-title fs-5"
+            id="editModalLabel"
+            style={{ fontWeight: 700 }}
+          >
+            Add Group Registration
+          </h1>
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <div className='mb-3'>
-          <label htmlFor='company' className='form-label'>
+        <h4 style={{ marginBottom: 12 }} className="fs-5">
+          Admin Information
+        </h4>
+        <div className="mb-3">
+          <label htmlFor="company" className="form-label">
             Company <span style={{ color: "red" }}> * </span>
           </label>
           <input
@@ -358,33 +365,19 @@ const AddMultiPageModal = ({ show, onHide }) => {
           </select>
         </div>
         <hr />
-        <h4 style={{ marginBottom: 20 }}>Attendees Information</h4>
+        <h4 style={{ marginBottom: 12 }} className="fs-5">
+          Attendees Information
+        </h4>
         <AddAttendees
           attendee={attendees[step] || {}}
           onSave={handleAttendeeSave}
+          handleSaveGroup={handleSaveGroup}
+          handleNext={handleNext}
+          handlePrev={handlePrev}
+          attendees={attendees}
+          step={step}
         />
       </Modal.Body>
-      <Modal.Footer>
-        <div className='w-100 d-flex justify-content-between'>
-          <Button
-            variant='secondary'
-            onClick={handlePrev}
-            disabled={step === 0}
-          >
-            Previous
-          </Button>
-          <small>
-            {/* Attendee {attendees.length || 1} of {step + 1} */}
-            Attendee {step + 1} of {attendees.length || 1}
-          </small>
-          <Button variant='primary' onClick={handleNext}>
-            Next
-          </Button>
-          <Button variant='success' onClick={handleSaveGroup}>
-            Save Group Registration
-          </Button>
-        </div>
-      </Modal.Footer>
     </Modal>
   );
 };
