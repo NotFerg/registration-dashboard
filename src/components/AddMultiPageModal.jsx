@@ -181,7 +181,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
         </div>
 
         <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3">
+          <div className="w-50 p-1 ">
             <label htmlFor="first_name" className="form-label">
               First Name <span style={{ color: "red" }}> * </span>
             </label>
@@ -198,7 +198,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
             />
           </div>
 
-          <div className="mb-3">
+          <div className="w-50 mb-3">
             <label htmlFor="last_name" className="form-label">
               Last Name <span style={{ color: "red" }}> * </span>
             </label>

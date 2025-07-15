@@ -188,51 +188,51 @@ const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
   return (
     <>
       <form onSubmit={handleSubmit}>
-        <div className='mb-3'>
-          <label htmlFor='company' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="company" className="form-label">
             Company <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type='text'
-            className='form-control'
-            id='company'
-            name='company'
-            placeholder='Enter Full company'
-            aria-describedby='company'
+            type="text"
+            className="form-control"
+            id="company"
+            name="company"
+            placeholder="Enter Full company"
+            aria-describedby="company"
             onChange={handleChange}
             value={reg.company}
             required
           />
         </div>
-        <div className='d-flex flex-row justify-content-between'>
-          <div className='mb-3'>
-            <label htmlFor='first_name' className='form-label'>
+        <div className="d-flex flex-row justify-content-between">
+          <div className="mb-3 flex-fill pe-3">
+            <label htmlFor="first_name" className="form-label">
               First Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type='text'
-              className='form-control'
-              id='first_name'
-              name='first_name'
-              placeholder='Enter Full first_name'
-              aria-describedby='first_name'
+              type="text"
+              className="form-control"
+              id="first_name"
+              name="first_name"
+              placeholder="Enter Full first_name"
+              aria-describedby="first_name"
               onChange={handleChange}
               value={reg.first_name}
               required
             />
           </div>
 
-          <div className='mb-3'>
-            <label htmlFor='last_name' className='form-label'>
+          <div className="mb-3 flex-fill">
+            <label htmlFor="last_name" className="form-label">
               Last Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type='text'
-              className='form-control'
-              id='last_name'
-              name='last_name'
-              placeholder='Enter Full last_name'
-              aria-describedby='last_name'
+              type="text"
+              className="form-control"
+              id="last_name"
+              name="last_name"
+              placeholder="Enter Full last_name"
+              aria-describedby="last_name"
               onChange={handleChange}
               value={reg.last_name}
               required
@@ -240,96 +240,100 @@ const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
           </div>
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='email' className='form-label'>
-            Email <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type='email'
-            className='form-control'
-            id='email'
-            name='email'
-            placeholder='Enter Full email'
-            aria-describedby='email'
-            onChange={handleChange}
-            value={reg.email}
-            required
-          />
+        <div className="d-flex flex-row justify-content-between">
+          <div className="mb-3 flex-fill pe-3">
+            <label htmlFor="email" className="form-label">
+              Email <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type="email"
+              className="form-control"
+              id="email"
+              name="email"
+              placeholder="Enter Full email"
+              aria-describedby="email"
+              onChange={handleChange}
+              value={reg.email}
+              required
+            />
+          </div>
+
+          <div className="mb-3 flex-fill">
+            <label htmlFor="position" className="form-label">
+              Position <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="position"
+              name="position"
+              placeholder="Enter Full position"
+              aria-describedby="position"
+              onChange={handleChange}
+              value={reg.position}
+              required
+            />
+          </div>
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='position' className='form-label'>
-            Position <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type='text'
-            className='form-control'
-            id='position'
-            name='position'
-            placeholder='Enter Full position'
-            aria-describedby='position'
-            onChange={handleChange}
-            value={reg.position}
-            required
-          />
+        <div className="d-flex flex-row justify-content-between">
+          <div className="mb-3 flex-fill pe-3">
+            <label htmlFor="designation" className="form-label">
+              Designation <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="designation"
+              name="designation"
+              placeholder="Enter Full designation"
+              aria-describedby="designation"
+              onChange={handleChange}
+              value={reg.designation}
+              required
+            />
+          </div>
+
+          <div className="mb-3 flex-fill">
+            <label htmlFor="country" className="form-label">
+              Country <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="country"
+              name="country"
+              placeholder="Enter Full country"
+              aria-describedby="country"
+              onChange={handleChange}
+              value={reg.country}
+              required
+            />
+          </div>
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='designation' className='form-label'>
-            Designation <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type='text'
-            className='form-control'
-            id='designation'
-            name='designation'
-            placeholder='Enter Full designation'
-            aria-describedby='designation'
-            onChange={handleChange}
-            value={reg.designation}
-            required
-          />
-        </div>
-
-        <div className='mb-3'>
-          <label htmlFor='country' className='form-label'>
-            Country <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type='text'
-            className='form-control'
-            id='country'
-            name='country'
-            placeholder='Enter Full country'
-            aria-describedby='country'
-            onChange={handleChange}
-            value={reg.country}
-            required
-          />
-        </div>
-
-        <div className='mb-3'>
-          <label htmlFor='trainings' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="trainings" className="form-label">
             Trainings <span style={{ color: "red" }}> * </span>
           </label>
           <br />
-          <div className='border rounded p-2'>
+          <div className="border rounded p-2">
             {trainings.map((training, i) => {
               const trainingString = `${training.name}: ${training.date} ($${training.price})`;
 
               return (
                 <React.Fragment key={training.id}>
                   <input
-                    type='checkbox'
-                    className='btn-check'
+                    type="checkbox"
+                    className="btn-check"
                     id={`btn-check-${i}`}
-                    autoComplete='off'
+                    autoComplete="off"
                     checked={reg.trainings.includes(trainingString)}
                     value={trainingString}
                     onChange={handleChange}
                   />
                   <label
-                    className='btn btn-outline-success m-1'
+                    className="btn btn-outline-success m-1"
                     htmlFor={`btn-check-${i}`}
                   >
                     {training.name}
@@ -340,17 +344,17 @@ const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
           </div>
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='total_cost' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="total_cost" className="form-label">
             Total Cost <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type='number'
-            className='form-control'
-            id='total_cost'
-            name='total_cost'
-            placeholder='Enter Full total_cost'
-            aria-describedby='total_cost'
+            type="number"
+            className="form-control"
+            id="total_cost"
+            name="total_cost"
+            placeholder="Enter Full total_cost"
+            aria-describedby="total_cost"
             onChange={handleChange}
             value={reg.total_cost}
             required
@@ -394,8 +398,8 @@ const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
         </div> */}
 
         <button
-          type='button'
-          className='btn btn-success w-100 mt-3'
+          type="button"
+          className="btn btn-success w-100 mt-3"
           onClick={() => onSave && onSave(reg)}
         >
           Save Attendee

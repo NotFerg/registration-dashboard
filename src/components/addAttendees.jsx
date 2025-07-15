@@ -50,7 +50,7 @@ const AddAttendees = ({ attendee = {}, onSave }) => {
     <>
       <form onSubmit={handleSubmit}>
         <div className='d-flex flex-row justify-content-between'>
-          <div className='mb-3'>
+          <div className='mb-3 flex-fill pe-3'>
             <label htmlFor='first_name' className='form-label'>
               First Name <span style={{ color: "red" }}> * </span>
             </label>
@@ -67,7 +67,7 @@ const AddAttendees = ({ attendee = {}, onSave }) => {
             />
           </div>
 
-          <div className='mb-3'>
+          <div className='mb-3 flex-fill'>
             <label htmlFor='last_name' className='form-label'>
               Last Name <span style={{ color: "red" }}> * </span>
             </label>
@@ -85,72 +85,76 @@ const AddAttendees = ({ attendee = {}, onSave }) => {
           </div>
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='email' className='form-label'>
-            Email <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type='email'
-            className='form-control'
-            id='email'
-            name='email'
-            placeholder='Enter Email'
-            aria-describedby='email'
-            onChange={handleChange}
-            value={form.email || ""}
-            required
-          />
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='mb-3 flex-fill pe-3'>
+            <label htmlFor='email' className='form-label'>
+              Email <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type='email'
+              className='form-control'
+              id='email'
+              name='email'
+              placeholder='Enter Email'
+              aria-describedby='email'
+              onChange={handleChange}
+              value={form.email || ""}
+              required
+            />
+          </div>
+
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='position' className='form-label'>
+              Position <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type='text'
+              className='form-control'
+              id='position'
+              name='position'
+              placeholder='Enter Position'
+              aria-describedby='position'
+              onChange={handleChange}
+              value={form.position || ""}
+              required
+            />
+          </div>
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='position' className='form-label'>
-            Position <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type='text'
-            className='form-control'
-            id='position'
-            name='position'
-            placeholder='Enter Position'
-            aria-describedby='position'
-            onChange={handleChange}
-            value={form.position || ""}
-            required
-          />
-        </div>
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='mb-3 flex-fill pe-3'>
+            <label htmlFor='designation' className='form-label'>
+              Designation <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type='text'
+              className='form-control'
+              id='designation'
+              name='designation'
+              placeholder='Enter Designation'
+              aria-describedby='designation'
+              onChange={handleChange}
+              value={form.designation || ""}
+              required
+            />
+          </div>
 
-        <div className='mb-3'>
-          <label htmlFor='designation' className='form-label'>
-            Designation <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type='text'
-            className='form-control'
-            id='designation'
-            name='designation'
-            placeholder='Enter Designation'
-            aria-describedby='designation'
-            onChange={handleChange}
-            value={form.designation || ""}
-            required
-          />
-        </div>
-
-        <div className='mb-3'>
-          <label htmlFor='country' className='form-label'>
-            Country <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type='text'
-            className='form-control'
-            id='country'
-            name='country'
-            placeholder='Enter Country'
-            aria-describedby='country'
-            onChange={handleChange}
-            value={form.country || ""}
-            required
-          />
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='country' className='form-label'>
+              Country <span style={{ color: "red" }}> * </span>
+            </label>
+            <input
+              type='text'
+              className='form-control'
+              id='country'
+              name='country'
+              placeholder='Enter Country'
+              aria-describedby='country'
+              onChange={handleChange}
+              value={form.country || ""}
+              required
+            />
+          </div>
         </div>
 
         {/* FIX CHECKED VALUE LATER */}
