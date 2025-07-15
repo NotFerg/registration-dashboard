@@ -9,10 +9,9 @@ function AppRoutes() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route element={<AuthorizedRoute />}>
+
         <Route path="/" element={<App />} />
         <Route path="/trainings" element={<Trainings />} />
-        </Route>
       </Routes>
     </Router>
   );
