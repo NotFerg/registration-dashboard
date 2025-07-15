@@ -18,7 +18,6 @@ const Sidebar = () => {
         alt="Logo"
       />
       <hr className="border-light" />
-
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item">
           <NavLink
@@ -68,32 +67,15 @@ const Sidebar = () => {
               5.468 2.37A7 7 0 0 0 8 1z"
             />
           </svg>
-          <strong>Test</strong>
+          <strong>User</strong>
         </a>
         <ul
           className="dropdown-menu dropdown-menu-dark text-small shadow"
           aria-labelledby="dropdownUser1"
         >
           <li>
-            <a className="dropdown-item" href="#">
-              New project...
-            </a>
-          </li>
-          <li>
-            <a className="dropdown-item" href="#">
-              Settings
-            </a>
-          </li>
-          <li>
-            <a className="dropdown-item" href="#">
-              Profile
-            </a>
-          </li>
-          <li>
-            <hr className="dropdown-divider" />
-          </li>
-          <li>
-            <a className="dropdown-item" href="#">
+            <a className="dropdown-item" href="#" onClick={handleLogout}>
+              <i className="bi bi-box-arrow-right me-2"></i>
               Sign out
             </a>
           </li>

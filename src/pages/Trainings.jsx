@@ -4,15 +4,35 @@ import Swal from "sweetalert2";
 import supabase from "../utils/supabase.js";
 import Sidebar from "../components/Sidebar.jsx";
 import "../App.css";
+import { useNavigate } from "react-router-dom";
 
 function Trainings() {
   const [isLoading, setIsLoading] = useState(false);
   const [trainingData, setTrainingData] = useState([]);
   const [activeTraining, setActiveTraining] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    getSession();
     fetchDataFromSupabase();
   }, []);
+
+  async function getSession() {
+    setLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate("/trainings");
+      } else {
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Error fetching session:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function fetchDataFromSupabase() {
     setIsLoading(true);
@@ -129,197 +149,220 @@ function Trainings() {
   }
 
   return (
-    <div className="overflow-hidden">
-      <div className="row min-vh-100">
-        <div className="col-md-2">
-          <Sidebar />
+    <>
+      {isLoading ? (
+        <div
+          className="container-fluid d-flex justify-content-center align-items-center vh-100"
+          style={{ backgroundColor: "#202030", color: "white" }}
+        >
+          <div
+            className="spinner-border text-primary"
+            role="status"
+            style={{ width: "3rem", height: "3rem" }}
+          >
+            <span className="visually-hidden">Loading...</span>
+          </div>
         </div>
-        <div className="col-md-10 p-3">
-          <div className="container mt-3">
-            <div className="d-flex justify-content-between mb-3">
-              <h2>Trainings</h2>
-              <button
-                type="button"
-                className="btn btn-primary fw-bold ms-2"
-                data-bs-toggle="modal"
-                data-bs-target="#addModal"
-              >
-                Add Training
-              </button>
+      ) : (
+        <div className="overflow-hidden">
+          <div className="row min-vh-100">
+            <div className="col-md-2">
+              <Sidebar />
             </div>
-
-            <table className="table table-striped table-hover">
-              <thead className="table-dark">
-                <tr>
-                  <th>Name</th>
-                  <th>Date</th>
-                  <th>Price</th>
-                  <th
-                    scope="col"
-                    colSpan={2}
-                    className="sticky-col text-center"
+            <div className="col-md-10 p-3">
+              <div className="container mt-3">
+                <div className="d-flex justify-content-between mb-3">
+                  <h2>Trainings</h2>
+                  <button
+                    type="button"
+                    className="btn btn-primary fw-bold ms-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addModal"
                   >
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {trainingData.map((training) => (
-                  <tr key={training.id}>
-                    <td>{training.name}</td>
-                    <td>{training.date}</td>
-                    <td>${training.price}</td>
-                    <td colSpan={2} className="sticky-col text-center">
-                      <div className="btn-group">
-                        <button
-                          className="btn"
-                          data-bs-toggle="modal"
-                          data-bs-target={"#editModal"}
-                          onClick={() => setActiveTraining(training)}
-                        >
-                          <i className="bi bi-pencil-square" />
-                        </button>
-                        <button
-                          className="btn"
-                          onClick={() => handleDelete(training.id)}
-                        >
-                          <i className="bi bi-trash-fill" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    Add Training
+                  </button>
+                </div>
 
-            <div
-              className="modal fade"
-              id="addModal"
-              tabIndex="-1"
-              aria-labelledby="addModalLabel"
-              aria-hidden="true"
-            >
-              <div className="modal-dialog">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title" id="addModalLabel">
-                      Add Training
-                    </h5>
-                    <button
-                      type="button"
-                      className="btn-close"
-                      data-bs-dismiss="modal"
-                      aria-label="Close"
-                      onClick={() => setActiveTraining(null)}
-                    ></button>
-                  </div>
-                  <div className="modal-body">
-                    <form onSubmit={(e) => handleSubmit(e)}>
-                      <div className="mb-3">
-                        <label className="form-label">Name</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          name="name"
-                          required
-                        />
-                      </div>
-                      <div className="mb-3">
-                        <label className="form-label">Date/s</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          name="date"
-                          required
-                        />
-                      </div>
-                      <div className="mb-3">
-                        <label className="form-label">Price</label>
-                        <input
-                          type="number"
-                          className="form-control"
-                          name="price"
-                          required
-                        />
-                      </div>
-                      <div className="mt-3">
-                        <button type="submit" className="btn btn-primary w-100">
+                <table className="table table-striped table-hover">
+                  <thead className="table-dark">
+                    <tr>
+                      <th>Name</th>
+                      <th>Date</th>
+                      <th>Price</th>
+                      <th
+                        scope="col"
+                        colSpan={2}
+                        className="sticky-col text-center"
+                      >
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trainingData.map((training) => (
+                      <tr key={training.id}>
+                        <td>{training.name}</td>
+                        <td>{training.date}</td>
+                        <td>${training.price}</td>
+                        <td colSpan={2} className="sticky-col text-center">
+                          <div className="btn-group">
+                            <button
+                              className="btn"
+                              data-bs-toggle="modal"
+                              data-bs-target={"#editModal"}
+                              onClick={() => setActiveTraining(training)}
+                            >
+                              <i className="bi bi-pencil-square" />
+                            </button>
+                            <button
+                              className="btn"
+                              onClick={() => handleDelete(training.id)}
+                            >
+                              <i className="bi bi-trash-fill" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div
+                  className="modal fade"
+                  id="addModal"
+                  tabIndex="-1"
+                  aria-labelledby="addModalLabel"
+                  aria-hidden="true"
+                >
+                  <div className="modal-dialog">
+                    <div className="modal-content">
+                      <div className="modal-header">
+                        <h5 className="modal-title" id="addModalLabel">
                           Add Training
-                        </button>
+                        </h5>
+                        <button
+                          type="button"
+                          className="btn-close"
+                          data-bs-dismiss="modal"
+                          aria-label="Close"
+                          onClick={() => setActiveTraining(null)}
+                        ></button>
                       </div>
-                    </form>
+                      <div className="modal-body">
+                        <form onSubmit={(e) => handleSubmit(e)}>
+                          <div className="mb-3">
+                            <label className="form-label">Name</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              name="name"
+                              required
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label className="form-label">Date/s</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              name="date"
+                              required
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label className="form-label">Price</label>
+                            <input
+                              type="number"
+                              className="form-control"
+                              name="price"
+                              required
+                            />
+                          </div>
+                          <div className="mt-3">
+                            <button
+                              type="submit"
+                              className="btn btn-primary w-100"
+                            >
+                              Add Training
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div
-              className="modal fade"
-              id="editModal"
-              tabIndex="-1"
-              aria-labelledby="editModalLabel"
-              aria-hidden="true"
-            >
-              <div className="modal-dialog">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title" id="editModalLabel">
-                      Edit Training
-                    </h5>
-                    <button
-                      type="button"
-                      className="btn-close"
-                      data-bs-dismiss="modal"
-                      aria-label="Close"
-                      onClick={() => setActiveTraining(null)}
-                    ></button>
-                  </div>
-                  <div className="modal-body">
-                    <form onSubmit={(e) => handleUpdate(e)}>
-                      <div className="mb-3">
-                        <label className="form-label">Name</label>
-                        <input
-                          id="name"
-                          type="text"
-                          className="form-control"
-                          defaultValue={activeTraining?.name}
-                          onChange={(e) => handleChange(e)}
-                        />
+                <div
+                  className="modal fade"
+                  id="editModal"
+                  tabIndex="-1"
+                  aria-labelledby="editModalLabel"
+                  aria-hidden="true"
+                >
+                  <div className="modal-dialog">
+                    <div className="modal-content">
+                      <div className="modal-header">
+                        <h5 className="modal-title" id="editModalLabel">
+                          Edit Training
+                        </h5>
+                        <button
+                          type="button"
+                          className="btn-close"
+                          data-bs-dismiss="modal"
+                          aria-label="Close"
+                          onClick={() => setActiveTraining(null)}
+                        ></button>
                       </div>
-                      <div className="mb-3">
-                        <label className="form-label">Date/s</label>
-                        <input
-                          id="date"
-                          type="text"
-                          className="form-control"
-                          defaultValue={activeTraining?.date}
-                          onChange={(e) => handleChange(e)}
-                        />
+                      <div className="modal-body">
+                        <form onSubmit={(e) => handleUpdate(e)}>
+                          <div className="mb-3">
+                            <label className="form-label">Name</label>
+                            <input
+                              id="name"
+                              type="text"
+                              className="form-control"
+                              defaultValue={activeTraining?.name}
+                              onChange={(e) => handleChange(e)}
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label className="form-label">Date/s</label>
+                            <input
+                              id="date"
+                              type="text"
+                              className="form-control"
+                              defaultValue={activeTraining?.date}
+                              onChange={(e) => handleChange(e)}
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label className="form-label">Price</label>
+                            <input
+                              id="price"
+                              type="number"
+                              className="form-control"
+                              defaultValue={activeTraining?.price}
+                              onChange={(e) => handleChange(e)}
+                            />
+                          </div>
+                          <div className="mt-3">
+                            <button
+                              type="submit"
+                              className="btn btn-primary w-100"
+                            >
+                              Submit
+                            </button>
+                          </div>
+                        </form>
                       </div>
-                      <div className="mb-3">
-                        <label className="form-label">Price</label>
-                        <input
-                          id="price"
-                          type="number"
-                          className="form-control"
-                          defaultValue={activeTraining?.price}
-                          onChange={(e) => handleChange(e)}
-                        />
-                      </div>
-                      <div className="mt-3">
-                        <button type="submit" className="btn btn-primary w-100">
-                          Submit
-                        </button>
-                      </div>
-                    </form>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 

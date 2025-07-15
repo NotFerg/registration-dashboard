@@ -15,7 +15,6 @@ const EditFormGroup = ({
   const [trainings, setTrainings] = useState([]);
   const [reg, setReg] = useState({
     company: "",
-    submission_date: "",
     first_name: "",
     last_name: "",
     email: "",
@@ -24,8 +23,6 @@ const EditFormGroup = ({
     country: "",
     trainings: [],
     total_cost: "",
-    payment_options: "",
-    payment_status: "",
   });
 
   useEffect(() => {
@@ -41,12 +38,9 @@ const EditFormGroup = ({
     if (type === "checkbox") {
       const trainingName = value;
       setReg((prev) => {
-        const prevTrainings = Array.isArray(prev.trainings)
-          ? prev.trainings
-          : [];
         const updatedTrainings = checked
-          ? [...prevTrainings, trainingName]
-          : prevTrainings.filter((t) => t !== trainingName);
+          ? [...prev.trainings, trainingName]
+          : prev.trainings.filter((t) => t !== trainingName);
 
         return {
           ...prev,
@@ -62,11 +56,14 @@ const EditFormGroup = ({
     }
   };
 
+  const handleSave = () => {
+    onSave(reg);
+  };
+
   function calculateTotalCost(trainingStrings) {
     return trainingStrings.reduce((total, str) => {
-      const match = str.match(/\(\$(\d+(?:\.\d{1,2})?)\)/); // match price inside ($...)
-      if (!match) return total;
-      return total + parseFloat(match[1]);
+      const match = str.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+      return match ? total + parseFloat(match[1]) : total;
     }, 0);
   }
 
@@ -192,14 +189,29 @@ const EditFormGroup = ({
         }
       }
     }
+    setTrainings(data || [])
   }
 
   return (
     <>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label htmlFor="company" className="form-label">
-            Company <span style={{ color: "red" }}> * </span>
+      <div className='mb-3'>
+        <label htmlFor='company' className='form-label'>
+          Company <span style={{ color: "red" }}> * </span>
+        </label>
+        <input
+          type='text'
+          className='form-control'
+          id='company'
+          value={reg.company}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className='d-flex flex-row justify-content-between'>
+        <div className='mb-3 me-2 flex-fill'>
+          <label htmlFor='first_name' className='form-label'>
+            First Name *
           </label>
           <input
             type="text"
@@ -368,28 +380,22 @@ const EditFormGroup = ({
             placeholder="Enter Full total_cost"
             aria-describedby="total_cost"
             onChange={handleChange}
-            value={reg.total_cost}
             required
           />
         </div>
-        {/* 
-        <div className='mb-3'>
-          <label htmlFor='payment_options' className='form-label'>
-            Payment Options <span style={{ color: "red" }}> * </span>
+        <div className='mb-3 flex-fill'>
+          <label htmlFor='last_name' className='form-label'>
+            Last Name *
           </label>
           <input
             type='text'
             className='form-control'
-            id='payment_options'
-            name='payment_options'
-            placeholder='Enter Full payment_options'
-            aria-describedby='payment_options'
+            id='last_name'
+            value={reg.last_name}
             onChange={handleChange}
-            value={reg.payment_options}
             required
           />
         </div>
-
         <div className='mb-3'>
           <label htmlFor='payment_status' className='form-label'>
             Payment Status <span style={{ color: "red" }}> * </span>

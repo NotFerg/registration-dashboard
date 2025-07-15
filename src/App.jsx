@@ -13,6 +13,7 @@ import Individual from "./components/Registration/Individual.jsx";
 import EditForm from "./components/EditForm.jsx";
 import AddFormGroup from "./components/AddFormGroup.jsx";
 import AddMultiPageModal from "./components/AddMultiPageModal.jsx";
+import { useNavigate } from "react-router-dom";
 
 function App() {
   const [excelData, setExcelData] = useState([]);
@@ -21,10 +22,29 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [individualRegistration, setIndividualRegistration] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDataFromSupabase();
+    getSession();
   }, []);
+
+  async function getSession() {
+    setLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate("/");
+      } else {
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Error fetching session:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function fetchDataFromSupabase() {
     setIsLoading(true);
@@ -429,7 +449,7 @@ function App() {
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Insert Modal */}
       <div>
