@@ -13,6 +13,7 @@ import Individual from "./components/Registration/Individual.jsx";
 import EditForm from "./components/EditForm.jsx";
 import AddFormGroup from "./components/AddFormGroup.jsx";
 import AddMultiPageModal from "./components/AddMultiPageModal.jsx";
+import { useNavigate } from "react-router-dom";
 
 function App() {
   const [excelData, setExcelData] = useState([]);
@@ -21,10 +22,29 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [individualRegistration, setIndividualRegistration] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDataFromSupabase();
+    getSession();
   }, []);
+
+  async function getSession() {
+    setLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate("/");
+      } else {
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Error fetching session:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function fetchDataFromSupabase() {
     setIsLoading(true);
@@ -132,8 +152,6 @@ function App() {
         console.error("Insert error:", error);
         continue;
       }
-
-  
 
       // Handle attendees
       for (const a of Attendees) {
@@ -336,130 +354,145 @@ function App() {
 
   return (
     <>
-      <div className='overflow-hidden'>
-        <div className='row min-vh-100'>
-          <div className='col-md-2'>
-            <Sidebar />
+      {isLoading ? (
+        <div
+          className="container-fluid d-flex justify-content-center align-items-center vh-100"
+          style={{ backgroundColor: "#202030", color: "white" }}
+        >
+          <div
+            className="spinner-border text-primary"
+            role="status"
+            style={{ width: "3rem", height: "3rem" }}
+          >
+            <span className="visually-hidden">Loading...</span>
           </div>
-
-          <div className='col-md-10 p-3'>
-            <div className='container mt-3'>
-              <div className='d-flex justify-content-between mb-3'>
-                {" "}
-                <h2>Registrations</h2>
-                <div>
-                  <label htmlFor='myFile' className='btn btn-success fw-bold'>
-                    <i className='bi bi-upload' /> Upload File
-                  </label>
-                  <input
-                    id='myFile'
-                    className='d-none'
-                    type='file'
-                    accept='.xlsx, .xls'
-                    onChange={handleFileUpload}
-                  />
-                  <ExportExcel excelData={excelData} />
-                </div>
-              </div>
+        </div>
+      ) : (
+        <div className="overflow-hidden">
+          <div className="row min-vh-100">
+            <div className="col-md-2">
+              <Sidebar />
             </div>
 
-            <div className='container-xxl mt-3'>
-              <Dashboard excelData={excelData} />
-              <div className='card'>
-                <div className='card-body'>
+            <div className="col-md-10 p-3">
+              <div className="container mt-3">
+                <div className="d-flex justify-content-between mb-3">
                   {" "}
-                  <div className='d-flex justify-content-end'>
-                    <button
-                      className='btn btn-primary text-white fw-bold mx-3'
-                      data-bs-toggle='modal'
-                      data-bs-target='#addRegistrationModal'
-                    >
-                      <i class='bi bi-person-plus-fill' />
-                      <span className='ms-2'>Add Registration</span>
-                    </button>
-                    <button
-                      className='btn btn-primary text-white fw-bold'
-                      onClick={() => setShowAddGroupModal(true)}
-                    >
-                      <i className='bi bi-person-lines-fill' />
-                      <span className='ms-2'>Add Group Registration</span>
-                    </button>
+                  <h2>Registrations</h2>
+                  <div>
+                    <label htmlFor="myFile" className="btn btn-success fw-bold">
+                      <i className="bi bi-upload" /> Upload File
+                    </label>
+                    <input
+                      id="myFile"
+                      className="d-none"
+                      type="file"
+                      accept=".xlsx, .xls"
+                      onChange={handleFileUpload}
+                    />
+                    <ExportExcel excelData={excelData} />
                   </div>
-                  <ul className='nav nav-tabs'>
-                    <li className='nav-item'>
-                      <a
-                        className={`nav-link ${
-                          activeTab === "individual"
-                            ? "active bg-primary text-white fw-bold"
-                            : "text-black"
-                        }`}
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setActiveTab("individual")}
+                </div>
+              </div>
+
+              <div className="container-xxl mt-3">
+                <Dashboard excelData={excelData} />
+                <div className="card">
+                  <div className="card-body">
+                    {" "}
+                    <div className="d-flex justify-content-end">
+                      <button
+                        className="btn btn-primary text-white fw-bold mx-3"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addRegistrationModal"
                       >
-                        Individual
-                      </a>
-                    </li>
-                    <li className='nav-item'>
-                      <a
-                        className={`nav-link ${
-                          activeTab === "group"
-                            ? "active bg-primary text-white fw-bold"
-                            : "text-black"
-                        }`}
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setActiveTab("group")}
+                        <i class="bi bi-person-plus-fill" />
+                        <span className="ms-2">Add Registration</span>
+                      </button>
+                      <button
+                        className="btn btn-primary text-white fw-bold"
+                        onClick={() => setShowAddGroupModal(true)}
                       >
-                        Group
-                      </a>
-                    </li>
-                  </ul>
-                  <input
-                    type='text'
-                    className='form-control'
-                    id='guestSearch'
-                    placeholder='Search participants...'
-                    onChange={handleInputChange}
-                    style={{ marginTop: 12, marginBottom: 1 }}
-                  />
-                  {activeTab === "group" ? (
-                    <Group filteredUsers={filteredUsers} />
-                  ) : (
-                    <Individual filteredUsers={filteredUsers} />
-                  )}
+                        <i className="bi bi-person-lines-fill" />
+                        <span className="ms-2">Add Group Registration</span>
+                      </button>
+                    </div>
+                    <ul className="nav nav-tabs">
+                      <li className="nav-item">
+                        <a
+                          className={`nav-link ${
+                            activeTab === "individual"
+                              ? "active bg-primary text-white fw-bold"
+                              : "text-black"
+                          }`}
+                          style={{ cursor: "pointer" }}
+                          onClick={() => setActiveTab("individual")}
+                        >
+                          Individual
+                        </a>
+                      </li>
+                      <li className="nav-item">
+                        <a
+                          className={`nav-link ${
+                            activeTab === "group"
+                              ? "active bg-primary text-white fw-bold"
+                              : "text-black"
+                          }`}
+                          style={{ cursor: "pointer" }}
+                          onClick={() => setActiveTab("group")}
+                        >
+                          Group
+                        </a>
+                      </li>
+                    </ul>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="guestSearch"
+                      placeholder="Search participants..."
+                      onChange={handleInputChange}
+                      style={{ marginTop: 12, marginBottom: 1 }}
+                    />
+                    {activeTab === "group" ? (
+                      <Group filteredUsers={filteredUsers} />
+                    ) : (
+                      <Individual filteredUsers={filteredUsers} />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Insert Modal */}
       <div>
         <div
-          className='modal fade'
-          id='addRegistrationModal'
-          tabIndex='-1'
-          aria-labelledby='addModalLabel'
-          aria-hidden='true'
+          className="modal fade"
+          id="addRegistrationModal"
+          tabIndex="-1"
+          aria-labelledby="addModalLabel"
+          aria-hidden="true"
         >
-          <div className='modal-dialog modal-dialog-centered modal-dialog-scrollable'>
-            <div className='modal-content'>
-              <div className='modal-header'>
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header">
                 <h1
-                  className='modal-title fs-5'
-                  id='editModalLabel'
+                  className="modal-title fs-5"
+                  id="editModalLabel"
                   style={{ fontWeight: 700 }}
                 >
                   Add Registration
                 </h1>
                 <button
-                  type='button'
-                  className='btn-close'
-                  data-bs-dismiss='modal'
-                  aria-label='Close'
+                  type="button"
+                  className="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
                 ></button>
               </div>
-              <div className='modal-body'>
+              <div className="modal-body">
                 <Form />
               </div>
             </div>
