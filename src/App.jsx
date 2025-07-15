@@ -133,8 +133,6 @@ function App() {
         continue;
       }
 
-  
-
       // Handle attendees
       for (const a of Attendees) {
         const { data: attendee, error: attErr } = await supabase
@@ -336,26 +334,26 @@ function App() {
 
   return (
     <>
-      <div className='overflow-hidden'>
-        <div className='row min-vh-100'>
-          <div className='col-md-2'>
+      <div className="overflow-hidden">
+        <div className="row min-vh-100">
+          <div className="col-md-2">
             <Sidebar />
           </div>
 
-          <div className='col-md-10 p-3'>
-            <div className='container mt-3'>
-              <div className='d-flex justify-content-between mb-3'>
+          <div className="col-md-10 p-3">
+            <div className="container mt-3">
+              <div className="d-flex justify-content-between mb-3">
                 {" "}
                 <h2>Registrations</h2>
                 <div>
-                  <label htmlFor='myFile' className='btn btn-success fw-bold'>
-                    <i className='bi bi-upload' /> Upload File
+                  <label htmlFor="myFile" className="btn btn-success fw-bold">
+                    <i className="bi bi-upload" /> Upload File
                   </label>
                   <input
-                    id='myFile'
-                    className='d-none'
-                    type='file'
-                    accept='.xlsx, .xls'
+                    id="myFile"
+                    className="d-none"
+                    type="file"
+                    accept=".xlsx, .xls"
                     onChange={handleFileUpload}
                   />
                   <ExportExcel excelData={excelData} />
@@ -363,30 +361,30 @@ function App() {
               </div>
             </div>
 
-            <div className='container-xxl mt-3'>
+            <div className="container-xxl mt-3">
               <Dashboard excelData={excelData} />
-              <div className='card'>
-                <div className='card-body'>
+              <div className="card">
+                <div className="card-body">
                   {" "}
-                  <div className='d-flex justify-content-end'>
+                  <div className="d-flex justify-content-end">
                     <button
-                      className='btn btn-primary text-white fw-bold mx-3'
-                      data-bs-toggle='modal'
-                      data-bs-target='#addRegistrationModal'
+                      className="btn btn-primary text-white fw-bold mx-3"
+                      data-bs-toggle="modal"
+                      data-bs-target="#addRegistrationModal"
                     >
-                      <i class='bi bi-person-plus-fill' />
-                      <span className='ms-2'>Add Registration</span>
+                      <i class="bi bi-person-plus-fill" />
+                      <span className="ms-2">Add Registration</span>
                     </button>
                     <button
-                      className='btn btn-primary text-white fw-bold'
+                      className="btn btn-primary text-white fw-bold"
                       onClick={() => setShowAddGroupModal(true)}
                     >
-                      <i className='bi bi-person-lines-fill' />
-                      <span className='ms-2'>Add Group Registration</span>
+                      <i className="bi bi-person-lines-fill" />
+                      <span className="ms-2">Add Group Registration</span>
                     </button>
                   </div>
-                  <ul className='nav nav-tabs'>
-                    <li className='nav-item'>
+                  <ul className="nav nav-tabs">
+                    <li className="nav-item">
                       <a
                         className={`nav-link ${
                           activeTab === "individual"
@@ -399,7 +397,7 @@ function App() {
                         Individual
                       </a>
                     </li>
-                    <li className='nav-item'>
+                    <li className="nav-item">
                       <a
                         className={`nav-link ${
                           activeTab === "group"
@@ -414,10 +412,10 @@ function App() {
                     </li>
                   </ul>
                   <input
-                    type='text'
-                    className='form-control'
-                    id='guestSearch'
-                    placeholder='Search participants...'
+                    type="text"
+                    className="form-control"
+                    id="guestSearch"
+                    placeholder="Search participants..."
                     onChange={handleInputChange}
                     style={{ marginTop: 12, marginBottom: 1 }}
                   />
@@ -436,30 +434,30 @@ function App() {
       {/* Insert Modal */}
       <div>
         <div
-          className='modal fade'
-          id='addRegistrationModal'
-          tabIndex='-1'
-          aria-labelledby='addModalLabel'
-          aria-hidden='true'
+          className="modal fade"
+          id="addRegistrationModal"
+          tabIndex="-1"
+          aria-labelledby="addModalLabel"
+          aria-hidden="true"
         >
-          <div className='modal-dialog modal-dialog-centered modal-dialog-scrollable'>
-            <div className='modal-content'>
-              <div className='modal-header'>
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header">
                 <h1
-                  className='modal-title fs-5'
-                  id='editModalLabel'
+                  className="modal-title fs-5"
+                  id="editModalLabel"
                   style={{ fontWeight: 700 }}
                 >
                   Add Registration
                 </h1>
                 <button
-                  type='button'
-                  className='btn-close'
-                  data-bs-dismiss='modal'
-                  aria-label='Close'
+                  type="button"
+                  className="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
                 ></button>
               </div>
-              <div className='modal-body'>
+              <div className="modal-body">
                 <Form />
               </div>
             </div>
