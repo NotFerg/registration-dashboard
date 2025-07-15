@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { Offcanvas, Button } from "react-bootstrap";
 import logo from "../assets/BSA-19th_Logo.png";
+import supabase from "../utils/supabase";
+import { useNavigate } from "react-router-dom";
 
 const Sidebar = () => {
   const [show, setShow] = useState(false);
@@ -9,6 +11,18 @@ const Sidebar = () => {
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
 
+  const navigate = useNavigate();
+
+  async function handleLogout() {
+    try {
+      const { error } = await supabase.auth.signOut();
+      localStorage.clear();
+    } catch (error) {
+      console.log(error);
+    } finally {
+      navigate("/login");
+    }
+  }
   const SidebarContent = (
     <>
       <img

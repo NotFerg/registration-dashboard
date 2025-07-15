@@ -449,7 +449,7 @@ function App() {
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Insert Modal */}
       <div>
@@ -495,3 +495,4 @@ function App() {
 }
 
 export default App;
+
