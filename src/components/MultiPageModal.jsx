@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button } from "react-bootstrap";
+import { Modal, Button, Form } from "react-bootstrap";
 import EditFormGroup from "./EditFormGroup";
 import supabase from "../utils/supabase";
 
-const MultiPageModal = ({ show, onHide, initialReg }) => {
+const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   // Step is attendee index (0-based)
   const [step, setStep] = useState(0);
   const [attendees, setAttendees] = useState([]);
@@ -41,7 +41,7 @@ const MultiPageModal = ({ show, onHide, initialReg }) => {
             }))
           : []
       );
-      setStep(0);
+      setStep(stepProp || 0);
     }
   }, [initialReg, show]);
 
@@ -136,6 +136,7 @@ const MultiPageModal = ({ show, onHide, initialReg }) => {
     if (attendees.length === 0) return <p>No attendee data.</p>;
     const attendee = attendees[step];
     if (!attendee) return <p>No attendee data.</p>;
+
     return (
       <EditFormGroup
         reg={{
@@ -153,6 +154,8 @@ const MultiPageModal = ({ show, onHide, initialReg }) => {
     );
   };
 
+  console.log(initialReg);
+
   if (!initialReg) return null;
 
   return (
@@ -165,37 +168,96 @@ const MultiPageModal = ({ show, onHide, initialReg }) => {
       <Modal.Body>
         {/* Admin overview (read-only) */}
         <section className='mb-4'>
-          <h4 style={{ marginBottom: 20 }}>Admin Information</h4>
-          <p>
-            <strong>Company:</strong> {reg.company}
-          </p>
-          <p>
-            <strong>Name:</strong> {reg.first_name} {reg.last_name}
-          </p>
-          <p>
-            <strong>Email:</strong> {reg.email}
-          </p>
-          <p>
-            <strong>Total Cost:</strong> ${reg.total_cost}
-          </p>
+          {/* Admin overview (read-only) */}
+          <h4 style={{ marginBottom: 12 }}>Admin Information</h4>
+          <div className='card w-100'>
+            <div className='card-body'>
+              <div className='d-flex flex-row'>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i class='bi bi-building'></i>
+                  </h3>
+                  <h6 className='card-title'>
+                    <strong>Company</strong>
+                  </h6>
+                  <p className='card-text'>{initialReg.company}</p>
+                </div>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i class='bi bi-person-circle'></i>
+                  </h3>
+                  <h6 className='card-title'>
+                    <strong>Name</strong>
+                  </h6>
+                  <p className='card-text'>
+                    {initialReg.first_name} {initialReg.last_name}
+                  </p>
+                </div>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i class='bi bi-envelope-at-fill'></i>
+                  </h3>
+                  <h6 className='card-title'>
+                    <strong>E-Mail</strong>
+                  </h6>
+                  <p className='card-text'>{initialReg.email}</p>
+                </div>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i class='bi bi-cash'></i>
+                  </h3>
+                  <h6 className='card-title'>
+                    <strong>Total Cost</strong>
+                  </h6>
+                  <p className='card-text'>${initialReg.total_cost}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
         <hr />
-        <h4 style={{ marginBottom: 20 }}>Attendees Information</h4>
+        <h4 style={{ marginBottom: 12 }}>Attendees Information</h4>
         {renderAttendeeForm()}
-      </Modal.Body>
-      <Modal.Footer>
-        <div className='w-100 d-flex justify-content-between'>
-          <Button variant='secondary' onClick={prev} disabled={isFirst}>
+        <div className='text-center my-3'>
+          <Button
+            variant='outline-primary'
+            onClick={prev}
+            disabled={isFirst}
+            style={{ width: "100px" }}
+          >
             Previous
           </Button>
-          <small>
+          <small className="mx-3 text-muted">
             Attendee {attendees.length === 0 ? 0 : step + 1} of{" "}
             {attendees.length}
           </small>
           <Button variant='primary' onClick={next} disabled={isLast}>
+          <Button
+            variant="outline-primary"
+            onClick={next}
+            disabled={isLast}
+            style={{ width: "100px" }}
+          >
             Next
           </Button>
           <Button variant='success' onClick={handleSubmitGroup}>
+            Save Group
+          </Button>
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <div className='w-100 d-flex justify-content-end'>
+          <Button variant='success' onClick={handleSubmitGroup}>
+            Save Group
+          </Button>
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <div className="w-100 d-flex justify-content-end">
+          <Button variant="success" onClick={handleSubmitGroup}>
             Save Group
           </Button>
         </div>

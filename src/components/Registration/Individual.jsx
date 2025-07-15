@@ -185,7 +185,7 @@ const Individual = ({ filteredUsers = [] }) => {
             )}
           </button>
           <ul
-            className="dropdown-menu"
+            className="dropdown-menu p-2"
             style={{ maxHeight: "300px", overflowY: "scroll" }}
           >
             {[

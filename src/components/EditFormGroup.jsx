@@ -315,7 +315,7 @@ const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
           <br />
           <div className='border rounded p-2'>
             {trainings.map((training, i) => {
-              const trainingString = `${training.date}: ${training.name} ($${training.price})`;
+              const trainingString = `${training.name}: ${training.date} ($${training.price})`;
 
               return (
                 <React.Fragment key={training.id}>
@@ -393,13 +393,11 @@ const EditFormGroup = ({ reg: initialReg, onSave = () => {} }) => {
           </select>
         </div> */}
 
-        <button
-          type='button'
-          className='btn btn-success w-100 mt-3'
-          onClick={() => onSave && onSave(reg)}
-        >
-          Save Attendee
-        </button>
+        <div className='mt-3'>
+          <button type='submit' className='btn btn-primary w-100'>
+            Submit
+          </button>
+        </div>
       </form>
     </>
   );

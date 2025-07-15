@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button } from "react-bootstrap";
 import AddAttendees from "./addAttendees";
 import supabase from "../utils/supabase";
+import Swal from "sweetalert2";
 const AddMultiPageModal = ({ show, onHide }) => {
   const attendeeTemplate = {
     first_name: "",
@@ -74,15 +75,6 @@ const AddMultiPageModal = ({ show, onHide }) => {
     setStep(Math.max(step - 1, 0));
   }
 
-  // function handleSaveGroup(e) {
-  //   // e.preventDefault();
-  //   // console.log("Registration Info:", reg);
-  //   // console.log("Attendees:", attendees);
-  //   // console.log("Full Group Registration:", { ...reg, attendees });
-  //   // onHide();
-
-  // }
-
   async function handleSaveGroup(e) {
     e.preventDefault();
     console.log("Full Group Registration:", { ...reg, attendees });
@@ -141,14 +133,25 @@ const AddMultiPageModal = ({ show, onHide }) => {
 
       if (attendeeError) throw attendeeError;
 
-      console.log("✅ Group registration successfully saved.");
-      onHide(); // close modal
+      Swal.fire({
+        title: "Group registration successfully saved!",
+        icon: "success",
+        confirmButtonText: "OK",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
     } catch (error) {
-      console.error("❌ Error saving registration:", error);
-      alert(
-        "There was an error saving the registration. Please try again.",
-        error
-      );
+      Swal.fire({
+        title: "Error!",
+        text: "There was an error saving the registration. Please try again.",
+        icon: "error",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
     }
   }
 
@@ -178,7 +181,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
         </div>
 
         <div className='d-flex flex-row justify-content-between'>
-          <div className='mb-3'>
+          <div className='w-50 p-1 '>
             <label htmlFor='first_name' className='form-label'>
               First Name <span style={{ color: "red" }}> * </span>
             </label>
@@ -195,7 +198,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
             />
           </div>
 
-          <div className='mb-3'>
+          <div className='w-50 mb-3'>
             <label htmlFor='last_name' className='form-label'>
               Last Name <span style={{ color: "red" }}> * </span>
             </label>

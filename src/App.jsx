@@ -133,45 +133,7 @@ function App() {
         continue;
       }
 
-      // // --- Handle trainings for registration ---
-      // const trainingLines = splitTrainingLines(regData["Trainings"]);
-      // for (const line of trainingLines) {
-      //   const parsed = parseTrainingLine(line);
-      //   if (!parsed) continue;
-
-      //   const trainingId = await upsertTrainingByNameDatePrice(
-      //     parsed.name,
-      //     parsed.date,
-      //     parsed.price
-      //   );
-
-      //   if (trainingId) {
-      //     await supabase
-      //       .from("registration_trainings")
-      //       .insert([{ registration_id: reg.id, training_id: trainingId }]);
-      //   }
-      // }
-
-      // // Link trainings to registration
-      // const trainingLines = splitTrainingLines(regData["Trainings"]);
-      // for (const line of trainingLines) {
-      //   const parsed = parseTrainingLine(line);
-      //   if (!parsed) continue;
-
-      //   const trainingId = await upsertTrainingByNameDatePrice(
-      //     parsed.name,
-      //     parsed.date,
-      //     parsed.price
-      //   );
-      //   if (trainingId) {
-      //     await supabase.from("training_references").insert([
-      //       {
-      //         training_id: trainingId,
-      //         registration_id: reg.id,
-      //       },
-      //     ]);
-      //   }
-      // }
+  
 
       // Handle attendees
       for (const a of Attendees) {
