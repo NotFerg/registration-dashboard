@@ -210,7 +210,7 @@ const EditFormGroup = ({
         </div>
 
         <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3 me-2 flex-fill">
+          <div className="mb-3">
             <label htmlFor="first_name" className="form-label">
               First Name *
             </label>
@@ -227,7 +227,7 @@ const EditFormGroup = ({
             />
           </div>
           <div className="d-flex flex-row justify-content-between">
-            <div className="mb-3 flex-fill pe-3">
+            <div className="mb-3 pe-3">
               <label htmlFor="first_name" className="form-label">
                 First Name <span style={{ color: "red" }}> * </span>
               </label>
@@ -244,7 +244,7 @@ const EditFormGroup = ({
               />
             </div>
 
-            <div className="mb-3 flex-fill">
+            <div className="mb-3 ">
               <label htmlFor="last_name" className="form-label">
                 Last Name <span style={{ color: "red" }}> * </span>
               </label>
@@ -263,7 +263,7 @@ const EditFormGroup = ({
           </div>
 
           <div className="d-flex flex-row justify-content-between">
-            <div className="mb-3 flex-fill pe-3">
+            <div className="mb-3  pe-3">
               <label htmlFor="email" className="form-label">
                 Email <span style={{ color: "red" }}> * </span>
               </label>
@@ -280,7 +280,7 @@ const EditFormGroup = ({
               />
             </div>
 
-            <div className="mb-3 flex-fill">
+            <div className="mb-3 ">
               <label htmlFor="position" className="form-label">
                 Position <span style={{ color: "red" }}> * </span>
               </label>
@@ -299,7 +299,7 @@ const EditFormGroup = ({
           </div>
 
           <div className="d-flex flex-row justify-content-between">
-            <div className="mb-3 flex-fill pe-3">
+            <div className="mb-3  pe-3">
               <label htmlFor="designation" className="form-label">
                 Designation <span style={{ color: "red" }}> * </span>
               </label>
@@ -316,7 +316,7 @@ const EditFormGroup = ({
               />
             </div>
 
-            <div className="mb-3 flex-fill">
+            <div className="mb-3 ">
               <label htmlFor="country" className="form-label">
                 Country <span style={{ color: "red" }}> * </span>
               </label>
@@ -384,7 +384,7 @@ const EditFormGroup = ({
               required
             />
           </div>
-          <div className="mb-3 flex-fill">
+          <div className="mb-3 ">
             <label htmlFor="last_name" className="form-label">
               Last Name *
             </label>
