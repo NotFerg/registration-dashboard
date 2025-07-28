@@ -28,7 +28,7 @@ function Dashboard({ excelData: data }) {
   return (
     <Container fluid>
       <Row>
-        <Col xl={5} md={5} sm={12} className="mb-4">
+        <Col xl={4} md={4} sm={12} className="mb-4">
           <Card className="border-left-primary shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
@@ -55,7 +55,7 @@ function Dashboard({ excelData: data }) {
           </Card>
         </Col>
 
-        <Col xl={7} md={7} sm={12} className="mb-4">
+        {/* <Col xl={7} md={7} sm={12} className="mb-4">
           <Card className="border-left-info shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
@@ -87,10 +87,8 @@ function Dashboard({ excelData: data }) {
               </Row>
             </Card.Body>
           </Card>
-        </Col>
-      </Row>
-      <Row>
-        <Col xl={4} md={6} sm={12} className="mb-4">
+        </Col> */}
+        <Col xl={4} md={4} sm={12} className="mb-4">
           <Card className="border-left-warning shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
@@ -118,7 +116,7 @@ function Dashboard({ excelData: data }) {
             </Card.Body>
           </Card>
         </Col>
-        <Col xl={4} md={6} sm={12} className="mb-4">
+        <Col xl={4} md={4} sm={12} className="mb-4">
           <Card className="border-left-primary shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
@@ -145,7 +143,7 @@ function Dashboard({ excelData: data }) {
           </Card>
         </Col>
 
-        <Col xl={4} md={6} sm={12} className="mb-4">
+        {/* <Col xl={4} md={6} sm={12} className="mb-4">
           <Card className="border-left-success shadow-sm h-100 py-2">
             <Card.Body>
               <Row className="no-gutters align-items-center">
@@ -170,7 +168,7 @@ function Dashboard({ excelData: data }) {
               </Row>
             </Card.Body>
           </Card>
-        </Col>
+        </Col> */}
       </Row>
 
       {/* Charts section */}

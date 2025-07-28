@@ -88,7 +88,7 @@ const Individual = ({ filteredUsers = [] }) => {
   return (
     <>
       <div className="d-flex justify-content-between align-items-center my-3">
-        <div className="d-flex flex-column flex-md-row flex-wrap gap-2 mb-3 align-items-start align-items-center">
+        <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
           <div className="dropdown" id="companyDropdown">
             <button
               className="btn btn-outline-dark dropdown-toggle border 
@@ -129,7 +129,6 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-
           <div className="dropdown ps-2" id="countryDropdown">
             <button
               className="btn btn-outline-dark dropdown-toggle border 
@@ -170,7 +169,6 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-
           <div className="dropdown ps-2" id="trainingDropdown">
             <button
               className="btn btn-outline-dark dropdown-toggle border 
@@ -237,7 +235,6 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-
           <div className="dropdown ps-2" id="paymentStatusDropdown">
             <button
               className="btn btn-outline-dark dropdown-toggle border 
@@ -274,10 +271,14 @@ const Individual = ({ filteredUsers = [] }) => {
             </ul>
           </div>
         </div>
-
         <button className="btn btn-outline-danger" onClick={clearFilters}>
           <i class="bi bi-x-circle"></i> Clear Filters
         </button>
+      </div>
+      <div className="pb-2">
+        <h5>
+          <b>Total Count: {addedFilteredUsers.length}</b>
+        </h5>
       </div>
 
       <div className="table-responsive">
