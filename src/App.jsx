@@ -10,8 +10,7 @@ import ExportExcel from "./components/ExportExcel.jsx";
 import Form from "./components/Registration/Form.jsx";
 import Group from "./components/Registration/Group.jsx";
 import Individual from "./components/Registration/Individual.jsx";
-import EditForm from "./components/EditForm.jsx";
-import AddFormGroup from "./components/AddFormGroup.jsx";
+import All from "./components/Registration/All.jsx";
 import AddMultiPageModal from "./components/AddMultiPageModal.jsx";
 import { useNavigate } from "react-router-dom";
 
@@ -430,6 +429,19 @@ function App() {
                         Group
                       </a>
                     </li>
+                        <li className="nav-item">
+                      <a
+                        className={`nav-link ${
+                          activeTab === "all"
+                            ? "active bg-primary text-white fw-bold"
+                            : "text-black"
+                        }`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => setActiveTab("all")}
+                      >
+                        All
+                      </a>
+                    </li>
                   </ul>
                   <input
                     type="text"
@@ -441,8 +453,11 @@ function App() {
                   />
                   {activeTab === "group" ? (
                     <Group filteredUsers={filteredUsers} />
-                  ) : (
+                  ) : 
+                  activeTab === "individual" ? (
                     <Individual filteredUsers={filteredUsers} />
+                  ) : (
+                    <All filteredUsers={filteredUsers} />
                   )}
                 </div>
               </div>
