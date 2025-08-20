@@ -379,6 +379,7 @@ const Form = ({}) => {
             <option value=''>Select Payment Status</option>
             <option value='Paid'>Paid</option>
             <option value='Unpaid'>Unpaid</option>
+            <option value='Partial Payment'>Partial Payment</option>
           </select>
         </div>
 
