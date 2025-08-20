@@ -19,9 +19,83 @@ const All = ({ filteredUsers = [] }) => {
       currency: "USD",
     });
   }
+  function formatDate(date) {
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
 
   const destructureFilteredUsers = (users) =>
     users.flatMap((user) =>
+      user.attendees.length > 0
+        ? user.attendees.map((attendee) => ({
+            id: attendee.id,
+            first_name: attendee.first_name,
+            last_name: attendee.last_name,
+            email: attendee.email,
+            position: attendee.position,
+            designation:
+              attendee.designation.length > 0
+                ? attendee.designation
+                : "No Current Designation",
+            company: user.company,
+            country: attendee.country,
+            trainings: attendee.training_references,
+            payment_status: user.payment_status,
+            total_cost: attendee.subtotal,
+            submission_date: user.submission_date
+          }))
+        : [
+            {
+              id: user.id,
+              first_name: user.first_name,
+              last_name: user.last_name,
+              email: user.email,
+              position: user.position,
+              designation:
+                user.designation.length > 0
+                  ? user.designation
+                  : "No Current Designation",
+              company: user.company,
+              country: user.country,
+              trainings: user.training_references,
+              payment_status: user.payment_status,
+              total_cost: user.total_cost,
+              submission_date: user.submission_date
+            },
+          ]
+    );
+
+  console.log("filteredUsers", filteredUsers);
+  console.log(destructureFilteredUsers(filteredUsers));
+
+  const usersToDisplay = filteredUsers
+    .filter((user) => {
+      const paymentStatusMatches =
+        !activePaymentStatus || user.payment_status === activePaymentStatus;
+      const trainingMatches =
+        !activeTraining.length ||
+        user.attendees.some((attendee) =>
+          attendee.training_references.some((tr) =>
+            activeTraining.includes(tr.trainings?.id)
+          )
+        );
+      const companyMatches = !activeCompany || user.company === activeCompany;
+      const countryMatches = !activeCountry || user.country === activeCountry;
+
+      return (
+        paymentStatusMatches &&
+        trainingMatches &&
+        companyMatches &&
+        countryMatches
+      );
+    })
+    .flatMap((user) =>
       user.attendees.length > 0
         ? user.attendees.map((attendee) => ({
             id: attendee.id,
@@ -60,8 +134,6 @@ const All = ({ filteredUsers = [] }) => {
             },
           ]
     );
-
-  const usersToDisplay = destructureFilteredUsers(filteredUsers);
 
   const clearFilters = () => {
     setActivePaymentStatus("");
@@ -174,6 +246,12 @@ const All = ({ filteredUsers = [] }) => {
             >
               {filteredUsers
                 .map((user) => user.country)
+                .filter(
+                  (country) =>
+                    country !== null &&
+                    country.trim() !== "" &&
+                    country !== undefined
+                )
                 .filter(
                   (country, index, self) => self.indexOf(country) === index
                 )
@@ -341,7 +419,9 @@ const All = ({ filteredUsers = [] }) => {
                   return (
                     <tr key={i}>
                       <td className="small">{reg.company}</td>
-                      <td className="small">{reg.submission_date}</td>
+                      <td className="small">
+                        {formatDate(reg.submission_date)}
+                      </td>
                       <td className="small">{reg.first_name}</td>
                       <td className="small">{reg.last_name}</td>
                       <td className="small">{reg.email}</td>
@@ -431,4 +511,3 @@ const All = ({ filteredUsers = [] }) => {
 };
 
 export default All;
-

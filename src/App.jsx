@@ -69,7 +69,6 @@ function App() {
       return;
     }
 
-    console.log("DATA", registrations);
     setExcelData(registrations);
     setIsLoading(false);
   }
@@ -429,7 +428,7 @@ function App() {
                         Group
                       </a>
                     </li>
-                        <li className="nav-item">
+                    <li className="nav-item">
                       <a
                         className={`nav-link ${
                           activeTab === "all"
@@ -453,8 +452,7 @@ function App() {
                   />
                   {activeTab === "group" ? (
                     <Group filteredUsers={filteredUsers} />
-                  ) : 
-                  activeTab === "individual" ? (
+                  ) : activeTab === "individual" ? (
                     <Individual filteredUsers={filteredUsers} />
                   ) : (
                     <All filteredUsers={filteredUsers} />
@@ -510,4 +508,3 @@ function App() {
 }
 
 export default App;
-
