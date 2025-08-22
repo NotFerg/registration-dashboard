@@ -1,13 +1,19 @@
-import React, { useState } from "react";
-import MultiPageModal from "../MultiPageModal"; // import the multi-page modal component
+import React, { useState, useEffect } from "react";
+import MultiPageModal from "../MultiPageModal";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
 
 const Group = ({ filteredUsers = [] }) => {
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [editRegistration, setEditRegistration] = useState(null);
-  const [showModal, setShowModal] = useState(false); // control MultiPageModal visibility
+  const [showModal, setShowModal] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+
+  const [activePaymentStatus, setActivePaymentStatus] = useState("");
+  const [activeTraining, setActiveTraining] = useState([]);
+  const [activeCompany, setActiveCompany] = useState("");
+  const [activeCountry, setActiveCountry] = useState("");
+  const [trainingData, setTrainingData] = useState([]);
 
   function formatCurrency(amount) {
     const num = parseFloat(amount);
@@ -27,6 +33,120 @@ const Group = ({ filteredUsers = [] }) => {
     });
   }
 
+  useEffect(() => {
+    async function fetchDataFromSupabase() {
+      try {
+        const { data: trainings, error } = await supabase
+          .from("trainings")
+          .select("*");
+        if (error) {
+          console.error("Error fetching trainings:", error);
+          return;
+        }
+        setTrainingData(trainings || []);
+      } catch (err) {
+        console.error("Unexpected error fetching trainings:", err);
+      }
+    }
+    fetchDataFromSupabase();
+  }, []);
+
+  const normalize = (s) => (s || "").toString().trim().toLowerCase();
+
+  const extractTrainingNamesFromRegistration = (reg) => {
+    const names = [];
+
+    (reg.training_references || []).forEach((tr) => {
+      if (tr && tr.trainings && tr.trainings.name)
+        names.push(tr.trainings.name);
+    });
+
+    (reg.attendees || []).forEach((att) => {
+      (att.training_references || []).forEach((tr) => {
+        if (tr && tr.trainings && tr.trainings.name)
+          names.push(tr.trainings.name);
+      });
+    });
+
+    return Array.from(new Set(names.map(normalize)));
+  };
+
+  const filteredRegistrations = filteredUsers.filter((reg) => {
+    const paymentStatusMatches =
+      !activePaymentStatus || reg.payment_status === activePaymentStatus;
+    const companyMatches = !activeCompany || reg.company === activeCompany;
+    const countryMatches = !activeCountry || reg.country === activeCountry;
+
+    const activeNormalized = (activeTraining || []).map(normalize);
+    if (activeNormalized.length === 0) {
+      return paymentStatusMatches && companyMatches && countryMatches;
+    }
+
+    const regTrainingNames = extractTrainingNamesFromRegistration(reg);
+    const trainingMatches = activeNormalized.some((sel) =>
+      regTrainingNames.includes(sel)
+    );
+
+    return (
+      paymentStatusMatches &&
+      companyMatches &&
+      countryMatches &&
+      trainingMatches
+    );
+  });
+
+  const usersToDisplay = filteredRegistrations.flatMap((user) =>
+    (user.attendees || []).length > 0
+      ? user.attendees.map((attendee) => ({
+          id: attendee.id,
+          first_name: attendee.first_name,
+          last_name: attendee.last_name,
+          email: attendee.email,
+          position: attendee.position,
+          designation:
+            attendee.designation && attendee.designation.length > 0
+              ? attendee.designation
+              : "No Current Designation",
+          company: user.company,
+          country: attendee.country,
+          trainings: attendee.training_references || [],
+          payment_status: user.payment_status,
+          total_cost:
+            attendee.total_cost ?? attendee.subtotal ?? user.total_cost,
+          submission_date: user.submission_date,
+          registration_id: user.id,
+          fullRegistration: user,
+        }))
+      : [
+          {
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            position: user.position,
+            designation:
+              user.designation && user.designation.length > 0
+                ? user.designation
+                : "No Current Designation",
+            company: user.company,
+            country: user.country,
+            trainings: user.training_references || [],
+            payment_status: user.payment_status,
+            total_cost: user.total_cost,
+            submission_date: user.submission_date,
+            registration_id: user.id,
+            fullRegistration: user,
+          },
+        ]
+  );
+
+  const clearFilters = () => {
+    setActivePaymentStatus("");
+    setActiveTraining([]);
+    setActiveCompany("");
+    setActiveCountry("");
+  };
+
   async function handleDeleteAttendee(attendeeId, registrationId) {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -41,7 +161,6 @@ const Group = ({ filteredUsers = [] }) => {
     if (!result.isConfirmed) return;
 
     try {
-      // Step 1: Delete training references for the attendee
       const { error: trainRefError } = await supabase
         .from("training_references")
         .delete()
@@ -57,7 +176,6 @@ const Group = ({ filteredUsers = [] }) => {
         });
       }
 
-      // Step 2: Delete the attendee
       const { error: attendeeDeleteError } = await supabase
         .from("attendees")
         .delete()
@@ -72,7 +190,6 @@ const Group = ({ filteredUsers = [] }) => {
         });
       }
 
-      // Step 3: Success
       Swal.fire({
         icon: "success",
         text: "Attendee deleted successfully.",
@@ -102,7 +219,7 @@ const Group = ({ filteredUsers = [] }) => {
           .from("attendees")
           .select("id")
           .match({ registration_id: id });
-        if (attendees.length > 0) {
+        if (attendees && attendees.length > 0) {
           await supabase
             .from("attendees")
             .delete()
@@ -128,6 +245,7 @@ const Group = ({ filteredUsers = [] }) => {
                 "Group Attendee has been deleted.",
                 "success"
               );
+              window.location.reload();
             }
           })
           .catch((error) => {
@@ -143,24 +261,227 @@ const Group = ({ filteredUsers = [] }) => {
 
   return (
     <>
-      <div className='d-flex'>
-        <div className='table-responsive'>
-          <table className='table table-bordered table-hover'>
-            <thead className='table-dark'>
+      {/* Filters */}
+      <div className="d-flex justify-content-between align-items-center my-3">
+        <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
+          {/* Company */}
+          <div className="dropdown" id="companyDropdown">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              data-bs-auto-close="outside"
+            >
+              <i className="bi bi-building-fill" /> Company:{" "}
+              <span className="fw-bold">{activeCompany}</span>
+            </button>
+            <ul
+              className="dropdown-menu"
+              style={{ maxHeight: "300px", overflowY: "scroll" }}
+            >
+              {filteredUsers
+                .map((u) => u.company)
+                .filter((c, i, self) => self.indexOf(c) === i)
+                .map((company, idx) => (
+                  <li key={idx}>
+                    <div
+                      className="dropdown-item"
+                      onClick={() => setActiveCompany(company)}
+                    >
+                      {company}
+                    </div>
+                    <hr className="dropdown-divider" />
+                  </li>
+                ))}
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => setActiveCompany("")}
+              >
+                Clear Filter
+              </li>
+            </ul>
+          </div>
+
+          {/* Country */}
+          <div className="dropdown ps-2" id="countryDropdown">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              data-bs-auto-close="outside"
+            >
+              <i className="bi bi-globe-americas-fill" /> Country:{" "}
+              <span className="fw-bold">{activeCountry}</span>
+            </button>
+            <ul
+              className="dropdown-menu"
+              style={{ maxHeight: "300px", overflowY: "scroll" }}
+            >
+              {filteredUsers
+                .map((u) => u.country)
+                .filter(
+                  (country) =>
+                    country !== null &&
+                    country !== undefined &&
+                    country.toString().trim() !== ""
+                )
+                .filter((c, i, self) => self.indexOf(c) === i)
+                .map((country, idx) => (
+                  <li key={idx}>
+                    <div
+                      className="dropdown-item"
+                      onClick={() => setActiveCountry(country)}
+                    >
+                      {country}
+                    </div>
+                    <hr className="dropdown-divider" />
+                  </li>
+                ))}
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => setActiveCountry("")}
+              >
+                Clear Filter
+              </li>
+            </ul>
+          </div>
+
+          {/* Training (driven by trainingData.name) */}
+          <div className="dropdown ps-2" id="trainingDropdown">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              data-bs-auto-close="outside"
+            >
+              <i className="bi bi-funnel-fill" /> Training:{" "}
+              {activeTraining && activeTraining.length !== 0 ? (
+                <span className="badge bg-success ms-2">
+                  {activeTraining.length}
+                </span>
+              ) : (
+                ""
+              )}
+            </button>
+            <ul
+              className="dropdown-menu p-2"
+              style={{ maxHeight: "300px", overflowY: "scroll" }}
+            >
+              {(trainingData || [])
+                .slice()
+                .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                .map((training, index) => (
+                  <li key={training.id ?? index}>
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        value={training.name}
+                        id={`group-training-${training.id ?? index}`}
+                        checked={activeTraining.includes(training.name)}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          if (e.target.checked) {
+                            setActiveTraining((prev) => [...prev, newValue]);
+                          } else {
+                            setActiveTraining((prev) =>
+                              prev.filter((item) => item !== newValue)
+                            );
+                          }
+                        }}
+                      />
+                      <label
+                        className="form-check-label"
+                        htmlFor={`group-training-${training.id ?? index}`}
+                      >
+                        {training.name}
+                        {training.date ? ` — ${training.date}` : ""}
+                        {typeof training.price !== "undefined"
+                          ? ` (${formatCurrency(training.price)})`
+                          : ""}
+                      </label>
+                    </div>
+                    <hr className="dropdown-divider" />
+                  </li>
+                ))}
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => setActiveTraining([])}
+              >
+                Clear Filter
+              </li>
+            </ul>
+          </div>
+
+          {/* Payment Status */}
+          <div className="dropdown ps-2" id="paymentStatusDropdown">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              data-bs-auto-close="outside"
+            >
+              <i className="bi bi-wallet-fill" /> Payment Status:{" "}
+              <span className="fw-bold">{activePaymentStatus}</span>
+            </button>
+            <ul
+              className="dropdown-menu"
+              style={{ maxHeight: "300px", overflowY: "scroll" }}
+            >
+              {["Paid", "Unpaid"].map((status, idx) => (
+                <li key={idx}>
+                  <div
+                    className="dropdown-item"
+                    onClick={() => setActivePaymentStatus(status)}
+                  >
+                    {status}
+                  </div>
+                  <hr className="dropdown-divider" />
+                </li>
+              ))}
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => setActivePaymentStatus("")}
+              >
+                Clear Filter
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <button className="btn btn-outline-danger" onClick={clearFilters}>
+          <i className="bi bi-x-circle" /> Clear Filters
+        </button>
+      </div>
+
+      <div className="pb-2">
+        <h5>
+          <b>Total Count: {usersToDisplay.length}</b>
+        </h5>
+      </div>
+
+      <div className="d-flex">
+        <div className="table-responsive">
+          <table className="table table-bordered table-hover">
+            <thead className="table-dark">
               <tr>
                 <th>Company / Institution</th>
                 <th>Submission Date</th>
                 <th>Admin First Name</th>
                 <th>Admin Last Name</th>
                 <th>Email</th>
-                <th colSpan='3'>Attendees</th>
+                <th colSpan="3">Attendees</th>
                 <th>Total Cost</th>
                 <th>Payment Status</th>
                 <th colSpan={2}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((reg, idx) => {
+              {filteredRegistrations.map((reg, idx) => {
                 const dateObj = new Date(reg.submission_date);
                 const options = {
                   year: "numeric",
@@ -173,7 +494,7 @@ const Group = ({ filteredUsers = [] }) => {
                 const formattedDate = dateObj.toLocaleString("en-US", options);
 
                 return (
-                  <React.Fragment key={idx}>
+                  <React.Fragment key={reg.id ?? idx}>
                     <tr
                       onClick={() => toggleRow(idx)}
                       style={{ cursor: "pointer" }}
@@ -184,36 +505,39 @@ const Group = ({ filteredUsers = [] }) => {
                       <td>{reg.first_name}</td>
                       <td>{reg.last_name}</td>
                       <td>{reg.email}</td>
-                      <td colSpan='3'>
+                      <td colSpan="3">
                         Group Registration - {reg.attendees?.length || 0}{" "}
                         attendees
                       </td>
                       <td>{formatCurrency(reg.total_cost)}</td>
                       <td>{reg.payment_status}</td>
-                      <td className='text-center'>
+                      <td className="text-center">
                         <button
-                          className='btn'
-                          onClick={() => handleRegDelete(reg.id)}
+                          className="btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRegDelete(reg.id);
+                          }}
                         >
-                          <i className='bi bi-trash-fill' />
+                          <i className="bi bi-trash-fill" />
                         </button>
                       </td>
                       <td>
                         {expandedRows.has(idx) ? (
-                          <i className='bi bi-caret-up-fill' />
+                          <i className="bi bi-caret-up-fill" />
                         ) : (
-                          <i className='bi bi-caret-down-fill' />
+                          <i className="bi bi-caret-down-fill" />
                         )}
                       </td>
                     </tr>
 
                     {expandedRows.has(idx) && (
                       <tr>
-                        <td colSpan='12' className='p-0'>
-                          <div className='table-responsive'>
-                            <table className='table table-bordered mb-0 table-hover'>
-                              <thead className='ps-4'>
-                                <tr className=' table-primary small'>
+                        <td colSpan="12" className="p-0">
+                          <div className="table-responsive">
+                            <table className="table table-bordered mb-0 table-hover">
+                              <thead className="ps-4">
+                                <tr className="table-primary small">
                                   <th>First Name</th>
                                   <th>Last Name</th>
                                   <th>Email</th>
@@ -226,15 +550,15 @@ const Group = ({ filteredUsers = [] }) => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {reg.attendees?.map((att, j) => (
-                                  <tr key={j} className='table-light'>
-                                    <td className='small'>{att.first_name}</td>
-                                    <td className='small'>{att.last_name}</td>
-                                    <td className='small'>{att.email}</td>
-                                    <td className='small'>{att.position}</td>
-                                    <td className='small'>{att.designation}</td>
-                                    <td className='small'>{att.country}</td>
-                                    <td className='small'>
+                                {(reg.attendees || []).map((att, j) => (
+                                  <tr key={att.id ?? j} className="table-light">
+                                    <td className="small">{att.first_name}</td>
+                                    <td className="small">{att.last_name}</td>
+                                    <td className="small">{att.email}</td>
+                                    <td className="small">{att.position}</td>
+                                    <td className="small">{att.designation}</td>
+                                    <td className="small">{att.country}</td>
+                                    <td className="small">
                                       {(att.training_references || [])
                                         .map((tr) =>
                                           tr.trainings
@@ -244,14 +568,15 @@ const Group = ({ filteredUsers = [] }) => {
                                         .filter(Boolean)
                                         .join(", ")}
                                     </td>
-                                    <td className='small'>
+                                    <td className="small">
                                       {formatCurrency(att.subtotal)}
                                     </td>
-                                    <td className='sticky-col'>
-                                      <div className='btn-group'>
+                                    <td className="sticky-col">
+                                      <div className="btn-group">
                                         <button
-                                          className='btn'
-                                          onClick={() => {
+                                          className="btn"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
                                             setActiveStep(
                                               reg.attendees.indexOf(att)
                                             );
@@ -259,15 +584,19 @@ const Group = ({ filteredUsers = [] }) => {
                                             setShowModal(true);
                                           }}
                                         >
-                                          <i className='bi bi-pencil-square' />
+                                          <i className="bi bi-pencil-square" />
                                         </button>
                                         <button
-                                          className='btn'
-                                          onClick={() =>
-                                            handleDeleteAttendee(att.id, reg.id)
-                                          }
+                                          className="btn"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteAttendee(
+                                              att.id,
+                                              reg.id
+                                            );
+                                          }}
                                         >
-                                          <i className='bi bi-trash-fill' />
+                                          <i className="bi bi-trash-fill" />
                                         </button>
                                       </div>
                                     </td>
