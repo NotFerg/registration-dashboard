@@ -342,7 +342,7 @@ const EditFormGroup = ({
                     htmlFor={`btn-check-${i}`}
                   >
                     {reg.trainings.includes(trainingString) && (
-                      <i class="bi bi-check-lg"></i>
+                      <i className="bi bi-check-lg"></i>
                     )}{" "}
                     {training.name}
                   </label>
@@ -384,7 +384,7 @@ const EditFormGroup = ({
             <option value="">Select Payment Status</option>
             <option value="Paid">Paid</option>
             <option value="Unpaid">Unpaid</option>
-            <option value='Partial Payment'>Partial Payment</option>
+            <option value="Partial Payment">Partial Payment</option>
           </select>
         </div>
 

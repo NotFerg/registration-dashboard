@@ -390,7 +390,7 @@ function App() {
                       data-bs-toggle="modal"
                       data-bs-target="#addRegistrationModal"
                     >
-                      <i class="bi bi-person-plus-fill" />
+                      <i className="bi bi-person-plus-fill" />
                       <span className="ms-2">Add Registration</span>
                     </button>
                     <button

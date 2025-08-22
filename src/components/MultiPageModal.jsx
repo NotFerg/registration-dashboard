@@ -226,7 +226,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   if (!initialReg) return null;
 
   return (
-    <Modal show={show} onHide={onHide} size='lg'>
+    <Modal show={show} onHide={onHide} size="lg">
       <Modal.Header closeButton>
         <Modal.Title>
           <h1
@@ -240,7 +240,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
       </Modal.Header>
       <Modal.Body>
         {/* Admin overview (read-only) */}
-        <section className='mb-4'>
+        <section className="mb-4">
           {/* Admin overview (read-only) */}
           <h4 style={{ marginBottom: 12 }} className="fs-5">
             Admin Information
@@ -250,44 +250,44 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
               <div className="d-flex flex-row">
                 <div className="flex-fill">
                   <h3 className="card-title">
-                    <i class="bi bi-building"></i>
+                    <i className="bi bi-building"></i>
                   </h3>
-                  <h6 className='card-title'>
+                  <h6 className="card-title">
                     <strong>Company</strong>
                   </h6>
-                  <p className='card-text'>{initialReg.company}</p>
+                  <p className="card-text">{initialReg.company}</p>
                 </div>
-                <div className='vr mx-3'></div>
-                <div className='flex-fill'>
-                  <h3 className='card-title'>
-                    <i class='bi bi-person-circle'></i>
+                <div className="vr mx-3"></div>
+                <div className="flex-fill">
+                  <h3 className="card-title">
+                    <i className="bi bi-person-circle"></i>
                   </h3>
-                  <h6 className='card-title'>
+                  <h6 className="card-title">
                     <strong>Name</strong>
                   </h6>
-                  <p className='card-text'>
+                  <p className="card-text">
                     {initialReg.first_name} {initialReg.last_name}
                   </p>
                 </div>
-                <div className='vr mx-3'></div>
-                <div className='flex-fill'>
-                  <h3 className='card-title'>
-                    <i class='bi bi-envelope-at-fill'></i>
+                <div className="vr mx-3"></div>
+                <div className="flex-fill">
+                  <h3 className="card-title">
+                    <i className="bi bi-envelope-at-fill"></i>
                   </h3>
-                  <h6 className='card-title'>
+                  <h6 className="card-title">
                     <strong>E-Mail</strong>
                   </h6>
-                  <p className='card-text'>{initialReg.email}</p>
+                  <p className="card-text">{initialReg.email}</p>
                 </div>
-                <div className='vr mx-3'></div>
-                <div className='flex-fill'>
-                  <h3 className='card-title'>
-                    <i class='bi bi-cash'></i>
+                <div className="vr mx-3"></div>
+                <div className="flex-fill">
+                  <h3 className="card-title">
+                    <i className="bi bi-cash"></i>
                   </h3>
-                  <h6 className='card-title'>
+                  <h6 className="card-title">
                     <strong>Total Cost</strong>
                   </h6>
-                  <p className='card-text'>${initialReg.total_cost}</p>
+                  <p className="card-text">${initialReg.total_cost}</p>
                 </div>
               </div>
             </div>
