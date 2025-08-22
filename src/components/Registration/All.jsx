@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from "react";
+import React, { use, useEffect, useMemo, useState } from "react";
 import EditForm from "../EditForm";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
@@ -9,6 +9,10 @@ const All = ({ filteredUsers = [] }) => {
   const [activeTraining, setActiveTraining] = useState([]);
   const [activeCompany, setActiveCompany] = useState("");
   const [activeCountry, setActiveCountry] = useState("");
+  const [trainingData, setTrainingData] = useState([]);
+
+  const [sortBy, setSortBy] = useState("");
+  const [sortDirection, setSortDirection] = useState("asc");
 
   function formatCurrency(amount) {
     const num = parseFloat(amount);
@@ -30,6 +34,27 @@ const All = ({ filteredUsers = [] }) => {
     });
   }
 
+  async function fetchDataFromSupabase() {
+    try {
+      const { data: trainings, error } = await supabase
+        .from("trainings")
+        .select("*");
+
+      if (error) {
+        console.error("Error fetching trainings:", error);
+        return;
+      }
+
+      setTrainingData(trainings || []);
+    } catch (err) {
+      console.error("Unexpected error fetching trainings:", err);
+    }
+  }
+
+  useEffect(() => {
+    fetchDataFromSupabase();
+  }, []);
+
   const destructureFilteredUsers = (users) =>
     users.flatMap((user) =>
       user.attendees.length > 0
@@ -48,70 +73,6 @@ const All = ({ filteredUsers = [] }) => {
             trainings: attendee.training_references,
             payment_status: user.payment_status,
             total_cost: attendee.subtotal,
-            submission_date: user.submission_date
-          }))
-        : [
-            {
-              id: user.id,
-              first_name: user.first_name,
-              last_name: user.last_name,
-              email: user.email,
-              position: user.position,
-              designation:
-                user.designation.length > 0
-                  ? user.designation
-                  : "No Current Designation",
-              company: user.company,
-              country: user.country,
-              trainings: user.training_references,
-              payment_status: user.payment_status,
-              total_cost: user.total_cost,
-              submission_date: user.submission_date
-            },
-          ]
-    );
-
-  console.log("filteredUsers", filteredUsers);
-  console.log(destructureFilteredUsers(filteredUsers));
-
-  const usersToDisplay = filteredUsers
-    .filter((user) => {
-      const paymentStatusMatches =
-        !activePaymentStatus || user.payment_status === activePaymentStatus;
-      const trainingMatches =
-        !activeTraining.length ||
-        user.attendees.some((attendee) =>
-          attendee.training_references.some((tr) =>
-            activeTraining.includes(tr.trainings?.id)
-          )
-        );
-      const companyMatches = !activeCompany || user.company === activeCompany;
-      const countryMatches = !activeCountry || user.country === activeCountry;
-
-      return (
-        paymentStatusMatches &&
-        trainingMatches &&
-        companyMatches &&
-        countryMatches
-      );
-    })
-    .flatMap((user) =>
-      user.attendees.length > 0
-        ? user.attendees.map((attendee) => ({
-            id: attendee.id,
-            first_name: attendee.first_name,
-            last_name: attendee.last_name,
-            email: attendee.email,
-            position: attendee.position,
-            designation:
-              attendee.designation.length > 0
-                ? attendee.designation
-                : "No Current Designation",
-            company: user.company,
-            country: attendee.country,
-            trainings: attendee.training_references,
-            payment_status: user.payment_status,
-            total_cost: attendee.total_cost,
             submission_date: user.submission_date,
           }))
         : [
@@ -134,6 +95,100 @@ const All = ({ filteredUsers = [] }) => {
             },
           ]
     );
+
+  const normalize = (s) => (s || "").toString().trim().toLowerCase();
+
+  const extractTrainingNamesFromUser = (user) => {
+    const names = [];
+
+    if (user.training_references && user.training_references.length > 0) {
+      user.training_references.forEach((tr) => {
+        if (tr && tr.trainings && tr.trainings.name) {
+          names.push(tr.trainings.name);
+        }
+      });
+    }
+
+    if (Array.isArray(user.attendees) && user.attendees.length > 0) {
+      user.attendees.forEach((attendee) => {
+        (attendee.training_references || []).forEach((tr) => {
+          if (tr && tr.trainings && tr.trainings.name) {
+            names.push(tr.trainings.name);
+          }
+        });
+      });
+    }
+
+    return Array.from(new Set(names.map(normalize)));
+  };
+
+  const filteredRegistrations = filteredUsers.filter((user) => {
+    const paymentStatusMatches =
+      !activePaymentStatus || user.payment_status === activePaymentStatus;
+
+    const companyMatches = !activeCompany || user.company === activeCompany;
+    const countryMatches = !activeCountry || user.country === activeCountry;
+
+    const activeNormalized = (activeTraining || []).map(normalize);
+
+    if (activeNormalized.length === 0) {
+      return paymentStatusMatches && companyMatches && countryMatches;
+    }
+
+    const userTrainingNames = extractTrainingNamesFromUser(user);
+
+    const trainingMatches = activeNormalized.some((sel) =>
+      userTrainingNames.includes(sel)
+    );
+
+    return (
+      paymentStatusMatches &&
+      trainingMatches &&
+      companyMatches &&
+      countryMatches
+    );
+  });
+
+  const usersToDisplay = filteredRegistrations.flatMap((user) =>
+    (user.attendees || []).length > 0
+      ? user.attendees.map((attendee) => ({
+          id: attendee.id,
+          first_name: attendee.first_name,
+          last_name: attendee.last_name,
+          email: attendee.email,
+          position: attendee.position,
+          designation:
+            attendee.designation && attendee.designation.length > 0
+              ? attendee.designation
+              : "No Current Designation",
+          company: user.company,
+          country: attendee.country,
+          trainings: attendee.training_references || [],
+          payment_status: user.payment_status,
+          total_cost:
+            attendee.total_cost ?? attendee.subtotal ?? user.total_cost,
+          submission_date: user.submission_date,
+        }))
+      : [
+          {
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            position: user.position,
+            designation:
+              user.designation && user.designation.length > 0
+                ? user.designation
+                : "No Current Designation",
+            company: user.company,
+            country: user.country,
+            trainings: user.training_references || [],
+            payment_status: user.payment_status,
+            total_cost: user.total_cost,
+            submission_date: user.submission_date,
+          },
+        ]
+  );
 
   const clearFilters = () => {
     setActivePaymentStatus("");
@@ -184,6 +239,40 @@ const All = ({ filteredUsers = [] }) => {
     }
   }
 
+  const handleSort = (property) => {
+    if (sortBy === property) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(property);
+      setSortDirection("asc");
+    }
+  };
+
+  const displayedUsers = useMemo(() => {
+    const arr = (usersToDisplay || []).slice();
+    if (!sortBy) return arr;
+
+    arr.sort((a, b) => {
+      const aVal =
+        sortBy === "company"
+          ? normalize(a.company)
+          : sortBy === "first_name"
+          ? normalize(a.first_name)
+          : normalize(a.last_name);
+      const bVal =
+        sortBy === "company"
+          ? normalize(b.company)
+          : sortBy === "first_name"
+          ? normalize(b.first_name)
+          : normalize(b.last_name);
+
+      const cmp = aVal.localeCompare(bVal || "");
+      return sortDirection === "asc" ? cmp : -cmp;
+    });
+
+    return arr;
+  }, [usersToDisplay, sortBy, sortDirection]);
+
   return (
     <>
       <div className="d-flex justify-content-between align-items-center my-3">
@@ -197,7 +286,7 @@ const All = ({ filteredUsers = [] }) => {
               aria-expanded="false"
               data-bs-auto-close="outside"
             >
-              <i class="bi bi-building-fill" /> Company:{" "}
+              <i className="bi bi-building-fill" /> Company:{" "}
               <span className="fw-bold">{activeCompany}</span>
             </button>
             <ul
@@ -237,7 +326,7 @@ const All = ({ filteredUsers = [] }) => {
               aria-expanded="false"
               data-bs-auto-close="outside"
             >
-              <i class="bi bi-globe-americas-fill" /> Country:{" "}
+              <i className="bi bi-globe-americas-fill" /> Country:{" "}
               <span className="fw-bold">{activeCountry}</span>
             </button>
             <ul
@@ -283,7 +372,7 @@ const All = ({ filteredUsers = [] }) => {
               aria-expanded="false"
               data-bs-auto-close="outside"
             >
-              <i class="bi bi-funnel-fill"></i> Training:{" "}
+              <i className="bi bi-funnel-fill"></i> Training:{" "}
               {activeTraining && activeTraining.length != 0 ? (
                 <span className="badge bg-success ms-2">
                   {activeTraining.length}
@@ -296,42 +385,39 @@ const All = ({ filteredUsers = [] }) => {
               className="dropdown-menu p-2"
               style={{ maxHeight: "300px", overflowY: "scroll" }}
             >
-              {[
-                "Annual Pacific Region Investment Conference",
-                "Applied Responsible Investment for Fiduciaries",
-                "Accredited Investment Fiduciary Training",
-                "Responsible Investment Essentials",
-                "Investment Governance Essentials",
-              ].map((training, index) => (
-                <li key={index}>
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      value={training}
-                      id={`training-${index}`}
-                      checked={activeTraining.includes(training)}
-                      onChange={(e) => {
-                        const newValue = e.target.value;
-                        if (e.target.checked) {
-                          setActiveTraining((prev) => [...prev, newValue]);
-                        } else {
-                          setActiveTraining((prev) =>
-                            prev.filter((item) => item !== newValue)
-                          );
-                        }
-                      }}
-                    />
-                    <label
-                      className="form-check-label"
-                      htmlFor={`training-${index}`}
-                    >
-                      {training}
-                    </label>
-                  </div>
-                  <hr className="dropdown-divider" />
-                </li>
-              ))}
+              {(trainingData || [])
+                .slice()
+                .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                .map((training, index) => (
+                  <li key={training.id ?? index}>
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        value={training.name}
+                        id={`training-${training.id ?? index}`}
+                        checked={activeTraining.includes(training.name)}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          if (e.target.checked) {
+                            setActiveTraining((prev) => [...prev, newValue]);
+                          } else {
+                            setActiveTraining((prev) =>
+                              prev.filter((item) => item !== newValue)
+                            );
+                          }
+                        }}
+                      />
+                      <label
+                        className="form-check-label"
+                        htmlFor={`training-${training.id ?? index}`}
+                      >
+                        {training.name}
+                      </label>
+                    </div>
+                    <hr className="dropdown-divider" />
+                  </li>
+                ))}
               <li
                 className="dropdown-item text-center fw-bold"
                 onClick={() => setActiveTraining([])}
@@ -349,7 +435,7 @@ const All = ({ filteredUsers = [] }) => {
               aria-expanded="false"
               data-bs-auto-close="outside"
             >
-              <i class="bi bi-wallet-fill"></i> Payment Status:{" "}
+              <i className="bi bi-wallet-fill"></i> Payment Status:{" "}
               <span className="fw-bold">{activePaymentStatus}</span>
             </button>
             <ul
@@ -375,9 +461,93 @@ const All = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
+          <div className="dropdown">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <i className="bi bi-sort-alpha-down"></i> Sort:{" "}
+              <span className="fw-bold">
+                {sortBy
+                  ? sortBy === "company"
+                    ? "Company"
+                    : sortBy === "first_name"
+                    ? "First Name"
+                    : "Last Name"
+                  : "None"}
+              </span>
+              {/* fixed icon logic: only truthy when explicitly 'asc' */}
+              {sortBy && (
+                <span className="ms-2">
+                  (
+                  {sortDirection === "asc" ? (
+                    <i className="bi bi-arrow-up-short" />
+                  ) : (
+                    <i className="bi bi-arrow-down-short" />
+                  )}
+                  )
+                </span>
+              )}
+            </button>
+            <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
+              <li className="dropdown-header">Property</li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("company")}
+              >
+                Company
+              </li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("first_name")}
+              >
+                First Name
+              </li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("last_name")}
+              >
+                Last Name
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
+              <li className="dropdown-header">Direction</li>
+              <li
+                className={
+                  "dropdown-item " + (sortDirection === "asc" ? "active" : "")
+                }
+                onClick={() => setSortDirection("asc")}
+              >
+                Ascending
+              </li>
+              <li
+                className={
+                  "dropdown-item " + (sortDirection === "desc" ? "active" : "")
+                }
+                onClick={() => setSortDirection("desc")}
+              >
+                Descending
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => {
+                  setSortBy("");
+                  setSortDirection("asc");
+                }}
+              >
+                Clear Sort
+              </li>
+            </ul>
+          </div>
         </div>
         <button className="btn btn-outline-danger" onClick={clearFilters}>
-          <i class="bi bi-x-circle"></i> Clear Filters
+          <i className="bi bi-x-circle"></i> Clear Filters
         </button>
       </div>
       <div className="pb-2">
@@ -408,14 +578,14 @@ const All = ({ filteredUsers = [] }) => {
               </tr>
             </thead>
             <tbody>
-              {usersToDisplay.length === 0 ? (
+              {displayedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="text-center">
                     <h1 className="m-5"> No records satisfy the filter</h1>
                   </td>
                 </tr>
               ) : (
-                usersToDisplay.map((reg, i) => {
+                displayedUsers.map((reg, i) => {
                   return (
                     <tr key={i}>
                       <td className="small">{reg.company}</td>
@@ -433,7 +603,7 @@ const All = ({ filteredUsers = [] }) => {
                           {(reg.trainings || [])
                             .map((tr) =>
                               tr.trainings ? (
-                                <li key={tr.trainings.id}>
+                                <li className="mb-2" key={tr.trainings.id}>
                                   {tr.trainings.name}
                                 </li>
                               ) : null

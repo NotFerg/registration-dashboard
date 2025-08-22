@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import EditForm from "../EditForm";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
@@ -9,6 +9,10 @@ const Individual = ({ filteredUsers = [] }) => {
   const [activeTraining, setActiveTraining] = useState([]);
   const [activeCompany, setActiveCompany] = useState("");
   const [activeCountry, setActiveCountry] = useState("");
+  const [trainingData, setTrainingData] = useState([]);
+
+  const [sortBy, setSortBy] = useState("");
+  const [sortDirection, setSortDirection] = useState("asc");
 
   function formatCurrency(amount) {
     const num = parseFloat(amount);
@@ -20,18 +24,45 @@ const Individual = ({ filteredUsers = [] }) => {
     });
   }
 
+  async function fetchDataFromSupabase() {
+    const { data: trainings, error } = await supabase
+      .from("trainings")
+      .select(`*`);
+
+    if (error) {
+      console.error("Error fetching data:", error);
+      setIsLoading(false);
+      return;
+    }
+    setTrainingData(trainings);
+  }
+
+  useEffect(() => {
+    fetchDataFromSupabase();
+  }, []);
+
   const clearFilters = () => {
     setActivePaymentStatus("");
-    setActiveTraining("");
+    setActiveTraining([]);
     setActiveCompany("");
     setActiveCountry("");
   };
 
+  const normalize = (s) => (s || "").toString().trim().toLowerCase();
+
   const addedFilteredUsers = filteredUsers.filter((user) => {
     const paymentStatusMatches =
       !activePaymentStatus || user.payment_status === activePaymentStatus;
+    const userTrainings = (user.training_references || [])
+      .map((tr) => tr?.trainings?.name)
+      .filter(Boolean)
+      .map(normalize);
+    const activeNormalized = (activeTraining || []).map(normalize);
+
     const trainingMatches =
-      !activeTraining || user.trainings.includes(activeTraining);
+      activeNormalized.length === 0 ||
+      activeNormalized.some((sel) => userTrainings.includes(sel));
+
     const companyMatches = !activeCompany || user.company === activeCompany;
     const countryMatches = !activeCountry || user.country === activeCountry;
 
@@ -42,6 +73,43 @@ const Individual = ({ filteredUsers = [] }) => {
       countryMatches
     );
   });
+
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const displayedUsers = useMemo(() => {
+    const arr = (addedFilteredUsers || []).slice();
+    if (!sortBy) return arr;
+
+    arr.sort((a, b) => {
+      const aVal = normalize(
+        sortBy === "company"
+          ? a.company
+          : sortBy === "first_name"
+          ? a.first_name
+          : a.last_name
+      );
+      const bVal = normalize(
+        sortBy === "company"
+          ? b.company
+          : sortBy === "first_name"
+          ? b.first_name
+          : b.last_name
+      );
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return arr;
+  }, [addedFilteredUsers, sortBy, sortDirection]);
 
   async function handleDelete(id) {
     const result = await Swal.fire({
@@ -98,7 +166,7 @@ const Individual = ({ filteredUsers = [] }) => {
               aria-expanded="false"
               data-bs-auto-close="outside"
             >
-              <i class="bi bi-building-fill" /> Company:{" "}
+              <i className="bi bi-building-fill" /> Company:{" "}
               <span className="fw-bold">{activeCompany}</span>
             </button>
             <ul
@@ -138,7 +206,7 @@ const Individual = ({ filteredUsers = [] }) => {
               aria-expanded="false"
               data-bs-auto-close="outside"
             >
-              <i class="bi bi-globe-americas-fill" /> Country:{" "}
+              <i className="bi bi-globe-americas-fill" /> Country:{" "}
               <span className="fw-bold">{activeCountry}</span>
             </button>
             <ul
@@ -171,15 +239,14 @@ const Individual = ({ filteredUsers = [] }) => {
           </div>
           <div className="dropdown ps-2" id="trainingDropdown">
             <button
-              className="btn btn-outline-dark dropdown-toggle border 
-            "
+              className="btn btn-outline-dark dropdown-toggle border"
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
               data-bs-auto-close="outside"
             >
-              <i class="bi bi-funnel-fill"></i> Training:{" "}
-              {activeTraining && activeTraining.length != 0 ? (
+              <i className="bi bi-funnel-fill"></i> Training:{" "}
+              {activeTraining && activeTraining.length !== 0 ? (
                 <span className="badge bg-success ms-2">
                   {activeTraining.length}
                 </span>
@@ -191,42 +258,39 @@ const Individual = ({ filteredUsers = [] }) => {
               className="dropdown-menu p-2"
               style={{ maxHeight: "300px", overflowY: "scroll" }}
             >
-              {[
-                "Annual Pacific Region Investment Conference",
-                "Applied Responsible Investment for Fiduciaries",
-                "Accredited Investment Fiduciary Training",
-                "Responsible Investment Essentials",
-                "Investment Governance Essentials",
-              ].map((training, index) => (
-                <li key={index}>
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      value={training}
-                      id={`training-${index}`}
-                      checked={activeTraining.includes(training)}
-                      onChange={(e) => {
-                        const newValue = e.target.value;
-                        if (e.target.checked) {
-                          setActiveTraining((prev) => [...prev, newValue]);
-                        } else {
-                          setActiveTraining((prev) =>
-                            prev.filter((item) => item !== newValue)
-                          );
-                        }
-                      }}
-                    />
-                    <label
-                      className="form-check-label"
-                      htmlFor={`training-${index}`}
-                    >
-                      {training}
-                    </label>
-                  </div>
-                  <hr className="dropdown-divider" />
-                </li>
-              ))}
+              {(trainingData || [])
+                .slice()
+                .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                .map((training, index) => (
+                  <li key={training.id ?? index}>
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        value={training.name}
+                        id={`training-${training.id ?? index}`}
+                        checked={activeTraining.includes(training.name)}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          if (e.target.checked) {
+                            setActiveTraining((prev) => [...prev, newValue]);
+                          } else {
+                            setActiveTraining((prev) =>
+                              prev.filter((item) => item !== newValue)
+                            );
+                          }
+                        }}
+                      />
+                      <label
+                        className="form-check-label"
+                        htmlFor={`training-${training.id ?? index}`}
+                      >
+                        {training.name}
+                      </label>
+                    </div>
+                    <hr className="dropdown-divider" />
+                  </li>
+                ))}
               <li
                 className="dropdown-item text-center fw-bold"
                 onClick={() => setActiveTraining([])}
@@ -244,7 +308,7 @@ const Individual = ({ filteredUsers = [] }) => {
               aria-expanded="false"
               data-bs-auto-close="outside"
             >
-              <i class="bi bi-wallet-fill"></i> Payment Status:{" "}
+              <i className="bi bi-wallet-fill"></i> Payment Status:{" "}
               <span className="fw-bold">{activePaymentStatus}</span>
             </button>
             <ul
@@ -270,11 +334,96 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
+
+          <div className="dropdown">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <i className="bi bi-sort-alpha-down"></i> Sort:{" "}
+              <span className="fw-bold">
+                {sortBy
+                  ? sortBy === "company"
+                    ? "Company"
+                    : sortBy === "first_name"
+                    ? "First Name"
+                    : "Last Name"
+                  : "None"}
+              </span>
+              {sortBy && (
+                <span className="ms-2">
+                  (
+                  {sortDirection ? (
+                    <i className="bi bi-arrow-up-short"></i>
+                  ) : (
+                    <i className="bi bi-arrow-down-short"></i>
+                  )}
+                  )
+                </span>
+              )}
+            </button>
+            <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
+              <li className="dropdown-header">Property</li>
+              <li
+                className="dropdown-item"
+                onClick={() => setSortBy("company")}
+              >
+                Company
+              </li>
+              <li
+                className="dropdown-item"
+                onClick={() => setSortBy("first_name")}
+              >
+                First Name
+              </li>
+              <li
+                className="dropdown-item"
+                onClick={() => setSortBy("last_name")}
+              >
+                Last Name
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
+              <li className="dropdown-header">Direction</li>
+              <li
+                className={
+                  "dropdown-item " + (sortDirection === "asc" ? "active" : "")
+                }
+                onClick={() => setSortDirection("asc")}
+              >
+                Ascending
+              </li>
+              <li
+                className={
+                  "dropdown-item " + (sortDirection === "desc" ? "active" : "")
+                }
+                onClick={() => setSortDirection("desc")}
+              >
+                Descending
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => {
+                  setSortBy("");
+                  setSortDirection("asc");
+                }}
+              >
+                Clear Sort
+              </li>
+            </ul>
+          </div>
         </div>
         <button className="btn btn-outline-danger" onClick={clearFilters}>
-          <i class="bi bi-x-circle"></i> Clear Filters
+          <i className="bi bi-x-circle"></i> Clear Filters
         </button>
       </div>
+
       <div className="pb-2">
         <h5>
           <b>Total Count: {addedFilteredUsers.length}</b>
@@ -286,7 +435,17 @@ const Individual = ({ filteredUsers = [] }) => {
           <table className="table table-bordered table-hover">
             <thead className="table-dark">
               <tr>
-                <th>Company</th>
+                <th
+                  className="sticky-col"
+                  style={{
+                    position: "sticky",
+                    left: 0,
+                    zIndex: 5,
+                    minWidth: "150px",
+                  }}
+                >
+                  Company
+                </th>
                 <th>Submission Date</th>
                 <th>First Name</th>
                 <th>Last Name</th>
@@ -303,14 +462,14 @@ const Individual = ({ filteredUsers = [] }) => {
               </tr>
             </thead>
             <tbody>
-              {addedFilteredUsers.length === 0 ? (
+              {displayedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="text-center">
                     <h1 className="m-5"> No records satisfy the filter</h1>
                   </td>
                 </tr>
               ) : (
-                addedFilteredUsers.map((reg, i) => {
+                displayedUsers.map((reg, i) => {
                   const dateObj = new Date(reg.submission_date);
 
                   const options = {
@@ -328,7 +487,18 @@ const Individual = ({ filteredUsers = [] }) => {
                   );
                   return (
                     <tr key={i}>
-                      <td className="small">{reg.company}</td>
+                      <td
+                        className="small sticky-col"
+                        style={{
+                          position: "sticky",
+                          left: 0,
+                          background: "#fff",
+                          zIndex: 4,
+                          minWidth: "150px",
+                        }}
+                      >
+                        {reg.company}
+                      </td>
                       <td className="small">{formattedDate}</td>
                       <td className="small">{reg.first_name}</td>
                       <td className="small">{reg.last_name}</td>
@@ -337,11 +507,11 @@ const Individual = ({ filteredUsers = [] }) => {
                       <td className="small">{reg.designation}</td>
                       <td className="small">{reg.country}</td>
                       <td className="small">
-                        <ul className=" mb-0">
+                        <ul className="mb-0">
                           {(reg.training_references || [])
                             .map((tr) =>
                               tr.trainings ? (
-                                <li key={tr.trainings.id}>
+                                <li className="mb-2" key={tr.trainings.id}>
                                   {tr.trainings.name}
                                 </li>
                               ) : null
