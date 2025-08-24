@@ -16,7 +16,6 @@ const Group = ({ filteredUsers = [] }) => {
   const [activeCountry, setActiveCountry] = useState("");
   const [trainingData, setTrainingData] = useState([]);
 
-
   function formatCurrency(amount) {
     const num = parseFloat(amount);
     if (isNaN(num)) return "$0.00";
@@ -513,18 +512,20 @@ const Group = ({ filteredUsers = [] }) => {
                       </td>
                       <td>{formatCurrency(reg.total_cost)}</td>
                       <td>{reg.payment_status}</td>
-                      <td className="text-center d-flex">
-                        <button
-                          className="btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRegDelete(reg.id);
-                          }}
-                        >
-                          <i className="bi bi-trash-fill" />
-                        </button>
+                      <td className="text-center">
+                        <div className="btn-group">
+                          <button
+                            className="btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRegDelete(reg.id);
+                            }}
+                          >
+                            <i className="bi bi-trash-fill" />
+                          </button>
 
-                        <InvoiceModal attendee={reg} />
+                          <InvoiceModal attendee={reg} />
+                        </div>
                       </td>
                       <td>
                         {expandedRows.has(idx) ? (
