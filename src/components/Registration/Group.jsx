@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import MultiPageModal from "../MultiPageModal";
+import InvoiceModal from "../InvoiceModal";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
 
@@ -14,6 +15,7 @@ const Group = ({ filteredUsers = [] }) => {
   const [activeCompany, setActiveCompany] = useState("");
   const [activeCountry, setActiveCountry] = useState("");
   const [trainingData, setTrainingData] = useState([]);
+
 
   function formatCurrency(amount) {
     const num = parseFloat(amount);
@@ -511,7 +513,7 @@ const Group = ({ filteredUsers = [] }) => {
                       </td>
                       <td>{formatCurrency(reg.total_cost)}</td>
                       <td>{reg.payment_status}</td>
-                      <td className="text-center">
+                      <td className="text-center d-flex">
                         <button
                           className="btn"
                           onClick={(e) => {
@@ -521,6 +523,8 @@ const Group = ({ filteredUsers = [] }) => {
                         >
                           <i className="bi bi-trash-fill" />
                         </button>
+
+                        <InvoiceModal attendee={reg} />
                       </td>
                       <td>
                         {expandedRows.has(idx) ? (
