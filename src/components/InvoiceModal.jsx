@@ -72,7 +72,7 @@ const InvoiceModal = (attendee = {}) => {
               window.open(attendee.attendee.invoice_storage_url, "_blank")
             }
             className="w-100 mb-2"
-            disabled={attendee.attendee.invoice_storage_url ? false : true}
+            disabled={attendee.attendee.invoice_storage_url === null ? true : false}
           >
             {attendee.attendee.invoice_storage_url ? "View" : "No Invoice Uploaded"}
           </Button>
