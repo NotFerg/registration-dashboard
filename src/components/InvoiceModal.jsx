@@ -6,12 +6,10 @@ import supabase from "../utils/supabase";
 const InvoiceModal = (attendee = {}) => {
   const [showModal, setShowModal] = useState(false);
 
-
   const openModal = () => setShowModal(true);
   const closeModal = () => setShowModal(false);
 
   async function uploadFile(file) {
-    
     try {
       const { data: storageData } = await supabase.storage
         .from("Invoices")
@@ -19,12 +17,12 @@ const InvoiceModal = (attendee = {}) => {
           cacheControl: "3600",
           upsert: true,
         });
-    
+
       const { data: fileData } = await supabase.storage
         .from("Invoices")
         .getPublicUrl(storageData.path);
       const publicUrl = fileData.publicUrl;
-      
+
       const { data: updateData } = await supabase
         .from("registrations")
         .update({ invoice_storage_url: publicUrl })
@@ -54,7 +52,6 @@ const InvoiceModal = (attendee = {}) => {
     }
   }
 
-
   return (
     <React.Fragment>
       <button className="btn">
@@ -67,14 +64,23 @@ const InvoiceModal = (attendee = {}) => {
         </Modal.Header>
         <Modal.Body>
           <Button
-            variant={attendee.attendee.invoice_storage_url ? "primary" : "outline-primary"}
+            variant={
+              attendee.attendee.invoice_storage_url !== "NULL"
+                ? "primary"
+                : "outline-primary"
+            }
             onClick={() =>
               window.open(attendee.attendee.invoice_storage_url, "_blank")
             }
             className="w-100 mb-2"
-            disabled={attendee.attendee.invoice_storage_url ? false : true}
+            disabled={
+              attendee.attendee.invoice_storage_url === "NULL" ? true : false
+            }
+            cursor="not-allowed"
           >
-            {attendee.attendee.invoice_storage_url ? "View" : "No Invoice Uploaded"}
+            {attendee.attendee.invoice_storage_url !== "NULL"
+              ? "View"
+              : "No Invoice Uploaded"}
           </Button>
           <label class="btn btn-success w-100">
             Upload{" "}
