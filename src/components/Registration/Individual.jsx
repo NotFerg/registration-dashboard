@@ -12,6 +12,9 @@ const Individual = ({ filteredUsers = [] }) => {
   const [activeCountry, setActiveCountry] = useState("");
   const [trainingData, setTrainingData] = useState([]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
   const [sortBy, setSortBy] = useState("");
   const [sortDirection, setSortDirection] = useState("asc");
 
@@ -32,7 +35,6 @@ const Individual = ({ filteredUsers = [] }) => {
 
     if (error) {
       console.error("Error fetching data:", error);
-      setIsLoading(false);
       return;
     }
     setTrainingData(trainings);
@@ -112,6 +114,25 @@ const Individual = ({ filteredUsers = [] }) => {
     return arr;
   }, [addedFilteredUsers, sortBy, sortDirection]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    activePaymentStatus,
+    JSON.stringify(activeTraining),
+    activeCompany,
+    activeCountry,
+    sortBy,
+    sortDirection,
+  ]);
+
+  // Paginate the displayed users
+  const totalRecords = displayedUsers.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return displayedUsers.slice(start, start + pageSize);
+  }, [displayedUsers, currentPage]);
+
   async function handleDelete(id) {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -153,6 +174,8 @@ const Individual = ({ filteredUsers = [] }) => {
       }
     }
   }
+  const startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endRecord = Math.min(currentPage * pageSize, totalRecords);
 
   return (
     <>
@@ -425,10 +448,17 @@ const Individual = ({ filteredUsers = [] }) => {
         </button>
       </div>
 
-      <div className="pb-2">
+      <div className="pb-2 d-flex justify-content-between align-items-center">
         <h5>
-          <b>Total Count: {addedFilteredUsers.length}</b>
+          <b>Total Count: {totalRecords}</b>
         </h5>
+        <h6>
+          <b>
+            <small>
+              Showing {startRecord}-{endRecord} of {totalRecords}
+            </small>
+          </b>
+        </h6>
       </div>
 
       <div className="table-responsive">
@@ -463,14 +493,14 @@ const Individual = ({ filteredUsers = [] }) => {
               </tr>
             </thead>
             <tbody>
-              {displayedUsers.length === 0 ? (
+              {paginatedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="text-center">
                     <h1 className="m-5"> No records satisfy the filter</h1>
                   </td>
                 </tr>
               ) : (
-                displayedUsers.map((reg, i) => {
+                paginatedUsers.map((reg, i) => {
                   const dateObj = new Date(reg.submission_date);
 
                   const options = {
@@ -487,7 +517,7 @@ const Individual = ({ filteredUsers = [] }) => {
                     options
                   );
                   return (
-                    <tr key={i}>
+                    <tr key={reg.id ?? i}>
                       <td
                         className="small sticky-col"
                         style={{
@@ -532,14 +562,14 @@ const Individual = ({ filteredUsers = [] }) => {
                             data-bs-target="#editModal"
                             onClick={() => setEditRegistration(reg)}
                           >
-                            <i className="bi bi-pencil-square" />
+                            <i className="bi bi-pencil-square text-success" />
                           </button>
-                           <InvoiceModal attendee={reg} />
+                          <InvoiceModal attendee={reg} />
                           <button
                             className="btn"
                             onClick={() => handleDelete(reg.id)}
                           >
-                            <i className="bi bi-trash-fill" />
+                            <i className="bi bi-trash-fill text-danger" />
                           </button>
                         </div>
                       </td>
@@ -549,6 +579,85 @@ const Individual = ({ filteredUsers = [] }) => {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="d-flex justify-content-center align-items-center mt-3">
+        <div>
+          <nav aria-label="Page navigation">
+            <ul className="pagination mb-0">
+              <li
+                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  &laquo;
+                </button>
+              </li>
+              <li
+                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+              </li>
+
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pageNum = idx + 1;
+                return (
+                  <li
+                    key={pageNum}
+                    className={`page-item ${
+                      currentPage === pageNum ? "active" : ""
+                    }`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum}
+                    </button>
+                  </li>
+                );
+              })}
+
+              <li
+                className={`page-item ${
+                  currentPage === totalPages ? "disabled" : ""
+                }`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </li>
+              <li
+                className={`page-item ${
+                  currentPage === totalPages ? "disabled" : ""
+                }`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  &raquo;
+                </button>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
 

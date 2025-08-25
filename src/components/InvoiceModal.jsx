@@ -55,7 +55,10 @@ const InvoiceModal = (attendee = {}) => {
   return (
     <React.Fragment>
       <button className="btn">
-        <i className="bi bi-file-earmark-bar-graph-fill" onClick={openModal} />
+        <i
+          className="bi bi-file-earmark-bar-graph-fill text-primary"
+          onClick={openModal}
+        />
       </button>
 
       <Modal show={showModal} onHide={closeModal} centered>
