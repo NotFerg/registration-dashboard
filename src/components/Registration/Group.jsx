@@ -5,10 +5,15 @@ import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
 
 const Group = ({ filteredUsers = [] }) => {
+  // tracks expanded registration ids (use ids instead of indexes so pagination doesn't break it)
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [editRegistration, setEditRegistration] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10; // limit 10 records per page
 
   const [activePaymentStatus, setActivePaymentStatus] = useState("");
   const [activeTraining, setActiveTraining] = useState([]);
@@ -25,11 +30,11 @@ const Group = ({ filteredUsers = [] }) => {
     });
   }
 
-  function toggleRow(idx) {
+  function toggleRow(id) {
     setExpandedRows((prev) => {
       const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -260,6 +265,27 @@ const Group = ({ filteredUsers = [] }) => {
     });
   }
 
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    activePaymentStatus,
+    JSON.stringify(activeTraining),
+    activeCompany,
+    activeCountry,
+  ]);
+
+  // pagination calculations
+  const totalRecords = filteredRegistrations.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const paginatedRegistrations = filteredRegistrations.slice(
+    (currentPage - 1) * pageSize,
+    (currentPage - 1) * pageSize + pageSize
+  );
+
+  const startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endRecord = Math.min(currentPage * pageSize, totalRecords);
+
   return (
     <>
       {/* Filters */}
@@ -459,10 +485,17 @@ const Group = ({ filteredUsers = [] }) => {
         </button>
       </div>
 
-      <div className="pb-2">
+      <div className="pb-2 d-flex justify-content-between align-items-center">
         <h5>
-          <b>Total Count: {usersToDisplay.length}</b>
+          <b>Total Count: {totalRecords}</b>
         </h5>
+        <h6>
+          <b>
+            <small>
+              Showing {startRecord}-{endRecord} of {totalRecords}
+            </small>
+          </b>
+        </h6>
       </div>
 
       <div className="d-flex">
@@ -482,7 +515,7 @@ const Group = ({ filteredUsers = [] }) => {
               </tr>
             </thead>
             <tbody>
-              {filteredRegistrations.map((reg, idx) => {
+              {paginatedRegistrations.map((reg, idx) => {
                 const dateObj = new Date(reg.submission_date);
                 const options = {
                   year: "numeric",
@@ -497,9 +530,11 @@ const Group = ({ filteredUsers = [] }) => {
                 return (
                   <React.Fragment key={reg.id ?? idx}>
                     <tr
-                      onClick={() => toggleRow(idx)}
+                      onClick={() => toggleRow(reg.id)}
                       style={{ cursor: "pointer" }}
-                      className={expandedRows.has(idx) ? "table-secondary" : ""}
+                      className={
+                        expandedRows.has(reg.id) ? "table-secondary" : ""
+                      }
                     >
                       <td>{reg.company}</td>
                       <td>{formattedDate}</td>
@@ -514,6 +549,7 @@ const Group = ({ filteredUsers = [] }) => {
                       <td>{reg.payment_status}</td>
                       <td className="text-center">
                         <div className="btn-group">
+                          <InvoiceModal attendee={reg} />
                           <button
                             className="btn"
                             onClick={(e) => {
@@ -521,14 +557,12 @@ const Group = ({ filteredUsers = [] }) => {
                               handleRegDelete(reg.id);
                             }}
                           >
-                            <i className="bi bi-trash-fill" />
+                            <i className="bi bi-trash-fill text-danger" />
                           </button>
-
-                          <InvoiceModal attendee={reg} />
                         </div>
                       </td>
                       <td>
-                        {expandedRows.has(idx) ? (
+                        {expandedRows.has(reg.id) ? (
                           <i className="bi bi-caret-up-fill" />
                         ) : (
                           <i className="bi bi-caret-down-fill" />
@@ -536,7 +570,7 @@ const Group = ({ filteredUsers = [] }) => {
                       </td>
                     </tr>
 
-                    {expandedRows.has(idx) && (
+                    {expandedRows.has(reg.id) && (
                       <tr>
                         <td colSpan="12" className="p-0">
                           <div className="table-responsive">
@@ -618,6 +652,85 @@ const Group = ({ filteredUsers = [] }) => {
               })}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="d-flex justify-content-center align-items-center mt-3">
+        <div>
+          <nav aria-label="Page navigation">
+            <ul className="pagination mb-0">
+              <li
+                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  &laquo;
+                </button>
+              </li>
+              <li
+                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+              </li>
+
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pageNum = idx + 1;
+                return (
+                  <li
+                    key={pageNum}
+                    className={`page-item ${
+                      currentPage === pageNum ? "active" : ""
+                    }`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum}
+                    </button>
+                  </li>
+                );
+              })}
+
+              <li
+                className={`page-item ${
+                  currentPage === totalPages ? "disabled" : ""
+                }`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </li>
+              <li
+                className={`page-item ${
+                  currentPage === totalPages ? "disabled" : ""
+                }`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  &raquo;
+                </button>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
 

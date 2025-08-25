@@ -1,4 +1,4 @@
-import React, { use, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import EditForm from "../EditForm";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
@@ -10,6 +10,10 @@ const All = ({ filteredUsers = [] }) => {
   const [activeCompany, setActiveCompany] = useState("");
   const [activeCountry, setActiveCountry] = useState("");
   const [trainingData, setTrainingData] = useState([]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10; // limit 10 records per page
 
   const [sortBy, setSortBy] = useState("");
   const [sortDirection, setSortDirection] = useState("asc");
@@ -57,7 +61,7 @@ const All = ({ filteredUsers = [] }) => {
 
   const destructureFilteredUsers = (users) =>
     users.flatMap((user) =>
-      user.attendees.length > 0
+      user.attendees && user.attendees.length > 0
         ? user.attendees.map((attendee) => ({
             id: attendee.id,
             first_name: attendee.first_name,
@@ -65,7 +69,7 @@ const All = ({ filteredUsers = [] }) => {
             email: attendee.email,
             position: attendee.position,
             designation:
-              attendee.designation.length > 0
+              attendee.designation && attendee.designation.length > 0
                 ? attendee.designation
                 : "No Current Designation",
             company: user.company,
@@ -83,7 +87,7 @@ const All = ({ filteredUsers = [] }) => {
               email: user.email,
               position: user.position,
               designation:
-                user.designation.length > 0
+                user.designation && user.designation.length > 0
                   ? user.designation
                   : "No Current Designation",
               company: user.company,
@@ -272,6 +276,29 @@ const All = ({ filteredUsers = [] }) => {
 
     return arr;
   }, [usersToDisplay, sortBy, sortDirection]);
+
+  // Reset to first page when filters/sort change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    activePaymentStatus,
+    JSON.stringify(activeTraining),
+    activeCompany,
+    activeCountry,
+    sortBy,
+    sortDirection,
+  ]);
+
+  // pagination calculations
+  const totalRecords = displayedUsers.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const paginatedUsers = displayedUsers.slice(
+    (currentPage - 1) * pageSize,
+    (currentPage - 1) * pageSize + pageSize
+  );
+
+  const startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endRecord = Math.min(currentPage * pageSize, totalRecords);
 
   return (
     <>
@@ -550,10 +577,17 @@ const All = ({ filteredUsers = [] }) => {
           <i className="bi bi-x-circle"></i> Clear Filters
         </button>
       </div>
-      <div className="pb-2">
+      <div className="pb-2 d-flex justify-content-between align-items-center">
         <h5>
-          <b>Total Count: {usersToDisplay.length}</b>
+          <b>Total Count: {totalRecords}</b>
         </h5>
+        <h6>
+          <b>
+            <small>
+              Showing {startRecord}-{endRecord} of {totalRecords}
+            </small>
+          </b>
+        </h6>
       </div>
 
       <div className="table-responsive">
@@ -561,7 +595,16 @@ const All = ({ filteredUsers = [] }) => {
           <table className="table table-bordered table-hover">
             <thead className="table-dark">
               <tr>
-                <th>Company</th>
+                <th
+                  style={{
+                    position: "sticky",
+                    left: 0,
+                    zIndex: 5,
+                    minWidth: "150px",
+                  }}
+                >
+                  Company
+                </th>
                 <th>Submission Date</th>
                 <th>First Name</th>
                 <th>Last Name</th>
@@ -578,17 +621,28 @@ const All = ({ filteredUsers = [] }) => {
               </tr>
             </thead>
             <tbody>
-              {displayedUsers.length === 0 ? (
+              {paginatedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="text-center">
                     <h1 className="m-5"> No records satisfy the filter</h1>
                   </td>
                 </tr>
               ) : (
-                displayedUsers.map((reg, i) => {
+                paginatedUsers.map((reg, i) => {
                   return (
-                    <tr key={i}>
-                      <td className="small">{reg.company}</td>
+                    <tr key={reg.id ?? i}>
+                      <td
+                        className="small sticky-col"
+                        style={{
+                          position: "sticky",
+                          left: 0,
+                          background: "#fff",
+                          zIndex: 4,
+                          minWidth: "150px",
+                        }}
+                      >
+                        {reg.company}
+                      </td>
                       <td className="small">
                         {formatDate(reg.submission_date)}
                       </td>
@@ -623,13 +677,13 @@ const All = ({ filteredUsers = [] }) => {
                             data-bs-target="#editModal"
                             onClick={() => setEditRegistration(reg)}
                           >
-                            <i className="bi bi-pencil-square" />
+                            <i className="bi bi-pencil-square text-success" />
                           </button>
                           <button
                             className="btn"
                             onClick={() => handleDelete(reg.id)}
                           >
-                            <i className="bi bi-trash-fill" />
+                            <i className="bi bi-trash-fill text-danger" />
                           </button>
                         </div>
                       </td>
@@ -639,6 +693,86 @@ const All = ({ filteredUsers = [] }) => {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Pagination controls */}
+      <div className="d-flex justify-content-center align-items-center mt-3">
+        <div>
+          <nav aria-label="Page navigation">
+            <ul className="pagination mb-0">
+              <li
+                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  &laquo;
+                </button>
+              </li>
+              <li
+                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+              </li>
+
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pageNum = idx + 1;
+                return (
+                  <li
+                    key={pageNum}
+                    className={`page-item ${
+                      currentPage === pageNum ? "active" : ""
+                    }`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum}
+                    </button>
+                  </li>
+                );
+              })}
+
+              <li
+                className={`page-item ${
+                  currentPage === totalPages ? "disabled" : ""
+                }`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </li>
+              <li
+                className={`page-item ${
+                  currentPage === totalPages ? "disabled" : ""
+                }`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  &raquo;
+                </button>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
 
