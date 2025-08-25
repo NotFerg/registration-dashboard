@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import EditForm from "../EditForm";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
+import InvoiceModal from "../InvoiceModal";
 
 const Individual = ({ filteredUsers = [] }) => {
   const [editRegistration, setEditRegistration] = useState(null);
@@ -533,6 +534,7 @@ const Individual = ({ filteredUsers = [] }) => {
                           >
                             <i className="bi bi-pencil-square" />
                           </button>
+                           <InvoiceModal attendee={reg} />
                           <button
                             className="btn"
                             onClick={() => handleDelete(reg.id)}
