@@ -170,7 +170,7 @@ function Trainings() {
               <Sidebar />
             </div>
             <div className="col-md-10 p-3">
-              <div className="container mt-3">
+              <div className="container-fluid mt-3">
                 <div className="d-flex justify-content-between mb-3">
                   <h2>Trainings</h2>
                   <button

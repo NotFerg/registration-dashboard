@@ -359,7 +359,7 @@ function App() {
           </div>
 
           <div className="col-md-10 p-3">
-            <div className="container mt-3">
+            <div className="container-fluid mt-3">
               <div className="d-flex justify-content-between mb-3">
                 {" "}
                 <h2>Registrations</h2>
@@ -379,7 +379,7 @@ function App() {
               </div>
             </div>
 
-            <div className="container-xxl mt-3">
+            <div className="container-fluid mt-3">
               <Dashboard excelData={excelData} />
               <div className="card">
                 <div className="card-body">
