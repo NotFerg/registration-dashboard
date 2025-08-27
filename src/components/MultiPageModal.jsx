@@ -226,11 +226,11 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   if (!initialReg) return null;
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
+    <Modal show={show} onHide={onHide} size="lg" style={{ zIndex: 11000 }}>
       <Modal.Header closeButton>
         <Modal.Title>
           <h1
-            className="modal-title fs-3"
+            className="modal-title fs-5"
             id="editModalLabel"
             style={{ fontWeight: 700 }}
           >
