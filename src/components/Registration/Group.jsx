@@ -503,15 +503,20 @@ const Group = ({ filteredUsers = [] }) => {
           <table className="table table-bordered table-hover">
             <thead className="table-dark">
               <tr>
-                <th>Company / Institution</th>
-                <th>Submission Date</th>
-                <th>Admin First Name</th>
-                <th>Admin Last Name</th>
-                <th>Email</th>
-                <th colSpan="3">Attendees</th>
-                <th>Total Cost</th>
-                <th>Payment Status</th>
-                <th colSpan={2}>Actions</th>
+                <th className="text-nowrap">Company / Institution</th>
+                <th className="text-nowrap">Submission Date</th>
+                <th className="text-nowrap">Admin First Name</th>
+                <th className="text-nowrap">Admin Last Name</th>
+                <th className="text-nowrap">Email</th>
+                <th className="text-nowrap" colSpan="3">
+                  Attendees
+                </th>
+                <th className="text-nowrap">Total Cost</th>
+                <th className="text-nowrap">Payment Status</th>
+                <th className="text-nowrap">Notes</th>
+                <th className="text-nowrap" colSpan={2}>
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -546,7 +551,22 @@ const Group = ({ filteredUsers = [] }) => {
                         attendees
                       </td>
                       <td>{formatCurrency(reg.total_cost)}</td>
-                      <td>{reg.payment_status}</td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            reg.payment_status === "Paid"
+                              ? "text-bg-success"
+                              : reg.payment_status === "Unpaid"
+                              ? "text-bg-warning"
+                              : "text-bg-secondary"
+                          }`}
+                        >
+                          {reg.payment_status}
+                        </span>
+                      </td>
+                      <td style={{ opacity: reg.notes ? 1 : 0.5 }}>
+                        {reg.notes ? reg.notes : "N/A"}
+                      </td>
                       <td className="text-center">
                         <div className="btn-group">
                           <InvoiceModal attendee={reg} />
@@ -572,7 +592,7 @@ const Group = ({ filteredUsers = [] }) => {
 
                     {expandedRows.has(reg.id) && (
                       <tr>
-                        <td colSpan="12" className="p-0">
+                        <td colSpan="13" className="p-0">
                           <div className="table-responsive">
                             <table className="table table-bordered mb-0 table-hover">
                               <thead className="ps-4">
