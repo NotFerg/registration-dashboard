@@ -3,6 +3,8 @@ import MultiPageModal from "../MultiPageModal";
 import InvoiceModal from "../InvoiceModal";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
+import NotesModal from "../NotesModal";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 const Group = ({ filteredUsers = [] }) => {
   // tracks expanded registration ids (use ids instead of indexes so pagination doesn't break it)
@@ -10,6 +12,9 @@ const Group = ({ filteredUsers = [] }) => {
   const [editRegistration, setEditRegistration] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [notesModalContent, setNotesModalContent] = useState("");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -564,9 +569,27 @@ const Group = ({ filteredUsers = [] }) => {
                           {reg.payment_status}
                         </span>
                       </td>
-                      <td style={{ opacity: reg.notes ? 1 : 0.5 }}>
-                        {reg.notes ? reg.notes : "N/A"}
-                      </td>
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={<Tooltip>Edit Notes for this Group</Tooltip>}
+                      >
+                        <td
+                          style={{
+                            cursor: "pointer",
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setNotesModalContent(reg.notes);
+                            setShowNotesModal(true);
+                          }}
+                        >
+                          <span style={{ opacity: reg.notes ? 1 : 0.5 }}>
+                            {reg.notes ? reg.notes : "N/A"}
+                          </span>
+                          <i className="bi bi-sticky-fill text-warning text-opacity-75"></i>
+                        </td>
+                      </OverlayTrigger>
+
                       <td className="text-center">
                         <div className="btn-group">
                           <InvoiceModal attendee={reg} />
@@ -753,6 +776,14 @@ const Group = ({ filteredUsers = [] }) => {
           </nav>
         </div>
       </div>
+
+      {showNotesModal && (
+        <NotesModal
+          notes={notesModalContent}
+          show={showNotesModal}
+          onHide={() => setShowNotesModal(false)}
+        />
+      )}
 
       <MultiPageModal
         stepProp={activeStep}
