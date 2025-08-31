@@ -10,3 +10,44 @@
 body {
   font-family: "Roboto";
 }
+.nav-bar .nav.nav-pills .nav-link:not(.dropdown-toggle) {
+  position: relative;
+  text-decoration: none;
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+  padding: 5px 0;
+  margin-right: 15px;
+  transition: color 0.3s ease;
+  padding-bottom: 6px;
+}
+
+.nav-bar .nav.nav-pills .nav-link:not(.dropdown-toggle)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  height: 3px;
+  background: linear-gradient(90deg, #ff6ec4, #7873f5, #4ade80);
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.nav-bar .nav.nav-pills .nav-link:not(.dropdown-toggle):hover::after {
+  width: 100%;
+}
+
+.nav-bar .nav.nav-pills .nav-link:not(.dropdown-toggle):hover {
+  color: #4ade80;
+}
+
+.nav-bar .nav.nav-pills .nav-link:not(.dropdown-toggle).active {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: #4ade80 !important; /* optional */
+}
+
+.nav-bar .nav.nav-pills .nav-link:not(.dropdown-toggle).active::after {
+  width: 100%;
+}

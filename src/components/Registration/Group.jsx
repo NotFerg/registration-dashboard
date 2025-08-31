@@ -3,6 +3,9 @@ import MultiPageModal from "../MultiPageModal";
 import InvoiceModal from "../InvoiceModal";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
+import NotesModal from "../NotesModal";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import EditAdminModal from "../EditAdminModal"; 
 
 const Group = ({ filteredUsers = [] }) => {
   // tracks expanded registration ids (use ids instead of indexes so pagination doesn't break it)
@@ -10,6 +13,9 @@ const Group = ({ filteredUsers = [] }) => {
   const [editRegistration, setEditRegistration] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [notesModalContent, setNotesModalContent] = useState("");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -503,15 +509,19 @@ const Group = ({ filteredUsers = [] }) => {
           <table className="table table-bordered table-hover">
             <thead className="table-dark">
               <tr>
-                <th>Company / Institution</th>
-                <th>Submission Date</th>
-                <th>Admin First Name</th>
-                <th>Admin Last Name</th>
-                <th>Email</th>
-                <th colSpan="3">Attendees</th>
-                <th>Total Cost</th>
-                <th>Payment Status</th>
-                <th colSpan={2}>Actions</th>
+                <th className="text-nowrap">Company / Institution</th>
+                <th className="text-nowrap">Submission Date</th>
+                <th className="text-nowrap">Admin Name</th>
+                <th className="text-nowrap">Email</th>
+                <th className="text-nowrap" colSpan="3">
+                  Attendees
+                </th>
+                <th className="text-nowrap">Total Cost</th>
+                <th className="text-nowrap">Payment Status</th>
+                <th className="text-nowrap">Notes</th>
+                <th className="text-nowrap" colSpan={2}>
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -521,11 +531,8 @@ const Group = ({ filteredUsers = [] }) => {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
                 };
-                const formattedDate = dateObj.toLocaleString("en-US", options);
+                const formattedDate = dateObj.toLocaleDateString("en-US", options);
 
                 return (
                   <React.Fragment key={reg.id ?? idx}>
@@ -538,17 +545,53 @@ const Group = ({ filteredUsers = [] }) => {
                     >
                       <td>{reg.company}</td>
                       <td>{formattedDate}</td>
-                      <td>{reg.first_name}</td>
-                      <td>{reg.last_name}</td>
+                      <td>{`${reg.first_name} ${reg.last_name}`}</td>
                       <td>{reg.email}</td>
                       <td colSpan="3">
                         Group Registration - {reg.attendees?.length || 0}{" "}
                         attendees
                       </td>
                       <td>{formatCurrency(reg.total_cost)}</td>
-                      <td>{reg.payment_status}</td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            reg.payment_status === "Paid"
+                              ? "text-bg-success"
+                              : reg.payment_status === "Unpaid"
+                              ? "text-bg-warning"
+                              : "text-bg-secondary"
+                          }`}
+                        >
+                          {reg.payment_status}
+                        </span>
+                      </td>
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={<Tooltip>Edit Notes for this Group</Tooltip>}
+                      >
+                        <td
+                          style={{
+                            cursor: "pointer",
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setNotesModalContent({
+                              id: reg.id,
+                              notes: reg.notes,
+                            });
+                            setShowNotesModal(true);
+                          }}
+                        >
+                          <span style={{ opacity: reg.notes ? 1 : 0.5 }}>
+                            {reg.notes ? reg.notes : "N/A"}
+                          </span>
+                          <i className="bi bi-sticky-fill text-warning text-opacity-75"></i>
+                        </td>
+                      </OverlayTrigger>
+
                       <td className="text-center">
                         <div className="btn-group">
+                          <EditAdminModal admin={reg}/>
                           <InvoiceModal attendee={reg} />
                           <button
                             className="btn"
@@ -572,7 +615,7 @@ const Group = ({ filteredUsers = [] }) => {
 
                     {expandedRows.has(reg.id) && (
                       <tr>
-                        <td colSpan="12" className="p-0">
+                        <td colSpan="13" className="p-0">
                           <div className="table-responsive">
                             <table className="table table-bordered mb-0 table-hover">
                               <thead className="ps-4">
@@ -733,6 +776,14 @@ const Group = ({ filteredUsers = [] }) => {
           </nav>
         </div>
       </div>
+
+      {showNotesModal && (
+        <NotesModal
+          registration={notesModalContent}
+          show={showNotesModal}
+          onHide={() => setShowNotesModal(false)}
+        />
+      )}
 
       <MultiPageModal
         stepProp={activeStep}

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
+import { Modal, Button, Form, OverlayTrigger, Tooltip } from "react-bootstrap";
 import Swal from "sweetalert2";
 import supabase from "../utils/supabase";
 
@@ -52,18 +52,33 @@ const InvoiceModal = (attendee = {}) => {
     }
   }
 
+  const tooltipId = `invoice-tooltip-${attendee?.id ?? "na"}`;
+
   return (
     <React.Fragment>
       <button className="btn">
-        <i
-          className="bi bi-file-earmark-bar-graph-fill text-primary"
-          onClick={openModal}
-        />
+        <OverlayTrigger
+          placement="top"
+          overlay={<Tooltip id={tooltipId}>Invoices</Tooltip>}
+        >
+          <i
+            className="bi bi-file-earmark-bar-graph-fill text-primary"
+            onClick={openModal}
+          />
+        </OverlayTrigger>
       </button>
 
       <Modal show={showModal} onHide={closeModal} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Invoice Details</Modal.Title>
+          <Modal.Title>
+            <h1
+              className="modal-title fs-5"
+              id="editModalLabel"
+              style={{ fontWeight: 700 }}
+            >
+              Invoice Details
+            </h1>
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Button

@@ -596,6 +596,7 @@ const All = ({ filteredUsers = [] }) => {
             <thead className="table-dark">
               <tr>
                 <th
+                  className="text-nowrap"
                   style={{
                     position: "sticky",
                     left: 0,
@@ -605,17 +606,17 @@ const All = ({ filteredUsers = [] }) => {
                 >
                   Company
                 </th>
-                <th>Submission Date</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Position</th>
-                <th>Designation</th>
-                <th>Country</th>
-                <th>Trainings</th>
-                <th>Total Cost</th>
-                <th>Payment Status</th>
-                <th className="text-center" colSpan={2}>
+                <th className="text-nowrap">Submission Date</th>
+                <th className="text-nowrap">First Name</th>
+                <th className="text-nowrap">Last Name</th>
+                <th className="text-nowrap">Email</th>
+                <th className="text-nowrap">Position</th>
+                <th className="text-nowrap">Designation</th>
+                <th className="text-nowrap">Country</th>
+                <th className="text-nowrap">Trainings</th>
+                <th className="text-nowrap">Total Cost</th>
+                <th className="text-nowrap">Payment Status</th>
+                <th className="text-nowrap text-center" colSpan={2}>
                   Actions
                 </th>
               </tr>
@@ -668,7 +669,19 @@ const All = ({ filteredUsers = [] }) => {
                       <td className="small">
                         {formatCurrency(reg.total_cost)}
                       </td>
-                      <td className="small">{reg.payment_status}</td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            reg.payment_status === "Paid"
+                              ? "text-bg-success"
+                              : reg.payment_status === "Unpaid"
+                              ? "text-bg-warning"
+                              : "text-bg-secondary"
+                          }`}
+                        >
+                          {reg.payment_status}
+                        </span>
+                      </td>
                       <td colSpan={2} className="sticky-col">
                         <div className="btn-group">
                           <button
@@ -784,6 +797,7 @@ const All = ({ filteredUsers = [] }) => {
           tabIndex="-1"
           aria-labelledby="editModalLabel"
           aria-hidden="true"
+          style={{ zIndex: 11000 }}
         >
           <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content">

@@ -13,6 +13,7 @@ import Individual from "./components/Registration/Individual.jsx";
 import All from "./components/Registration/All.jsx";
 import AddMultiPageModal from "./components/AddMultiPageModal.jsx";
 import { useNavigate } from "react-router-dom";
+import TopNavbar from "./components/Navbar.jsx";
 
 function App() {
   const [excelData, setExcelData] = useState([]);
@@ -353,114 +354,110 @@ function App() {
   return (
     <>
       <div className="overflow-hidden">
-        <div className="row min-vh-100">
-          <div className="col-md-2">
-            <Sidebar />
+        <div className="min-vh-100">
+          <TopNavbar />
+          <div className="container-fluid px-5 mt-3">
+            <div className="d-flex justify-content-between mb-3">
+              {" "}
+              <h2>Registrations</h2>
+              <div>
+                <label htmlFor="myFile" className="btn btn-success fw-bold">
+                  <i className="bi bi-upload" /> Upload File
+                </label>
+                <input
+                  id="myFile"
+                  className="d-none"
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleFileUpload}
+                />
+                <ExportExcel excelData={excelData} />
+              </div>
+            </div>
           </div>
 
-          <div className="col-md-10 p-3">
-            <div className="container mt-3">
-              <div className="d-flex justify-content-between mb-3">
+          <div className="container-fluid px-5 my-3">
+            <Dashboard excelData={excelData} />
+            <div className="card">
+              <div className="card-body">
                 {" "}
-                <h2>Registrations</h2>
-                <div>
-                  <label htmlFor="myFile" className="btn btn-success fw-bold">
-                    <i className="bi bi-upload" /> Upload File
-                  </label>
-                  <input
-                    id="myFile"
-                    className="d-none"
-                    type="file"
-                    accept=".xlsx, .xls"
-                    onChange={handleFileUpload}
-                  />
-                  <ExportExcel excelData={excelData} />
+                <div className="d-flex justify-content-end">
+                  <button
+                    className="btn btn-primary text-white fw-bold mx-3"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addRegistrationModal"
+                  >
+                    <i className="bi bi-person-plus-fill" />
+                    <span className="ms-2">Add Registration</span>
+                  </button>
+                  <button
+                    className="btn btn-primary text-white fw-bold"
+                    onClick={() => setShowAddGroupModal(true)}
+                  >
+                    <i className="bi bi-person-lines-fill" />
+                    <span className="ms-2">Add Group Registration</span>
+                  </button>
                 </div>
-              </div>
-            </div>
-
-            <div className="container-xxl mt-3">
-              <Dashboard excelData={excelData} />
-              <div className="card">
-                <div className="card-body">
-                  {" "}
-                  <div className="d-flex justify-content-end">
-                    <button
-                      className="btn btn-primary text-white fw-bold mx-3"
-                      data-bs-toggle="modal"
-                      data-bs-target="#addRegistrationModal"
+                <ul className="nav nav-tabs">
+                  <li className="nav-item">
+                    <a
+                      className={`nav-link ${
+                        activeTab === "individual"
+                          ? "active bg-primary text-white fw-bold"
+                          : "text-black"
+                      }`}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setActiveTab("individual")}
                     >
-                      <i className="bi bi-person-plus-fill" />
-                      <span className="ms-2">Add Registration</span>
-                    </button>
-                    <button
-                      className="btn btn-primary text-white fw-bold"
-                      onClick={() => setShowAddGroupModal(true)}
+                      Individual
+                    </a>
+                  </li>
+                  <li className="nav-item">
+                    <a
+                      className={`nav-link ${
+                        activeTab === "group"
+                          ? "active bg-primary text-white fw-bold"
+                          : "text-black"
+                      }`}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setActiveTab("group")}
                     >
-                      <i className="bi bi-person-lines-fill" />
-                      <span className="ms-2">Add Group Registration</span>
-                    </button>
-                  </div>
-                  <ul className="nav nav-tabs">
-                    <li className="nav-item">
-                      <a
-                        className={`nav-link ${
-                          activeTab === "individual"
-                            ? "active bg-primary text-white fw-bold"
-                            : "text-black"
-                        }`}
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setActiveTab("individual")}
-                      >
-                        Individual
-                      </a>
-                    </li>
-                    <li className="nav-item">
-                      <a
-                        className={`nav-link ${
-                          activeTab === "group"
-                            ? "active bg-primary text-white fw-bold"
-                            : "text-black"
-                        }`}
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setActiveTab("group")}
-                      >
-                        Group
-                      </a>
-                    </li>
-                    <li className="nav-item">
-                      <a
-                        className={`nav-link ${
-                          activeTab === "all"
-                            ? "active bg-primary text-white fw-bold"
-                            : "text-black"
-                        }`}
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setActiveTab("all")}
-                      >
-                        All
-                      </a>
-                    </li>
-                  </ul>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="guestSearch"
-                    placeholder="Search participants..."
-                    onChange={handleInputChange}
-                    style={{ marginTop: 12, marginBottom: 1 }}
-                  />
-                  {activeTab === "group" ? (
-                    <Group filteredUsers={filteredUsers} />
-                  ) : activeTab === "individual" ? (
-                    <Individual filteredUsers={filteredUsers} />
-                  ) : (
-                    <All filteredUsers={filteredUsers} />
-                  )}
-                </div>
+                      Group
+                    </a>
+                  </li>
+                  <li className="nav-item">
+                    <a
+                      className={`nav-link ${
+                        activeTab === "all"
+                          ? "active bg-primary text-white fw-bold"
+                          : "text-black"
+                      }`}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setActiveTab("all")}
+                    >
+                      All
+                    </a>
+                  </li>
+                </ul>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="guestSearch"
+                  placeholder="Search participants..."
+                  onChange={handleInputChange}
+                  style={{ marginTop: 12, marginBottom: 1 }}
+                />
+                {activeTab === "group" ? (
+                  <Group filteredUsers={filteredUsers} />
+                ) : activeTab === "individual" ? (
+                  <Individual filteredUsers={filteredUsers} />
+                ) : (
+                  <All filteredUsers={filteredUsers} />
+                )}
               </div>
             </div>
           </div>
+          {/* </div> */}
         </div>
       </div>
 
@@ -472,6 +469,7 @@ function App() {
           tabIndex="-1"
           aria-labelledby="addModalLabel"
           aria-hidden="true"
+          style={{ zIndex: 9999 }}
         >
           <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content">

@@ -352,6 +352,7 @@ const EditFormGroup = ({
           </div>
         </div>
 
+        {/* <div className="d-flex flex-row justify-content-between"> */}
         <div className="mb-3">
           <label htmlFor="total_cost" className="form-label">
             Total Cost <span style={{ color: "red" }}> * </span>
@@ -368,26 +369,26 @@ const EditFormGroup = ({
           />
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="payment_status" className="form-label">
-            Payment Status <span style={{ color: "red" }}> * </span>
-          </label>
-          <select
-            className="form-select"
-            id="payment_status"
-            name="payment_status"
-            aria-describedby="payment_status"
-            onChange={handleChange}
-            value={reg.payment_status}
-            required
-          >
-            <option value="">Select Payment Status</option>
-            <option value="Paid">Paid</option>
-            <option value="Unpaid">Unpaid</option>
-            <option value="Partial Payment">Partial Payment</option>
-          </select>
-        </div>
-
+        {/* <div className="mb-3 flex-fill">
+            <label htmlFor="payment_status" className="form-label">
+              Payment Status <span style={{ color: "red" }}> * </span>
+            </label>
+            <select
+              className="form-select"
+              id="payment_status"
+              name="payment_status"
+              aria-describedby="payment_status"
+              onChange={handleChange}
+              value={reg.payment_status}
+              required
+            >
+              <option value="">Select Payment Status</option>
+              <option value="Paid">Paid</option>
+              <option value="Unpaid">Unpaid</option>
+              <option value="Partial Payment">Partial Payment</option>
+            </select>
+          </div> */}
+        {/* </div> */}
         <div className="text-center mt-4 mb-4">
           <button
             className="btn btn-outline-primary btn-sm"
