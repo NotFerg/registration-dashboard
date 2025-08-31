@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
 import NotesModal from "../NotesModal";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import EditAdminModal from "../EditAdminModal"; 
 
 const Group = ({ filteredUsers = [] }) => {
   // tracks expanded registration ids (use ids instead of indexes so pagination doesn't break it)
@@ -510,8 +511,7 @@ const Group = ({ filteredUsers = [] }) => {
               <tr>
                 <th className="text-nowrap">Company / Institution</th>
                 <th className="text-nowrap">Submission Date</th>
-                <th className="text-nowrap">Admin First Name</th>
-                <th className="text-nowrap">Admin Last Name</th>
+                <th className="text-nowrap">Admin Name</th>
                 <th className="text-nowrap">Email</th>
                 <th className="text-nowrap" colSpan="3">
                   Attendees
@@ -531,11 +531,8 @@ const Group = ({ filteredUsers = [] }) => {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
                 };
-                const formattedDate = dateObj.toLocaleString("en-US", options);
+                const formattedDate = dateObj.toLocaleDateString("en-US", options);
 
                 return (
                   <React.Fragment key={reg.id ?? idx}>
@@ -548,8 +545,7 @@ const Group = ({ filteredUsers = [] }) => {
                     >
                       <td>{reg.company}</td>
                       <td>{formattedDate}</td>
-                      <td>{reg.first_name}</td>
-                      <td>{reg.last_name}</td>
+                      <td>{`${reg.first_name} ${reg.last_name}`}</td>
                       <td>{reg.email}</td>
                       <td colSpan="3">
                         Group Registration - {reg.attendees?.length || 0}{" "}
@@ -579,7 +575,10 @@ const Group = ({ filteredUsers = [] }) => {
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setNotesModalContent(reg.notes);
+                            setNotesModalContent({
+                              id: reg.id,
+                              notes: reg.notes,
+                            });
                             setShowNotesModal(true);
                           }}
                         >
@@ -592,6 +591,7 @@ const Group = ({ filteredUsers = [] }) => {
 
                       <td className="text-center">
                         <div className="btn-group">
+                          <EditAdminModal admin={reg}/>
                           <InvoiceModal attendee={reg} />
                           <button
                             className="btn"
@@ -779,7 +779,7 @@ const Group = ({ filteredUsers = [] }) => {
 
       {showNotesModal && (
         <NotesModal
-          notes={notesModalContent}
+          registration={notesModalContent}
           show={showNotesModal}
           onHide={() => setShowNotesModal(false)}
         />
