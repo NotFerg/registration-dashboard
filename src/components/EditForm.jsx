@@ -134,6 +134,11 @@ const EditForm = ({ reg: initialReg }) => {
 
       if (updateError) {
         console.error("Update error:", updateError);
+        Swal.fire({
+          text: "Update failed. Please try again.",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
         return;
       }
 
@@ -163,6 +168,16 @@ const EditForm = ({ reg: initialReg }) => {
           ]);
         }
       }
+
+      Swal.fire({
+        text: "Registration updated successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
     } else {
       // INSERT CASE
       const { data: insertedRegistration, error: insertError } = await supabase
@@ -187,6 +202,11 @@ const EditForm = ({ reg: initialReg }) => {
 
       if (insertError) {
         console.error("Insert error:", insertError);
+        Swal.fire({
+          text: "Insert failed. Please try again.",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
         return;
       }
 
@@ -212,6 +232,16 @@ const EditForm = ({ reg: initialReg }) => {
           ]);
         }
       }
+
+      Swal.fire({
+        text: "Registration created successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
     }
   }
 
