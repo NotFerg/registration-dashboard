@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import supabase from "../utils/supabase";
+import swal from "sweetalert2";
 
 const EditForm = ({ reg: initialReg }) => {
   const [trainings, setTrainings] = useState([]);
