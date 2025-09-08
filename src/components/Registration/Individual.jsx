@@ -12,9 +12,6 @@ const Individual = ({ filteredUsers = [] }) => {
   const [activeCountry, setActiveCountry] = useState("");
   const [trainingData, setTrainingData] = useState([]);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
-
   const [sortBy, setSortBy] = useState("");
   const [sortDirection, setSortDirection] = useState("asc");
 
@@ -49,6 +46,8 @@ const Individual = ({ filteredUsers = [] }) => {
     setActiveTraining([]);
     setActiveCompany("");
     setActiveCountry("");
+    setSortBy("");
+    setSortDirection("asc");
   };
 
   const normalize = (s) => (s || "").toString().trim().toLowerCase();
@@ -114,24 +113,7 @@ const Individual = ({ filteredUsers = [] }) => {
     return arr;
   }, [addedFilteredUsers, sortBy, sortDirection]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    activePaymentStatus,
-    JSON.stringify(activeTraining),
-    activeCompany,
-    activeCountry,
-    sortBy,
-    sortDirection,
-  ]);
-
-  // Paginate the displayed users
   const totalRecords = displayedUsers.length;
-  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return displayedUsers.slice(start, start + pageSize);
-  }, [displayedUsers, currentPage]);
 
   async function handleDelete(id) {
     const result = await Swal.fire({
@@ -174,8 +156,6 @@ const Individual = ({ filteredUsers = [] }) => {
       }
     }
   }
-  const startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endRecord = Math.min(currentPage * pageSize, totalRecords);
 
   return (
     <>
@@ -392,19 +372,19 @@ const Individual = ({ filteredUsers = [] }) => {
               <li className="dropdown-header">Property</li>
               <li
                 className="dropdown-item"
-                onClick={() => setSortBy("company")}
+                onClick={() => handleSort("company")}
               >
                 Company
               </li>
               <li
                 className="dropdown-item"
-                onClick={() => setSortBy("first_name")}
+                onClick={() => handleSort("first_name")}
               >
                 First Name
               </li>
               <li
                 className="dropdown-item"
-                onClick={() => setSortBy("last_name")}
+                onClick={() => handleSort("last_name")}
               >
                 Last Name
               </li>
@@ -449,15 +429,8 @@ const Individual = ({ filteredUsers = [] }) => {
       </div>
 
       <div className="pb-2 d-flex justify-content-between align-items-center">
-        <h5>
-          <b>Total Count: {totalRecords}</b>
-        </h5>
         <h6>
-          <b>
-            <small>
-              Showing {startRecord}-{endRecord} of {totalRecords}
-            </small>
-          </b>
+          <b>Total Count: {totalRecords}</b>
         </h6>
       </div>
 
@@ -465,7 +438,7 @@ const Individual = ({ filteredUsers = [] }) => {
         <div style={{ overflowX: "auto" }}>
           <table className="table table-bordered table-hover">
             <thead className="table-dark">
-              <tr>
+              <tr className="small">
                 <th
                   className="sticky-col text-nowrap"
                   style={{
@@ -477,12 +450,11 @@ const Individual = ({ filteredUsers = [] }) => {
                 >
                   Company
                 </th>
-                <th className="text-nowrap">Submission Date</th>
-                <th className="text-nowrap">First Name</th>
-                <th className="text-nowrap">Last Name</th>
+                <th className="text-nowrap">Date Submitted</th>
+                <th className="text-nowrap">Full Name</th>
                 <th className="text-nowrap">Email</th>
                 <th className="text-nowrap">Position</th>
-                <th className="text-nowrap">Designation</th>
+                {/* <th className="text-nowrap">Designation</th> */}
                 <th className="text-nowrap">Country</th>
                 <th className="text-nowrap">Trainings</th>
                 <th className="text-nowrap">Total Cost</th>
@@ -493,14 +465,14 @@ const Individual = ({ filteredUsers = [] }) => {
               </tr>
             </thead>
             <tbody>
-              {paginatedUsers.length === 0 ? (
+              {displayedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="text-center">
                     <h1 className="m-5"> No records satisfy the filter</h1>
                   </td>
                 </tr>
               ) : (
-                paginatedUsers.map((reg, i) => {
+                displayedUsers.map((reg, i) => {
                   const dateObj = new Date(reg.submission_date);
 
                   const options = {
@@ -528,11 +500,12 @@ const Individual = ({ filteredUsers = [] }) => {
                         {reg.company}
                       </td>
                       <td className="small">{formattedDate}</td>
-                      <td className="small">{reg.first_name}</td>
-                      <td className="small">{reg.last_name}</td>
-                      <td className="small">{reg.email}</td>
+                      <td className="small">
+                        {reg.first_name} {reg.last_name}
+                      </td>
+                      <td className="small text-wrap">{reg.email}</td>
                       <td className="small">{reg.position}</td>
-                      <td className="small">{reg.designation}</td>
+                      {/* <td className="small">{reg.designation}</td> */}
                       <td className="small">{reg.country}</td>
                       <td className="small">
                         <ul className="mb-0">
@@ -550,7 +523,7 @@ const Individual = ({ filteredUsers = [] }) => {
                       <td className="small">
                         {formatCurrency(reg.total_cost)}
                       </td>
-                      <td>
+                      <td className="small">
                         <span
                           className={`badge ${
                             reg.payment_status === "Paid"
@@ -588,85 +561,6 @@ const Individual = ({ filteredUsers = [] }) => {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <div className="d-flex justify-content-center align-items-center mt-3">
-        <div>
-          <nav aria-label="Page navigation">
-            <ul className="pagination mb-0">
-              <li
-                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  &laquo;
-                </button>
-              </li>
-              <li
-                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-              </li>
-
-              {Array.from({ length: totalPages }).map((_, idx) => {
-                const pageNum = idx + 1;
-                return (
-                  <li
-                    key={pageNum}
-                    className={`page-item ${
-                      currentPage === pageNum ? "active" : ""
-                    }`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() => setCurrentPage(pageNum)}
-                    >
-                      {pageNum}
-                    </button>
-                  </li>
-                );
-              })}
-
-              <li
-                className={`page-item ${
-                  currentPage === totalPages ? "disabled" : ""
-                }`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
-              </li>
-              <li
-                className={`page-item ${
-                  currentPage === totalPages ? "disabled" : ""
-                }`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  &raquo;
-                </button>
-              </li>
-            </ul>
-          </nav>
         </div>
       </div>
 
