@@ -1,7 +1,7 @@
 import React from "react";
 import { Navbar, Nav, Container, NavDropdown } from "react-bootstrap";
 import { NavLink, useNavigate } from "react-router-dom";
-import logo from "../assets/BSA-19th_Logo.png";
+import logo from "../assets/APAFS_logo.png";
 import supabase from "../utils/supabase";
 
 const TopNavbar = () => {
@@ -18,19 +18,6 @@ const TopNavbar = () => {
     }
   }
 
-  // custom NavLink wrapper so bootstrap's active state works with react-router NavLink
-  const LinkItem = ({ to, children, end = false, ...props }) => (
-    <Nav.Link
-      as={NavLink}
-      to={to}
-      end={end}
-      {...props}
-      className={({ isActive }) => (isActive ? "active" : "text-white")}
-    >
-      {children}
-    </Nav.Link>
-  );
-
   return (
     <Navbar
       // bg="dark"
@@ -44,7 +31,7 @@ const TopNavbar = () => {
           <img
             src={logo}
             alt="Logo"
-            style={{ filter: "invert(1)", maxWidth: 50, height: "auto" }}
+            style={{ maxWidth: 75, height: "auto" }}
             className="me-2"
           />
         </Navbar.Brand>
