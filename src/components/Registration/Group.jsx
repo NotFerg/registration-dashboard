@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import MultiPageModal from "../MultiPageModal";
 import InvoiceModal from "../InvoiceModal";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
 import NotesModal from "../NotesModal";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import EditAdminModal from "../EditAdminModal"; 
+import EditAdminModal from "../EditAdminModal";
 
 const Group = ({ filteredUsers = [] }) => {
   // tracks expanded registration ids (use ids instead of indexes so pagination doesn't break it)
@@ -17,15 +17,13 @@ const Group = ({ filteredUsers = [] }) => {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notesModalContent, setNotesModalContent] = useState("");
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10; // limit 10 records per page
-
   const [activePaymentStatus, setActivePaymentStatus] = useState("");
   const [activeTraining, setActiveTraining] = useState([]);
-  const [activeCompany, setActiveCompany] = useState("");
   const [activeCountry, setActiveCountry] = useState("");
   const [trainingData, setTrainingData] = useState([]);
+
+  const [sortBy, setSortBy] = useState("");
+  const [sortDirection, setSortDirection] = useState("asc");
 
   function formatCurrency(amount) {
     const num = parseFloat(amount);
@@ -86,12 +84,11 @@ const Group = ({ filteredUsers = [] }) => {
   const filteredRegistrations = filteredUsers.filter((reg) => {
     const paymentStatusMatches =
       !activePaymentStatus || reg.payment_status === activePaymentStatus;
-    const companyMatches = !activeCompany || reg.company === activeCompany;
     const countryMatches = !activeCountry || reg.country === activeCountry;
 
     const activeNormalized = (activeTraining || []).map(normalize);
     if (activeNormalized.length === 0) {
-      return paymentStatusMatches && companyMatches && countryMatches;
+      return paymentStatusMatches && countryMatches;
     }
 
     const regTrainingNames = extractTrainingNamesFromRegistration(reg);
@@ -99,12 +96,7 @@ const Group = ({ filteredUsers = [] }) => {
       regTrainingNames.includes(sel)
     );
 
-    return (
-      paymentStatusMatches &&
-      companyMatches &&
-      countryMatches &&
-      trainingMatches
-    );
+    return paymentStatusMatches && countryMatches && trainingMatches;
   });
 
   const usersToDisplay = filteredRegistrations.flatMap((user) =>
@@ -155,8 +147,9 @@ const Group = ({ filteredUsers = [] }) => {
   const clearFilters = () => {
     setActivePaymentStatus("");
     setActiveTraining([]);
-    setActiveCompany("");
     setActiveCountry("");
+    setSortBy("");
+    setSortDirection("asc");
   };
 
   async function handleDeleteAttendee(attendeeId, registrationId) {
@@ -271,73 +264,44 @@ const Group = ({ filteredUsers = [] }) => {
     });
   }
 
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    activePaymentStatus,
-    JSON.stringify(activeTraining),
-    activeCompany,
-    activeCountry,
-  ]);
+  const sortedRegistrations = useMemo(() => {
+    const arr = (filteredRegistrations || []).slice();
+    if (!sortBy) return arr;
 
-  // pagination calculations
-  const totalRecords = filteredRegistrations.length;
-  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
-  const paginatedRegistrations = filteredRegistrations.slice(
-    (currentPage - 1) * pageSize,
-    (currentPage - 1) * pageSize + pageSize
-  );
+    arr.sort((a, b) => {
+      const aVal =
+        sortBy === "company"
+          ? normalize(a.company)
+          : sortBy === "first_name"
+          ? normalize(a.first_name)
+          : normalize(a.last_name);
+      const bVal =
+        sortBy === "company"
+          ? normalize(b.company)
+          : sortBy === "first_name"
+          ? normalize(b.first_name)
+          : normalize(b.last_name);
 
-  const startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endRecord = Math.min(currentPage * pageSize, totalRecords);
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return arr;
+  }, [filteredRegistrations, sortBy, sortDirection]);
+
+  // counts (no pagination)
+  const totalRecords = sortedRegistrations.length;
+  const startRecord = totalRecords === 0 ? 0 : 1;
+  const endRecord = totalRecords;
 
   return (
     <>
       {/* Filters */}
       <div className="d-flex justify-content-between align-items-center my-3">
         <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
-          {/* Company */}
-          <div className="dropdown" id="companyDropdown">
-            <button
-              className="btn btn-outline-dark dropdown-toggle border"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              data-bs-auto-close="outside"
-            >
-              <i className="bi bi-building-fill" /> Company:{" "}
-              <span className="fw-bold">{activeCompany}</span>
-            </button>
-            <ul
-              className="dropdown-menu"
-              style={{ maxHeight: "300px", overflowY: "scroll" }}
-            >
-              {filteredUsers
-                .map((u) => u.company)
-                .filter((c, i, self) => self.indexOf(c) === i)
-                .map((company, idx) => (
-                  <li key={idx}>
-                    <div
-                      className="dropdown-item"
-                      onClick={() => setActiveCompany(company)}
-                    >
-                      {company}
-                    </div>
-                    <hr className="dropdown-divider" />
-                  </li>
-                ))}
-              <li
-                className="dropdown-item text-center fw-bold"
-                onClick={() => setActiveCompany("")}
-              >
-                Clear Filter
-              </li>
-            </ul>
-          </div>
-
           {/* Country */}
-          <div className="dropdown ps-2" id="countryDropdown">
+          <div className="dropdown" id="countryDropdown">
             <button
               className="btn btn-outline-dark dropdown-toggle border"
               type="button"
@@ -484,6 +448,90 @@ const Group = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
+
+          <div className="dropdown ps-2">
+            <button
+              className="btn btn-outline-dark dropdown-toggle border"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <i className="bi bi-sort-alpha-down"></i> Sort:{" "}
+              <span className="fw-bold">
+                {sortBy
+                  ? sortBy === "company"
+                    ? "Company"
+                    : sortBy === "first_name"
+                    ? "Admin First Name"
+                    : "Admin Last Name"
+                  : "None"}
+              </span>
+              {sortBy && (
+                <span className="ms-2">
+                  (
+                  {sortDirection === "asc" ? (
+                    <i className="bi bi-arrow-up-short" />
+                  ) : (
+                    <i className="bi bi-arrow-down-short" />
+                  )}
+                  )
+                </span>
+              )}
+            </button>
+            <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
+              <li className="dropdown-header">Property</li>
+              <li
+                className="dropdown-item"
+                onClick={() => setSortBy("company")}
+              >
+                Company
+              </li>
+              <li
+                className="dropdown-item"
+                onClick={() => setSortBy("first_name")}
+              >
+                Admin First Name
+              </li>
+              <li
+                className="dropdown-item"
+                onClick={() => setSortBy("last_name")}
+              >
+                Admin Last Name
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
+              <li className="dropdown-header">Direction</li>
+              <li
+                className={
+                  "dropdown-item " + (sortDirection === "asc" ? "active" : "")
+                }
+                onClick={() => setSortDirection("asc")}
+              >
+                Ascending
+              </li>
+              <li
+                className={
+                  "dropdown-item " + (sortDirection === "desc" ? "active" : "")
+                }
+                onClick={() => setSortDirection("desc")}
+              >
+                Descending
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
+              <li
+                className="dropdown-item text-center fw-bold"
+                onClick={() => {
+                  setSortBy("");
+                  setSortDirection("asc");
+                }}
+              >
+                Clear Sort
+              </li>
+            </ul>
+          </div>
         </div>
 
         <button className="btn btn-outline-danger" onClick={clearFilters}>
@@ -492,9 +540,9 @@ const Group = ({ filteredUsers = [] }) => {
       </div>
 
       <div className="pb-2 d-flex justify-content-between align-items-center">
-        <h5>
+        <h6>
           <b>Total Count: {totalRecords}</b>
-        </h5>
+        </h6>
         <h6>
           <b>
             <small>
@@ -504,127 +552,137 @@ const Group = ({ filteredUsers = [] }) => {
         </h6>
       </div>
 
-      <div className="d-flex">
-        <div className="table-responsive">
-          <table className="table table-bordered table-hover">
-            <thead className="table-dark">
-              <tr>
-                <th className="text-nowrap">Company / Institution</th>
-                <th className="text-nowrap">Submission Date</th>
-                <th className="text-nowrap">Admin Name</th>
-                <th className="text-nowrap">Email</th>
-                <th className="text-nowrap" colSpan="3">
-                  Attendees
-                </th>
-                <th className="text-nowrap">Total Cost</th>
-                <th className="text-nowrap">Payment Status</th>
-                <th className="text-nowrap">Notes</th>
-                <th className="text-nowrap" colSpan={2}>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedRegistrations.map((reg, idx) => {
-                const dateObj = new Date(reg.submission_date);
-                const options = {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                };
-                const formattedDate = dateObj.toLocaleDateString("en-US", options);
+      <div className="table-responsive">
+        <table className="table table-bordered table-hover">
+          <thead className="table-dark">
+            <tr className="small">
+              <th className="text-nowrap">Company / Institution</th>
+              <th className="text-nowrap">Date Submitted</th>
+              <th className="text-nowrap">Admin Name</th>
+              <th className="text-nowrap">Email</th>
+              <th className="text-nowrap" colSpan={3}>
+                Attendees
+              </th>
+              <th className="text-nowrap">Total Cost</th>
+              <th className="text-nowrap">Payment Status</th>
+              <th className="text-nowrap" colSpan={2}>
+                Notes
+              </th>
+              <th className="text-nowrap text-center" colSpan={2}>
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedRegistrations.map((reg, idx) => {
+              const dateObj = new Date(reg.submission_date);
+              const options = {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              };
+              const formattedDate = dateObj.toLocaleDateString(
+                "en-US",
+                options
+              );
 
-                return (
-                  <React.Fragment key={reg.id ?? idx}>
-                    <tr
-                      onClick={() => toggleRow(reg.id)}
-                      style={{ cursor: "pointer" }}
-                      className={
-                        expandedRows.has(reg.id) ? "table-secondary" : ""
-                      }
-                    >
-                      <td>{reg.company}</td>
-                      <td>{formattedDate}</td>
-                      <td>{`${reg.first_name} ${reg.last_name}`}</td>
-                      <td>{reg.email}</td>
-                      <td colSpan="3">
-                        Group Registration - {reg.attendees?.length || 0}{" "}
-                        attendees
-                      </td>
-                      <td>{formatCurrency(reg.total_cost)}</td>
-                      <td>
-                        <span
-                          className={`badge ${
-                            reg.payment_status === "Paid"
-                              ? "text-bg-success"
-                              : reg.payment_status === "Unpaid"
-                              ? "text-bg-warning"
-                              : "text-bg-secondary"
-                          }`}
-                        >
-                          {reg.payment_status}
-                        </span>
-                      </td>
-                      <OverlayTrigger
-                        placement="top"
-                        overlay={<Tooltip>Edit Notes for this Group</Tooltip>}
+              return (
+                <React.Fragment key={reg.id ?? idx}>
+                  <tr
+                    onClick={() => toggleRow(reg.id)}
+                    style={{ cursor: "pointer" }}
+                    className={
+                      expandedRows.has(reg.id) ? "table-secondary" : ""
+                    }
+                  >
+                    <td className="small text-wrap">{reg.company}</td>
+                    <td className="small">{formattedDate}</td>
+                    <td className="small text-wrap">{`${reg.first_name} ${reg.last_name}`}</td>
+                    <td className="small text-wrap">{reg.email}</td>
+                    <td className="small text-wrap" colSpan={3}>
+                      Total Attendees:{" "}
+                      <strong>{reg.attendees?.length || 0}</strong>
+                    </td>
+                    <td className="small text-wrap">
+                      {formatCurrency(reg.total_cost)}
+                    </td>
+                    <td className="small">
+                      <span
+                        className={`badge ${
+                          reg.payment_status === "Paid"
+                            ? "text-bg-success"
+                            : reg.payment_status === "Unpaid"
+                            ? "text-bg-warning"
+                            : "text-bg-secondary"
+                        }`}
                       >
-                        <td
-                          style={{
-                            cursor: "pointer",
-                          }}
+                        {reg.payment_status}
+                      </span>
+                    </td>
+                    <OverlayTrigger
+                      placement="top"
+                      overlay={<Tooltip>Edit Notes for this Group</Tooltip>}
+                    >
+                      <td
+                        style={{
+                          cursor: "pointer",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setNotesModalContent({
+                            id: reg.id,
+                            notes: reg.notes,
+                          });
+                          setShowNotesModal(true);
+                        }}
+                        colSpan={2}
+                        className="small text-wrap"
+                      >
+                        <span style={{ opacity: reg.notes ? 1 : 0.5 }}>
+                          {reg.notes ? reg.notes : "N/A"}
+                        </span>
+                        {"   "}
+                        <i className="bi bi-sticky-fill text-warning text-opacity-75"></i>
+                      </td>
+                    </OverlayTrigger>
+
+                    <td className="text-center small">
+                      <div className="btn-group">
+                        <EditAdminModal admin={reg} />
+                        <InvoiceModal attendee={reg} />
+                        <button
+                          className="btn"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setNotesModalContent({
-                              id: reg.id,
-                              notes: reg.notes,
-                            });
-                            setShowNotesModal(true);
+                            handleRegDelete(reg.id);
                           }}
                         >
-                          <span style={{ opacity: reg.notes ? 1 : 0.5 }}>
-                            {reg.notes ? reg.notes : "N/A"}
-                          </span>
-                          <i className="bi bi-sticky-fill text-warning text-opacity-75"></i>
-                        </td>
-                      </OverlayTrigger>
+                          <i className="bi bi-trash-fill text-danger" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="small">
+                      {expandedRows.has(reg.id) ? (
+                        <i className="bi bi-caret-up-fill" />
+                      ) : (
+                        <i className="bi bi-caret-down-fill" />
+                      )}
+                    </td>
+                  </tr>
 
-                      <td className="text-center">
-                        <div className="btn-group">
-                          <EditAdminModal admin={reg}/>
-                          <InvoiceModal attendee={reg} />
-                          <button
-                            className="btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRegDelete(reg.id);
-                            }}
-                          >
-                            <i className="bi bi-trash-fill text-danger" />
-                          </button>
-                        </div>
-                      </td>
-                      <td>
-                        {expandedRows.has(reg.id) ? (
-                          <i className="bi bi-caret-up-fill" />
-                        ) : (
-                          <i className="bi bi-caret-down-fill" />
-                        )}
-                      </td>
-                    </tr>
-
-                    {expandedRows.has(reg.id) && (
+                  {expandedRows.has(reg.id) && (
+                    <>
                       <tr>
-                        <td colSpan="13" className="p-0">
+                        <td colSpan={13} className="p-0">
                           <div className="table-responsive">
                             <table className="table table-bordered mb-0 table-hover">
                               <thead className="ps-4">
                                 <tr className="table-primary small">
-                                  <th>First Name</th>
-                                  <th>Last Name</th>
+                                  <th>Full Name</th>
+                                  {/* <th>Last Name</th> */}
                                   <th>Email</th>
                                   <th>Position</th>
-                                  <th>Designation</th>
+                                  {/* <th>Designation</th> */}
                                   <th>Country</th>
                                   <th>Trainings</th>
                                   <th>Subtotal</th>
@@ -634,13 +692,21 @@ const Group = ({ filteredUsers = [] }) => {
                               <tbody>
                                 {(reg.attendees || []).map((att, j) => (
                                   <tr key={att.id ?? j} className="table-light">
-                                    <td className="small">{att.first_name}</td>
-                                    <td className="small">{att.last_name}</td>
-                                    <td className="small">{att.email}</td>
-                                    <td className="small">{att.position}</td>
-                                    <td className="small">{att.designation}</td>
-                                    <td className="small">{att.country}</td>
-                                    <td className="small">
+                                    <td className="small text-wrap">
+                                      {att.first_name} {att.last_name}
+                                    </td>
+                                    {/* <td className="small">{att.last_name}</td> */}
+                                    <td className="small text-wrap">
+                                      {att.email}
+                                    </td>
+                                    <td className="small text-wrap">
+                                      {att.position}
+                                    </td>
+                                    {/* <td className="small">{att.designation}</td> */}
+                                    <td className="small text-wrap">
+                                      {att.country}
+                                    </td>
+                                    <td className="small text-wrap">
                                       {(att.training_references || [])
                                         .map((tr) =>
                                           tr.trainings
@@ -650,7 +716,7 @@ const Group = ({ filteredUsers = [] }) => {
                                         .filter(Boolean)
                                         .join(", ")}
                                     </td>
-                                    <td className="small">
+                                    <td className="small text-wrap">
                                       {formatCurrency(att.subtotal)}
                                     </td>
                                     <td className="sticky-col">
@@ -689,92 +755,34 @@ const Group = ({ filteredUsers = [] }) => {
                           </div>
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="d-flex justify-content-center align-items-center mt-3">
-        <div>
-          <nav aria-label="Page navigation">
-            <ul className="pagination mb-0">
-              <li
-                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  &laquo;
-                </button>
-              </li>
-              <li
-                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-              </li>
-
-              {Array.from({ length: totalPages }).map((_, idx) => {
-                const pageNum = idx + 1;
-                return (
-                  <li
-                    key={pageNum}
-                    className={`page-item ${
-                      currentPage === pageNum ? "active" : ""
-                    }`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() => setCurrentPage(pageNum)}
-                    >
-                      {pageNum}
-                    </button>
-                  </li>
-                );
-              })}
-
-              <li
-                className={`page-item ${
-                  currentPage === totalPages ? "disabled" : ""
-                }`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
-              </li>
-              <li
-                className={`page-item ${
-                  currentPage === totalPages ? "disabled" : ""
-                }`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  &raquo;
-                </button>
-              </li>
-            </ul>
-          </nav>
-        </div>
+                      <tr>
+                        <td colSpan={13} className="text-center">
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
+                            aria-label="Add attendee"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log((reg.attendees || []).length);
+                              setActiveStep((reg.attendees || []).length);
+                              setEditRegistration(reg);
+                              console.log(reg);
+                              setShowModal(true);
+                            }}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <i className="bi bi-person-plus-fill" />
+                            <span className="fw-bold">Add Attendee</span>
+                          </button>
+                        </td>
+                      </tr>
+                    </>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {showNotesModal && (

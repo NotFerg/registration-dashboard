@@ -19,31 +19,56 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
 
   // Load initial data when modal opens or initialReg changes
   useEffect(() => {
-    if (initialReg) {
-      setReg({
-        first_name: initialReg.first_name,
-        last_name: initialReg.last_name,
-        email: initialReg.email,
-        company: initialReg.company,
-        total_cost: initialReg.total_cost,
-        payment_options: initialReg.payment_options,
-        payment_status: initialReg.payment_status,
-      });
-      setAttendees(
-        Array.isArray(initialReg.attendees)
-          ? initialReg.attendees.map((att) => ({
-              ...att,
-              trainings: Array.isArray(att.trainings)
-                ? att.trainings
-                : typeof att.trainings === "string"
-                ? att.trainings.split(",").map((t) => t.trim())
-                : [],
-            }))
-          : []
-      );
-      setStep(stepProp || 0);
+    if (!initialReg) return;
+
+    const baseAttendees = Array.isArray(initialReg.attendees)
+      ? initialReg.attendees.map((att) => ({
+          ...att,
+          trainings: Array.isArray(att.training_references)
+            ? att.training_references
+                .map((tr) =>
+                  tr.trainings
+                    ? `${tr.trainings.date}: ${tr.trainings.name} ($${tr.trainings.price})`
+                    : null
+                )
+                .filter(Boolean)
+            : [],
+        }))
+      : [];
+
+    const desiredStep = typeof stepProp === "number" ? stepProp : 0;
+
+    const attendeesWithPlaceholders = [...baseAttendees];
+    if (desiredStep >= attendeesWithPlaceholders.length) {
+      for (let i = attendeesWithPlaceholders.length; i <= desiredStep; i++) {
+        attendeesWithPlaceholders.push({
+          id: null,
+          first_name: "",
+          last_name: "",
+          email: "",
+          position: "",
+          designation: "",
+          country: "",
+          trainings: [],
+          subtotal: 0,
+        });
+      }
     }
-  }, [initialReg, show]);
+
+    setAttendees(attendeesWithPlaceholders);
+
+    setReg({
+      first_name: initialReg.first_name,
+      last_name: initialReg.last_name,
+      email: initialReg.email,
+      company: initialReg.company,
+      total_cost: initialReg.total_cost,
+      payment_options: initialReg.payment_options,
+      payment_status: initialReg.payment_status,
+    });
+
+    setStep(desiredStep);
+  }, [initialReg, show, stepProp]);
 
   // Navigation
   const isFirst = step === 0;
