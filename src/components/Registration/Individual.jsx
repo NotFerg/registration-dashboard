@@ -386,122 +386,128 @@ const Individual = ({ filteredUsers = [] }) => {
           <b>Total Count: {totalRecords}</b>
         </h6>
       </div>
-      <div className="table-responsive" data-mdb-perfect-scrollbar="true">
-        <table className="table table-bordered table-hover">
-          <thead className="table-dark sticky-top">
-            <tr className="small">
-              <th className="text-nowrap">Company</th>
-              <th className="text-nowrap">Date Submitted</th>
-              <th className="text-nowrap">Full Name</th>
-              <th className="text-nowrap">Email</th>
-              <th className="text-nowrap">Position</th>
-              {/* <th className="text-nowrap">Designation</th> */}
-              <th className="text-nowrap">Country</th>
-              <th className="text-nowrap">Trainings</th>
-              <th className="text-nowrap">Total Cost</th>
-              <th className="text-nowrap">Payment Status</th>
-              <th className="text-center" colSpan={2}>
-                Actions
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {displayedUsers.length === 0 ? (
-              <tr>
-                <td colSpan={12} className="text-center">
-                  <h1 className="m-5"> No records satisfy the filter</h1>
-                </td>
+      <div
+        style={{ maxHeight: "75vh", overflowY: "auto", scrollbarWidth: "thin" }}
+      >
+        <div className="table">
+          <table className="table table-bordered table-hover">
+            <thead className="table-dark sticky-top">
+              <tr className="small">
+                <th className="text-nowrap">Company</th>
+                <th className="text-nowrap">Date Submitted</th>
+                <th className="text-nowrap">Full Name</th>
+                <th className="text-nowrap">Email</th>
+                <th className="text-nowrap">Position</th>
+                {/* <th className="text-nowrap">Designation</th> */}
+                <th className="text-nowrap">Country</th>
+                <th className="text-nowrap">Trainings</th>
+                <th className="text-nowrap">Total Cost</th>
+                <th className="text-nowrap">Payment Status</th>
+                <th className="text-center" colSpan={2}>
+                  Actions
+                </th>
               </tr>
-            ) : (
-              displayedUsers.map((reg, i) => {
-                const dateObj = new Date(reg.submission_date);
+            </thead>
 
-                const options = {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                };
+            <tbody>
+              {displayedUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={12} className="text-center">
+                    <h1 className="m-5"> No records satisfy the filter</h1>
+                  </td>
+                </tr>
+              ) : (
+                displayedUsers.map((reg, i) => {
+                  const dateObj = new Date(reg.submission_date);
 
-                const formattedDate = dateObj.toLocaleDateString(
-                  "en-US",
-                  options
-                );
-                return (
-                  <tr key={reg.id ?? i}>
-                    <td
-                      className="small sticky-col"
-                      style={{
-                        minWidth: "120px",
-                      }}
-                    >
-                      {reg.company}
-                    </td>
-                    <td className="small">{formattedDate}</td>
-                    <td className="small">
-                      {reg.first_name} {reg.last_name}
-                    </td>
-                    <td
-                      className="small text-wrap"
-                      style={{ maxWidth: "125px" }}
-                    >
-                      {reg.email}
-                    </td>
-                    <td className="small">{reg.position}</td>
-                    {/* <td className="small">{reg.designation}</td> */}
-                    <td className="small">{reg.country}</td>
-                    <td className="small">
-                      <ul className="mb-0">
-                        {(reg.training_references || [])
-                          .map((tr) =>
-                            tr.trainings ? (
-                              <li className="mb-2" key={tr.trainings.id}>
-                                {tr.trainings.name}
-                              </li>
-                            ) : null
-                          )
-                          .filter(Boolean)}
-                      </ul>
-                    </td>
-                    <td className="small">{formatCurrency(reg.total_cost)}</td>
-                    <td className="small">
-                      <span
-                        className={`badge ${
-                          reg.payment_status === "Paid"
-                            ? "text-bg-success"
-                            : reg.payment_status === "Unpaid"
-                            ? "text-bg-warning"
-                            : "text-bg-secondary"
-                        }`}
+                  const options = {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  };
+
+                  const formattedDate = dateObj.toLocaleDateString(
+                    "en-US",
+                    options
+                  );
+                  return (
+                    <tr key={reg.id ?? i}>
+                      <td
+                        className="small sticky-col"
+                        style={{
+                          minWidth: "120px",
+                        }}
                       >
-                        {reg.payment_status}
-                      </span>
-                    </td>
-                    <td colSpan={2} className="sticky-col">
-                      <div className="btn-group">
-                        <button
-                          className="btn"
-                          data-bs-toggle="modal"
-                          data-bs-target="#editModal"
-                          onClick={() => setEditRegistration(reg)}
+                        {reg.company}
+                      </td>
+                      <td className="small">{formattedDate}</td>
+                      <td className="small">
+                        {reg.first_name} {reg.last_name}
+                      </td>
+                      <td
+                        className="small text-wrap"
+                        style={{ maxWidth: "125px" }}
+                      >
+                        {reg.email}
+                      </td>
+                      <td className="small">{reg.position}</td>
+                      {/* <td className="small">{reg.designation}</td> */}
+                      <td className="small">{reg.country}</td>
+                      <td className="small">
+                        <ul className="mb-0">
+                          {(reg.training_references || [])
+                            .map((tr) =>
+                              tr.trainings ? (
+                                <li className="mb-2" key={tr.trainings.id}>
+                                  {tr.trainings.name}
+                                </li>
+                              ) : null
+                            )
+                            .filter(Boolean)}
+                        </ul>
+                      </td>
+                      <td className="small">
+                        {formatCurrency(reg.total_cost)}
+                      </td>
+                      <td className="small">
+                        <span
+                          className={`badge ${
+                            reg.payment_status === "Paid"
+                              ? "text-bg-success"
+                              : reg.payment_status === "Unpaid"
+                              ? "text-bg-warning"
+                              : "text-bg-secondary"
+                          }`}
                         >
-                          <i className="bi bi-pencil-square text-success" />
-                        </button>
-                        <InvoiceModal attendee={reg} />
-                        <button
-                          className="btn"
-                          onClick={() => handleDelete(reg.id)}
-                        >
-                          <i className="bi bi-trash-fill text-danger" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                          {reg.payment_status}
+                        </span>
+                      </td>
+                      <td colSpan={2} className="sticky-col">
+                        <div className="btn-group">
+                          <button
+                            className="btn"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editModal"
+                            onClick={() => setEditRegistration(reg)}
+                          >
+                            <i className="bi bi-pencil-square text-success" />
+                          </button>
+                          <InvoiceModal attendee={reg} />
+                          <button
+                            className="btn"
+                            onClick={() => handleDelete(reg.id)}
+                          >
+                            <i className="bi bi-trash-fill text-danger" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Edit Modal */}

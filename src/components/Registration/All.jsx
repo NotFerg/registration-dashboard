@@ -508,128 +508,134 @@ const All = ({ filteredUsers = [] }) => {
           <b>Total Count: {totalRecords}</b>
         </h6>
       </div>
-
-      <div className="table-responsive">
-        <div style={{ overflowX: "auto" }}>
-          <table className="table table-bordered table-hover">
-            <thead className="table-dark">
-              <tr className="small">
-                <th
-                  className="text-nowrap"
-                  style={{
-                    position: "sticky",
-                    left: 0,
-                    zIndex: 5,
-                    minWidth: "150px",
-                  }}
-                >
-                  Company
-                </th>
-                <th className="text-nowrap">Date Submitted</th>
-                <th className="text-nowrap">Full Name</th>
-                <th className="text-nowrap">Email</th>
-                <th className="text-nowrap">Position</th>
-                {/* <th className="text-nowrap">Designation</th> */}
-                <th className="text-nowrap">Country</th>
-                <th className="text-nowrap">Trainings</th>
-                <th className="text-nowrap">Total Cost</th>
-                <th className="text-nowrap">Payment Status</th>
-                <th className="text-nowrap text-center" colSpan={2}>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayedUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="text-center">
-                    <h1 className="m-5"> No records satisfy the filter</h1>
-                  </td>
+      <div
+        style={{ maxHeight: "75vh", overflowY: "auto", scrollbarWidth: "thin" }}
+      >
+        <div className="table">
+          <div>
+            <table className="table table-bordered table-hover">
+              <thead
+                className="table-dark"
+                style={{ position: "sticky", top: 0, zIndex: 9999 }}
+              >
+                <tr className="small">
+                  <th
+                    className="text-nowrap"
+                    style={{
+                      position: "sticky",
+                      left: 0,
+                      zIndex: 5,
+                      minWidth: "150px",
+                    }}
+                  >
+                    Company
+                  </th>
+                  <th className="text-nowrap">Date Submitted</th>
+                  <th className="text-nowrap">Full Name</th>
+                  <th className="text-nowrap">Email</th>
+                  <th className="text-nowrap">Position</th>
+                  {/* <th className="text-nowrap">Designation</th> */}
+                  <th className="text-nowrap">Country</th>
+                  <th className="text-nowrap">Trainings</th>
+                  <th className="text-nowrap">Total Cost</th>
+                  <th className="text-nowrap">Payment Status</th>
+                  <th className="text-nowrap text-center" colSpan={2}>
+                    Actions
+                  </th>
                 </tr>
-              ) : (
-                displayedUsers.map((reg, i) => {
-                  return (
-                    <tr key={reg.id ?? i}>
-                      <td
-                        className="small sticky-col text-wrap"
-                        style={{
-                          position: "sticky",
-                          left: 0,
-                          background: "#fff",
-                          zIndex: 4,
-                          minWidth: "150px",
-                        }}
-                      >
-                        {reg.company}
-                      </td>
-                      <td className="small">
-                        {formatDate(reg.submission_date)}
-                      </td>
-                      <td className="small text-wrap">
-                        {reg.first_name} {reg.last_name}
-                      </td>
-                      <td
-                        className="small text-wrap"
-                        style={{ maxWidth: "150px" }}
-                      >
-                        {reg.email}
-                      </td>
-                      <td className="small text-wrap">{reg.position}</td>
-                      {/* <td className="small text-wrap">{reg.designation}</td> */}
-                      <td className="small text-wrap">{reg.country}</td>
-                      <td className="small text-wrap">
-                        <ul className=" mb-0">
-                          {(reg.trainings || [])
-                            .map((tr) =>
-                              tr.trainings ? (
-                                <li className="mb-2" key={tr.trainings.id}>
-                                  {tr.trainings.name}
-                                </li>
-                              ) : null
-                            )
-                            .filter(Boolean)}
-                        </ul>
-                      </td>
-                      <td className="small text-wrap">
-                        {formatCurrency(reg.total_cost)}
-                      </td>
-                      <td className="small">
-                        <span
-                          className={`badge ${
-                            reg.payment_status === "Paid"
-                              ? "text-bg-success"
-                              : reg.payment_status === "Unpaid"
-                              ? "text-bg-warning"
-                              : "text-bg-secondary"
-                          }`}
+              </thead>
+              <tbody>
+                {displayedUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={12} className="text-center">
+                      <h1 className="m-5"> No records satisfy the filter</h1>
+                    </td>
+                  </tr>
+                ) : (
+                  displayedUsers.map((reg, i) => {
+                    return (
+                      <tr key={reg.id ?? i}>
+                        <td
+                          className="small sticky-col text-wrap"
+                          style={{
+                            position: "sticky",
+                            left: 0,
+                            background: "#fff",
+                            zIndex: 4,
+                            minWidth: "150px",
+                          }}
                         >
-                          {reg.payment_status}
-                        </span>
-                      </td>
-                      <td colSpan={2} className="sticky-col">
-                        <div className="btn-group">
-                          <button
-                            className="btn"
-                            data-bs-toggle="modal"
-                            data-bs-target="#editModal"
-                            onClick={() => setEditRegistration(reg)}
+                          {reg.company}
+                        </td>
+                        <td className="small">
+                          {formatDate(reg.submission_date)}
+                        </td>
+                        <td className="small text-wrap">
+                          {reg.first_name} {reg.last_name}
+                        </td>
+                        <td
+                          className="small text-wrap"
+                          style={{ maxWidth: "150px" }}
+                        >
+                          {reg.email}
+                        </td>
+                        <td className="small text-wrap">{reg.position}</td>
+                        {/* <td className="small text-wrap">{reg.designation}</td> */}
+                        <td className="small text-wrap">{reg.country}</td>
+                        <td className="small text-wrap">
+                          <ul className=" mb-0">
+                            {(reg.trainings || [])
+                              .map((tr) =>
+                                tr.trainings ? (
+                                  <li className="mb-2" key={tr.trainings.id}>
+                                    {tr.trainings.name}
+                                  </li>
+                                ) : null
+                              )
+                              .filter(Boolean)}
+                          </ul>
+                        </td>
+                        <td className="small text-wrap">
+                          {formatCurrency(reg.total_cost)}
+                        </td>
+                        <td className="small">
+                          <span
+                            className={`badge ${
+                              reg.payment_status === "Paid"
+                                ? "text-bg-success"
+                                : reg.payment_status === "Unpaid"
+                                ? "text-bg-warning"
+                                : "text-bg-secondary"
+                            }`}
                           >
-                            <i className="bi bi-pencil-square text-success" />
-                          </button>
-                          <button
-                            className="btn"
-                            onClick={() => handleDelete(reg.id)}
-                          >
-                            <i className="bi bi-trash-fill text-danger" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                            {reg.payment_status}
+                          </span>
+                        </td>
+                        <td colSpan={2} className="sticky-col">
+                          <div className="btn-group">
+                            <button
+                              className="btn"
+                              data-bs-toggle="modal"
+                              data-bs-target="#editModal"
+                              onClick={() => setEditRegistration(reg)}
+                            >
+                              <i className="bi bi-pencil-square text-success" />
+                            </button>
+                            <button
+                              className="btn"
+                              onClick={() => handleDelete(reg.id)}
+                            >
+                              <i className="bi bi-trash-fill text-danger" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

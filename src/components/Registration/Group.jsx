@@ -545,7 +545,7 @@ const Group = ({ filteredUsers = [] }) => {
       </div>
 
       <div
-        style={{ maxHeight: "40vh", overflowY: "auto", scrollbarWidth: "thin" }}
+        style={{ maxHeight: "75vh", overflowY: "auto", scrollbarWidth: "thin" }}
       >
         <div className="table">
           <table className="table table-bordered table-hover">
