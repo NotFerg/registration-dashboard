@@ -155,7 +155,7 @@ const Individual = ({ filteredUsers = [] }) => {
     <>
       <div className="d-flex justify-content-between align-items-center my-3">
         <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
-          <div className="dropdown">
+          <div className="dropdown" style={{ zIndex: "10000" }}>
             <button
               className="btn btn-outline-dark dropdown-toggle border"
               type="button"
@@ -238,7 +238,11 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-          <div className="dropdown ps-2" id="countryDropdown">
+          <div
+            className="dropdown ps-2"
+            id="countryDropdown"
+            style={{ zIndex: "10000" }}
+          >
             <button
               className="btn btn-outline-dark dropdown-toggle border 
             "
@@ -297,7 +301,11 @@ const Individual = ({ filteredUsers = [] }) => {
             </button>
             <ul
               className="dropdown-menu p-2"
-              style={{ maxHeight: "300px", overflowY: "scroll" }}
+              style={{
+                maxHeight: "300px",
+                overflowY: "scroll",
+                zIndex: "10000",
+              }}
             >
               {(trainingData || [])
                 .slice()
@@ -340,7 +348,7 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-          <div className="dropdown ps-2" id="paymentStatusDropdown">
+          <div className="dropdown ps-2" id="paymentStatusDropdown" style={{ zIndex: "10000" }}>
             <button
               className="btn btn-outline-dark dropdown-toggle border 
             "
