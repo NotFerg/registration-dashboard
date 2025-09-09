@@ -300,7 +300,7 @@ const Group = ({ filteredUsers = [] }) => {
       {/* Filters */}
       <div className="d-flex justify-content-between align-items-center my-3">
         <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
-           <div className="dropdown">
+          <div className="dropdown">
             <button
               className="btn btn-outline-dark dropdown-toggle border"
               type="button"
@@ -384,7 +384,7 @@ const Group = ({ filteredUsers = [] }) => {
             </ul>
           </div>
           {/* Country */}
-          <div className="dropdown" id="countryDropdown">
+          <div className="dropdown ps-2" id="countryDropdown">
             <button
               className="btn btn-outline-dark dropdown-toggle border"
               type="button"
@@ -542,246 +542,254 @@ const Group = ({ filteredUsers = [] }) => {
         <h6>
           <b>Total Count: {totalRecords}</b>
         </h6>
-        <h6>
-          <b>
-            <small>
-              Showing {startRecord}-{endRecord} of {totalRecords}
-            </small>
-          </b>
-        </h6>
       </div>
 
-      <div className="table-responsive">
-        <table className="table table-bordered table-hover">
-          <thead className="table-dark">
-            <tr className="small">
-              <th className="text-nowrap">Company / Institution</th>
-              <th className="text-nowrap">Date Submitted</th>
-              <th className="text-nowrap">Admin Name</th>
-              <th className="text-nowrap">Email</th>
-              <th className="text-nowrap" colSpan={3}>
-                Attendees
-              </th>
-              <th className="text-nowrap">Total Cost</th>
-              <th className="text-nowrap">Payment Status</th>
-              <th className="text-nowrap" colSpan={2}>
-                Notes
-              </th>
-              <th className="text-nowrap text-center" colSpan={2}>
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedRegistrations.map((reg, idx) => {
-              const dateObj = new Date(reg.submission_date);
-              const options = {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              };
-              const formattedDate = dateObj.toLocaleDateString(
-                "en-US",
-                options
-              );
+      <div
+        style={{ maxHeight: "40vh", overflowY: "auto", scrollbarWidth: "thin" }}
+      >
+        <div className="table">
+          <table className="table table-bordered table-hover">
+            <thead
+              className="table-dark"
+              style={{ position: "sticky", top: 0, zIndex: 9999 }}
+            >
+              <tr className="small">
+                <th className="text-nowrap">Company / Institution</th>
+                <th className="text-nowrap">Date Submitted</th>
+                <th className="text-nowrap">Admin Name</th>
+                <th className="text-nowrap">Email</th>
+                <th className="text-nowrap" colSpan={3}>
+                  Attendees
+                </th>
+                <th className="text-nowrap">Total Cost</th>
+                <th className="text-nowrap">Payment Status</th>
+                <th className="text-nowrap" colSpan={2}>
+                  Notes
+                </th>
+                <th className="text-nowrap text-center" colSpan={2}>
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedRegistrations.map((reg, idx) => {
+                const dateObj = new Date(reg.submission_date);
+                const options = {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                };
+                const formattedDate = dateObj.toLocaleDateString(
+                  "en-US",
+                  options
+                );
 
-              return (
-                <React.Fragment key={reg.id ?? idx}>
-                  <tr
-                    onClick={() => toggleRow(reg.id)}
-                    style={{ cursor: "pointer" }}
-                    className={
-                      expandedRows.has(reg.id) ? "table-secondary" : ""
-                    }
-                  >
-                    <td className="small text-wrap">{reg.company}</td>
-                    <td className="small">{formattedDate}</td>
-                    <td className="small text-wrap">{`${reg.first_name} ${reg.last_name}`}</td>
-                    <td className="small text-wrap" style={{ maxWidth: "150px" }}>{reg.email}</td>
-                    <td className="small text-wrap" colSpan={3}>
-                      Total Attendees:{" "}
-                      <strong>{reg.attendees?.length || 0}</strong>
-                    </td>
-                    <td className="small text-wrap">
-                      {formatCurrency(reg.total_cost)}
-                    </td>
-                    <td className="small">
-                      <span
-                        className={`badge ${
-                          reg.payment_status === "Paid"
-                            ? "text-bg-success"
-                            : reg.payment_status === "Unpaid"
-                            ? "text-bg-warning"
-                            : "text-bg-secondary"
-                        }`}
-                      >
-                        {reg.payment_status}
-                      </span>
-                    </td>
-                    <OverlayTrigger
-                      placement="top"
-                      overlay={<Tooltip>Edit Notes for this Group</Tooltip>}
+                return (
+                  <React.Fragment key={reg.id ?? idx}>
+                    <tr
+                      onClick={() => toggleRow(reg.id)}
+                      style={{ cursor: "pointer" }}
+                      className={
+                        expandedRows.has(reg.id) ? "table-secondary" : ""
+                      }
                     >
+                      <td className="small text-wrap">{reg.company}</td>
+                      <td className="small">{formattedDate}</td>
+                      <td className="small text-wrap">{`${reg.first_name} ${reg.last_name}`}</td>
                       <td
-                        style={{
-                          cursor: "pointer",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setNotesModalContent({
-                            id: reg.id,
-                            notes: reg.notes,
-                          });
-                          setShowNotesModal(true);
-                        }}
-                        colSpan={2}
                         className="small text-wrap"
+                        style={{ maxWidth: "150px" }}
                       >
-                        <span style={{ opacity: reg.notes ? 1 : 0.5 }}>
-                          {reg.notes ? reg.notes : "N/A"}
-                        </span>
-                        {"   "}
-                        <i className="bi bi-sticky-fill text-warning text-opacity-75"></i>
+                        {reg.email}
                       </td>
-                    </OverlayTrigger>
-
-                    <td className="text-center small">
-                      <div className="btn-group">
-                        <EditAdminModal admin={reg} />
-                        <InvoiceModal attendee={reg} />
-                        <button
-                          className="btn"
+                      <td className="small text-wrap" colSpan={3}>
+                        Total Attendees:{" "}
+                        <strong>{reg.attendees?.length || 0}</strong>
+                      </td>
+                      <td className="small text-wrap">
+                        {formatCurrency(reg.total_cost)}
+                      </td>
+                      <td className="small">
+                        <span
+                          className={`badge ${
+                            reg.payment_status === "Paid"
+                              ? "text-bg-success"
+                              : reg.payment_status === "Unpaid"
+                              ? "text-bg-warning"
+                              : "text-bg-secondary"
+                          }`}
+                        >
+                          {reg.payment_status}
+                        </span>
+                      </td>
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={<Tooltip>Edit Notes for this Group</Tooltip>}
+                      >
+                        <td
+                          style={{
+                            cursor: "pointer",
+                          }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleRegDelete(reg.id);
+                            setNotesModalContent({
+                              id: reg.id,
+                              notes: reg.notes,
+                            });
+                            setShowNotesModal(true);
                           }}
+                          colSpan={2}
+                          className="small text-wrap"
                         >
-                          <i className="bi bi-trash-fill text-danger" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="small">
-                      {expandedRows.has(reg.id) ? (
-                        <i className="bi bi-caret-up-fill" />
-                      ) : (
-                        <i className="bi bi-caret-down-fill" />
-                      )}
-                    </td>
-                  </tr>
-
-                  {expandedRows.has(reg.id) && (
-                    <>
-                      <tr>
-                        <td colSpan={13} className="p-0">
-                          <div className="table-responsive">
-                            <table className="table table-bordered mb-0 table-hover">
-                              <thead className="ps-4">
-                                <tr className="table-primary small">
-                                  <th>Full Name</th>
-                                  {/* <th>Last Name</th> */}
-                                  <th>Email</th>
-                                  <th>Position</th>
-                                  {/* <th>Designation</th> */}
-                                  <th>Country</th>
-                                  <th>Trainings</th>
-                                  <th>Subtotal</th>
-                                  <th>Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {(reg.attendees || []).map((att, j) => (
-                                  <tr key={att.id ?? j} className="table-light">
-                                    <td className="small text-wrap">
-                                      {att.first_name} {att.last_name}
-                                    </td>
-                                    {/* <td className="small">{att.last_name}</td> */}
-                                    <td className="small text-wrap">
-                                      {att.email}
-                                    </td>
-                                    <td className="small text-wrap">
-                                      {att.position}
-                                    </td>
-                                    {/* <td className="small">{att.designation}</td> */}
-                                    <td className="small text-wrap">
-                                      {att.country}
-                                    </td>
-                                    <td className="small text-wrap">
-                                      {(att.training_references || [])
-                                        .map((tr) =>
-                                          tr.trainings
-                                            ? `${tr.trainings.name} (${tr.trainings.date})`
-                                            : null
-                                        )
-                                        .filter(Boolean)
-                                        .join(", ")}
-                                    </td>
-                                    <td className="small text-wrap">
-                                      {formatCurrency(att.subtotal)}
-                                    </td>
-                                    <td className="sticky-col">
-                                      <div className="btn-group">
-                                        <button
-                                          className="btn"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setActiveStep(
-                                              reg.attendees.indexOf(att)
-                                            );
-                                            setEditRegistration(reg);
-                                            setShowModal(true);
-                                          }}
-                                        >
-                                          <i className="bi bi-pencil-square" />
-                                        </button>
-                                        <button
-                                          className="btn"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteAttendee(
-                                              att.id,
-                                              reg.id
-                                            );
-                                          }}
-                                        >
-                                          <i className="bi bi-trash-fill" />
-                                        </button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                          <span style={{ opacity: reg.notes ? 1 : 0.5 }}>
+                            {reg.notes ? reg.notes : "N/A"}
+                          </span>
+                          {"   "}
+                          <i className="bi bi-sticky-fill text-warning text-opacity-75"></i>
                         </td>
-                      </tr>
-                      <tr>
-                        <td colSpan={13} className="text-center">
+                      </OverlayTrigger>
+
+                      <td className="text-center small">
+                        <div className="btn-group">
+                          <EditAdminModal admin={reg} />
+                          <InvoiceModal attendee={reg} />
                           <button
-                            type="button"
-                            className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
-                            aria-label="Add attendee"
+                            className="btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              console.log((reg.attendees || []).length);
-                              setActiveStep((reg.attendees || []).length);
-                              setEditRegistration(reg);
-                              console.log(reg);
-                              setShowModal(true);
+                              handleRegDelete(reg.id);
                             }}
-                            style={{ cursor: "pointer" }}
                           >
-                            <i className="bi bi-person-plus-fill" />
-                            <span className="fw-bold">Add Attendee</span>
+                            <i className="bi bi-trash-fill text-danger" />
                           </button>
-                        </td>
-                      </tr>
-                    </>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                        </div>
+                      </td>
+                      <td className="small">
+                        {expandedRows.has(reg.id) ? (
+                          <i className="bi bi-caret-up-fill" />
+                        ) : (
+                          <i className="bi bi-caret-down-fill" />
+                        )}
+                      </td>
+                    </tr>
+
+                    {expandedRows.has(reg.id) && (
+                      <>
+                        <tr>
+                          <td colSpan={13} className="p-0">
+                            <div className="table-responsive">
+                              <table className="table table-bordered mb-0 table-hover">
+                                <thead className="ps-4">
+                                  <tr className="table-primary small">
+                                    <th>Full Name</th>
+                                    {/* <th>Last Name</th> */}
+                                    <th>Email</th>
+                                    <th>Position</th>
+                                    {/* <th>Designation</th> */}
+                                    <th>Country</th>
+                                    <th>Trainings</th>
+                                    <th>Subtotal</th>
+                                    <th>Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(reg.attendees || []).map((att, j) => (
+                                    <tr
+                                      key={att.id ?? j}
+                                      className="table-light"
+                                    >
+                                      <td className="small text-wrap">
+                                        {att.first_name} {att.last_name}
+                                      </td>
+                                      {/* <td className="small">{att.last_name}</td> */}
+                                      <td className="small text-wrap">
+                                        {att.email}
+                                      </td>
+                                      <td className="small text-wrap">
+                                        {att.position}
+                                      </td>
+                                      {/* <td className="small">{att.designation}</td> */}
+                                      <td className="small text-wrap">
+                                        {att.country}
+                                      </td>
+                                      <td className="small text-wrap">
+                                        {(att.training_references || [])
+                                          .map((tr) =>
+                                            tr.trainings
+                                              ? `${tr.trainings.name} (${tr.trainings.date})`
+                                              : null
+                                          )
+                                          .filter(Boolean)
+                                          .join(", ")}
+                                      </td>
+                                      <td className="small text-wrap">
+                                        {formatCurrency(att.subtotal)}
+                                      </td>
+                                      <td className="sticky-col">
+                                        <div className="btn-group">
+                                          <button
+                                            className="btn"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setActiveStep(
+                                                reg.attendees.indexOf(att)
+                                              );
+                                              setEditRegistration(reg);
+                                              setShowModal(true);
+                                            }}
+                                          >
+                                            <i className="bi bi-pencil-square" />
+                                          </button>
+                                          <button
+                                            className="btn"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteAttendee(
+                                                att.id,
+                                                reg.id
+                                              );
+                                            }}
+                                          >
+                                            <i className="bi bi-trash-fill" />
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colSpan={13} className="text-center">
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
+                              aria-label="Add attendee"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log((reg.attendees || []).length);
+                                setActiveStep((reg.attendees || []).length);
+                                setEditRegistration(reg);
+                                console.log(reg);
+                                setShowModal(true);
+                              }}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <i className="bi bi-person-plus-fill" />
+                              <span className="fw-bold">Add Attendee</span>
+                            </button>
+                          </td>
+                        </tr>
+                      </>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showNotesModal && (

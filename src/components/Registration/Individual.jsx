@@ -238,7 +238,7 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-          <div className="dropdown" id="countryDropdown">
+          <div className="dropdown ps-2" id="countryDropdown">
             <button
               className="btn btn-outline-dark dropdown-toggle border 
             "
