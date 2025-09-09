@@ -122,14 +122,12 @@ const All = ({ filteredUsers = [] }) => {
   const filteredRegistrations = filteredUsers.filter((user) => {
     const paymentStatusMatches =
       !activePaymentStatus || user.payment_status === activePaymentStatus;
-
-    const companyMatches = !activeCompany || user.company === activeCompany;
     const countryMatches = !activeCountry || user.country === activeCountry;
 
     const activeNormalized = (activeTraining || []).map(normalize);
 
     if (activeNormalized.length === 0) {
-      return paymentStatusMatches && companyMatches && countryMatches;
+      return paymentStatusMatches && countryMatches;
     }
 
     const userTrainingNames = extractTrainingNamesFromUser(user);
@@ -138,12 +136,7 @@ const All = ({ filteredUsers = [] }) => {
       userTrainingNames.includes(sel)
     );
 
-    return (
-      paymentStatusMatches &&
-      trainingMatches &&
-      companyMatches &&
-      countryMatches
-    );
+    return paymentStatusMatches && trainingMatches && countryMatches;
   });
 
   const usersToDisplay = filteredRegistrations.flatMap((user) =>
@@ -278,43 +271,86 @@ const All = ({ filteredUsers = [] }) => {
     <>
       <div className="d-flex justify-content-between align-items-center my-3">
         <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
-          <div className="dropdown" id="companyDropdown">
+           <div className="dropdown">
             <button
-              className="btn btn-outline-dark dropdown-toggle border 
-            "
+              className="btn btn-outline-dark dropdown-toggle border"
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
-              data-bs-auto-close="outside"
             >
-              <i className="bi bi-building-fill" /> Company:{" "}
-              <span className="fw-bold">{activeCompany}</span>
+              <i className="bi bi-sort-alpha-down"></i> Sort:{" "}
+              <span className="fw-bold">
+                {sortBy
+                  ? sortBy === "company"
+                    ? "Company"
+                    : sortBy === "first_name"
+                    ? "First Name"
+                    : "Last Name"
+                  : "None"}
+              </span>
+              {sortBy && (
+                <span className="ms-2">
+                  (
+                  {sortDirection === "asc" ? (
+                    <i className="bi bi-arrow-up-short" />
+                  ) : (
+                    <i className="bi bi-arrow-down-short" />
+                  )}
+                  )
+                </span>
+              )}
             </button>
-            <ul
-              className="dropdown-menu"
-              style={{ maxHeight: "300px", overflowY: "scroll" }}
-            >
-              {filteredUsers
-                .map((user) => user.company)
-                .filter(
-                  (company, index, self) => self.indexOf(company) === index
-                )
-                .map((company, index) => (
-                  <li key={index}>
-                    <div
-                      className="dropdown-item"
-                      onClick={() => setActiveCompany(company)}
-                    >
-                      {company}
-                    </div>
-                    <hr className="dropdown-divider" />
-                  </li>
-                ))}
+            <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
+              <li className="dropdown-header">Property</li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("company")}
+              >
+                Company
+              </li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("first_name")}
+              >
+                First Name
+              </li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("last_name")}
+              >
+                Last Name
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
+              <li className="dropdown-header">Direction</li>
+              <li
+                className={
+                  "dropdown-item " + (sortDirection === "asc" ? "active" : "")
+                }
+                onClick={() => setSortDirection("asc")}
+              >
+                Ascending
+              </li>
+              <li
+                className={
+                  "dropdown-item " + (sortDirection === "desc" ? "active" : "")
+                }
+                onClick={() => setSortDirection("desc")}
+              >
+                Descending
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
               <li
                 className="dropdown-item text-center fw-bold"
-                onClick={() => setActiveCompany("")}
+                onClick={() => {
+                  setSortBy("");
+                  setSortDirection("asc");
+                }}
               >
-                Clear Filter
+                Clear Sort
               </li>
             </ul>
           </div>
@@ -462,89 +498,6 @@ const All = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-          <div className="dropdown">
-            <button
-              className="btn btn-outline-dark dropdown-toggle border"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              <i className="bi bi-sort-alpha-down"></i> Sort:{" "}
-              <span className="fw-bold">
-                {sortBy
-                  ? sortBy === "company"
-                    ? "Company"
-                    : sortBy === "first_name"
-                    ? "First Name"
-                    : "Last Name"
-                  : "None"}
-              </span>
-              {sortBy && (
-                <span className="ms-2">
-                  (
-                  {sortDirection === "asc" ? (
-                    <i className="bi bi-arrow-up-short" />
-                  ) : (
-                    <i className="bi bi-arrow-down-short" />
-                  )}
-                  )
-                </span>
-              )}
-            </button>
-            <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
-              <li className="dropdown-header">Property</li>
-              <li
-                className="dropdown-item"
-                onClick={() => handleSort("company")}
-              >
-                Company
-              </li>
-              <li
-                className="dropdown-item"
-                onClick={() => handleSort("first_name")}
-              >
-                First Name
-              </li>
-              <li
-                className="dropdown-item"
-                onClick={() => handleSort("last_name")}
-              >
-                Last Name
-              </li>
-              <li>
-                <hr className="dropdown-divider" />
-              </li>
-              <li className="dropdown-header">Direction</li>
-              <li
-                className={
-                  "dropdown-item " + (sortDirection === "asc" ? "active" : "")
-                }
-                onClick={() => setSortDirection("asc")}
-              >
-                Ascending
-              </li>
-              <li
-                className={
-                  "dropdown-item " + (sortDirection === "desc" ? "active" : "")
-                }
-                onClick={() => setSortDirection("desc")}
-              >
-                Descending
-              </li>
-              <li>
-                <hr className="dropdown-divider" />
-              </li>
-              <li
-                className="dropdown-item text-center fw-bold"
-                onClick={() => {
-                  setSortBy("");
-                  setSortDirection("asc");
-                }}
-              >
-                Clear Sort
-              </li>
-            </ul>
-          </div>
         </div>
         <button className="btn btn-outline-danger" onClick={clearFilters}>
           <i className="bi bi-x-circle"></i> Clear Filters
@@ -615,7 +568,7 @@ const All = ({ filteredUsers = [] }) => {
                       <td className="small text-wrap">
                         {reg.first_name} {reg.last_name}
                       </td>
-                      <td className="small text-wrap">{reg.email}</td>
+                      <td className="small text-wrap" style={{ maxWidth: "150px" }}>{reg.email}</td>
                       <td className="small text-wrap">{reg.position}</td>
                       {/* <td className="small text-wrap">{reg.designation}</td> */}
                       <td className="small text-wrap">{reg.country}</td>

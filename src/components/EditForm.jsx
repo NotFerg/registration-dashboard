@@ -169,15 +169,15 @@ const EditForm = ({ reg: initialReg }) => {
         }
       }
 
-      Swal.fire({
-        text: "Registration updated successfully.",
-        icon: "success",
-        confirmButtonText: "OK",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          window.location.reload();
-        }
-      });
+      // Swal.fire({
+      //   text: "Registration updated successfully.",
+      //   icon: "success",
+      //   confirmButtonText: "OK",
+      // }).then((result) => {
+      //   if (result.isConfirmed) {
+      //     window.location.reload();
+      //   }
+      // });
     } else {
       // INSERT CASE
       const { data: insertedRegistration, error: insertError } = await supabase

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import EditForm from "../EditForm";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
@@ -65,15 +65,9 @@ const Individual = ({ filteredUsers = [] }) => {
       activeNormalized.length === 0 ||
       activeNormalized.some((sel) => userTrainings.includes(sel));
 
-    const companyMatches = !activeCompany || user.company === activeCompany;
     const countryMatches = !activeCountry || user.country === activeCountry;
 
-    return (
-      paymentStatusMatches &&
-      trainingMatches &&
-      companyMatches &&
-      countryMatches
-    );
+    return paymentStatusMatches && trainingMatches && countryMatches;
   });
 
   const handleSort = (column) => {
@@ -161,47 +155,90 @@ const Individual = ({ filteredUsers = [] }) => {
     <>
       <div className="d-flex justify-content-between align-items-center my-3">
         <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
-          <div className="dropdown" id="companyDropdown">
+          <div className="dropdown">
             <button
-              className="btn btn-outline-dark dropdown-toggle border 
-            "
+              className="btn btn-outline-dark dropdown-toggle border"
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
-              data-bs-auto-close="outside"
             >
-              <i className="bi bi-building-fill" /> Company:{" "}
-              <span className="fw-bold">{activeCompany}</span>
+              <i className="bi bi-sort-alpha-down"></i> Sort:{" "}
+              <span className="fw-bold">
+                {sortBy
+                  ? sortBy === "company"
+                    ? "Company"
+                    : sortBy === "first_name"
+                    ? "First Name"
+                    : "Last Name"
+                  : "None"}
+              </span>
+              {sortBy && (
+                <span className="ms-2">
+                  (
+                  {sortDirection ? (
+                    <i className="bi bi-arrow-up-short"></i>
+                  ) : (
+                    <i className="bi bi-arrow-down-short"></i>
+                  )}
+                  )
+                </span>
+              )}
             </button>
-            <ul
-              className="dropdown-menu"
-              style={{ maxHeight: "300px", overflowY: "scroll" }}
-            >
-              {filteredUsers
-                .map((user) => user.company)
-                .filter(
-                  (company, index, self) => self.indexOf(company) === index
-                )
-                .map((company, index) => (
-                  <li key={index}>
-                    <div
-                      className="dropdown-item"
-                      onClick={() => setActiveCompany(company)}
-                    >
-                      {company}
-                    </div>
-                    <hr className="dropdown-divider" />
-                  </li>
-                ))}
+            <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
+              <li className="dropdown-header">Property</li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("company")}
+              >
+                Company
+              </li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("first_name")}
+              >
+                First Name
+              </li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("last_name")}
+              >
+                Last Name
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
+              <li className="dropdown-header">Direction</li>
+              <li
+                className={
+                  "dropdown-item " + (sortDirection === "asc" ? "active" : "")
+                }
+                onClick={() => setSortDirection("asc")}
+              >
+                Ascending
+              </li>
+              <li
+                className={
+                  "dropdown-item " + (sortDirection === "desc" ? "active" : "")
+                }
+                onClick={() => setSortDirection("desc")}
+              >
+                Descending
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
               <li
                 className="dropdown-item text-center fw-bold"
-                onClick={() => setActiveCompany("")}
+                onClick={() => {
+                  setSortBy("");
+                  setSortDirection("asc");
+                }}
               >
-                Clear Filter
+                Clear Sort
               </li>
             </ul>
           </div>
-          <div className="dropdown ps-2" id="countryDropdown">
+          <div className="dropdown" id="countryDropdown">
             <button
               className="btn btn-outline-dark dropdown-toggle border 
             "
@@ -338,90 +375,6 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-
-          <div className="dropdown">
-            <button
-              className="btn btn-outline-dark dropdown-toggle border"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              <i className="bi bi-sort-alpha-down"></i> Sort:{" "}
-              <span className="fw-bold">
-                {sortBy
-                  ? sortBy === "company"
-                    ? "Company"
-                    : sortBy === "first_name"
-                    ? "First Name"
-                    : "Last Name"
-                  : "None"}
-              </span>
-              {sortBy && (
-                <span className="ms-2">
-                  (
-                  {sortDirection ? (
-                    <i className="bi bi-arrow-up-short"></i>
-                  ) : (
-                    <i className="bi bi-arrow-down-short"></i>
-                  )}
-                  )
-                </span>
-              )}
-            </button>
-            <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
-              <li className="dropdown-header">Property</li>
-              <li
-                className="dropdown-item"
-                onClick={() => handleSort("company")}
-              >
-                Company
-              </li>
-              <li
-                className="dropdown-item"
-                onClick={() => handleSort("first_name")}
-              >
-                First Name
-              </li>
-              <li
-                className="dropdown-item"
-                onClick={() => handleSort("last_name")}
-              >
-                Last Name
-              </li>
-              <li>
-                <hr className="dropdown-divider" />
-              </li>
-              <li className="dropdown-header">Direction</li>
-              <li
-                className={
-                  "dropdown-item " + (sortDirection === "asc" ? "active" : "")
-                }
-                onClick={() => setSortDirection("asc")}
-              >
-                Ascending
-              </li>
-              <li
-                className={
-                  "dropdown-item " + (sortDirection === "desc" ? "active" : "")
-                }
-                onClick={() => setSortDirection("desc")}
-              >
-                Descending
-              </li>
-              <li>
-                <hr className="dropdown-divider" />
-              </li>
-              <li
-                className="dropdown-item text-center fw-bold"
-                onClick={() => {
-                  setSortBy("");
-                  setSortDirection("asc");
-                }}
-              >
-                Clear Sort
-              </li>
-            </ul>
-          </div>
         </div>
         <button className="btn btn-outline-danger" onClick={clearFilters}>
           <i className="bi bi-x-circle"></i> Clear Filters
@@ -433,135 +386,122 @@ const Individual = ({ filteredUsers = [] }) => {
           <b>Total Count: {totalRecords}</b>
         </h6>
       </div>
+      <div className="table-responsive" data-mdb-perfect-scrollbar="true">
+        <table className="table table-bordered table-hover">
+          <thead className="table-dark sticky-top">
+            <tr className="small">
+              <th className="text-nowrap">Company</th>
+              <th className="text-nowrap">Date Submitted</th>
+              <th className="text-nowrap">Full Name</th>
+              <th className="text-nowrap">Email</th>
+              <th className="text-nowrap">Position</th>
+              {/* <th className="text-nowrap">Designation</th> */}
+              <th className="text-nowrap">Country</th>
+              <th className="text-nowrap">Trainings</th>
+              <th className="text-nowrap">Total Cost</th>
+              <th className="text-nowrap">Payment Status</th>
+              <th className="text-center" colSpan={2}>
+                Actions
+              </th>
+            </tr>
+          </thead>
 
-      <div className="table-responsive">
-        <div style={{ overflowX: "auto" }}>
-          <table className="table table-bordered table-hover">
-            <thead className="table-dark">
-              <tr className="small">
-                <th
-                  className="sticky-col text-nowrap"
-                  style={{
-                    position: "sticky",
-                    left: 0,
-                    zIndex: 5,
-                    minWidth: "150px",
-                  }}
-                >
-                  Company
-                </th>
-                <th className="text-nowrap">Date Submitted</th>
-                <th className="text-nowrap">Full Name</th>
-                <th className="text-nowrap">Email</th>
-                <th className="text-nowrap">Position</th>
-                {/* <th className="text-nowrap">Designation</th> */}
-                <th className="text-nowrap">Country</th>
-                <th className="text-nowrap">Trainings</th>
-                <th className="text-nowrap">Total Cost</th>
-                <th className="text-nowrap">Payment Status</th>
-                <th className="text-center" colSpan={2}>
-                  Actions
-                </th>
+          <tbody>
+            {displayedUsers.length === 0 ? (
+              <tr>
+                <td colSpan={12} className="text-center">
+                  <h1 className="m-5"> No records satisfy the filter</h1>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {displayedUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="text-center">
-                    <h1 className="m-5"> No records satisfy the filter</h1>
-                  </td>
-                </tr>
-              ) : (
-                displayedUsers.map((reg, i) => {
-                  const dateObj = new Date(reg.submission_date);
+            ) : (
+              displayedUsers.map((reg, i) => {
+                const dateObj = new Date(reg.submission_date);
 
-                  const options = {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  };
+                const options = {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                };
 
-                  const formattedDate = dateObj.toLocaleDateString(
-                    "en-US",
-                    options
-                  );
-                  return (
-                    <tr key={reg.id ?? i}>
-                      <td
-                        className="small sticky-col"
-                        style={{
-                          position: "sticky",
-                          left: 0,
-                          background: "#fff",
-                          zIndex: 4,
-                          minWidth: "150px",
-                        }}
+                const formattedDate = dateObj.toLocaleDateString(
+                  "en-US",
+                  options
+                );
+                return (
+                  <tr key={reg.id ?? i}>
+                    <td
+                      className="small sticky-col"
+                      style={{
+                        minWidth: "120px",
+                      }}
+                    >
+                      {reg.company}
+                    </td>
+                    <td className="small">{formattedDate}</td>
+                    <td className="small">
+                      {reg.first_name} {reg.last_name}
+                    </td>
+                    <td
+                      className="small text-wrap"
+                      style={{ maxWidth: "125px" }}
+                    >
+                      {reg.email}
+                    </td>
+                    <td className="small">{reg.position}</td>
+                    {/* <td className="small">{reg.designation}</td> */}
+                    <td className="small">{reg.country}</td>
+                    <td className="small">
+                      <ul className="mb-0">
+                        {(reg.training_references || [])
+                          .map((tr) =>
+                            tr.trainings ? (
+                              <li className="mb-2" key={tr.trainings.id}>
+                                {tr.trainings.name}
+                              </li>
+                            ) : null
+                          )
+                          .filter(Boolean)}
+                      </ul>
+                    </td>
+                    <td className="small">{formatCurrency(reg.total_cost)}</td>
+                    <td className="small">
+                      <span
+                        className={`badge ${
+                          reg.payment_status === "Paid"
+                            ? "text-bg-success"
+                            : reg.payment_status === "Unpaid"
+                            ? "text-bg-warning"
+                            : "text-bg-secondary"
+                        }`}
                       >
-                        {reg.company}
-                      </td>
-                      <td className="small">{formattedDate}</td>
-                      <td className="small">
-                        {reg.first_name} {reg.last_name}
-                      </td>
-                      <td className="small text-wrap">{reg.email}</td>
-                      <td className="small">{reg.position}</td>
-                      {/* <td className="small">{reg.designation}</td> */}
-                      <td className="small">{reg.country}</td>
-                      <td className="small">
-                        <ul className="mb-0">
-                          {(reg.training_references || [])
-                            .map((tr) =>
-                              tr.trainings ? (
-                                <li className="mb-2" key={tr.trainings.id}>
-                                  {tr.trainings.name}
-                                </li>
-                              ) : null
-                            )
-                            .filter(Boolean)}
-                        </ul>
-                      </td>
-                      <td className="small">
-                        {formatCurrency(reg.total_cost)}
-                      </td>
-                      <td className="small">
-                        <span
-                          className={`badge ${
-                            reg.payment_status === "Paid"
-                              ? "text-bg-success"
-                              : reg.payment_status === "Unpaid"
-                              ? "text-bg-warning"
-                              : "text-bg-secondary"
-                          }`}
+                        {reg.payment_status}
+                      </span>
+                    </td>
+                    <td colSpan={2} className="sticky-col">
+                      <div className="btn-group">
+                        <button
+                          className="btn"
+                          data-bs-toggle="modal"
+                          data-bs-target="#editModal"
+                          onClick={() => setEditRegistration(reg)}
                         >
-                          {reg.payment_status}
-                        </span>
-                      </td>
-                      <td colSpan={2} className="sticky-col">
-                        <div className="btn-group">
-                          <button
-                            className="btn"
-                            data-bs-toggle="modal"
-                            data-bs-target="#editModal"
-                            onClick={() => setEditRegistration(reg)}
-                          >
-                            <i className="bi bi-pencil-square text-success" />
-                          </button>
-                          <InvoiceModal attendee={reg} />
-                          <button
-                            className="btn"
-                            onClick={() => handleDelete(reg.id)}
-                          >
-                            <i className="bi bi-trash-fill text-danger" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                          <i className="bi bi-pencil-square text-success" />
+                        </button>
+                        <InvoiceModal attendee={reg} />
+                        <button
+                          className="btn"
+                          onClick={() => handleDelete(reg.id)}
+                        >
+                          <i className="bi bi-trash-fill text-danger" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Edit Modal */}
