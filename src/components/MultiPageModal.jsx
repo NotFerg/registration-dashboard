@@ -234,6 +234,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         reg={{
           ...initialReg,
           ...attendee,
+          registration_id: initialReg.id,
           trainings: Array.isArray(attendee.trainings)
             ? attendee.trainings
             : typeof attendee.trainings === "string"
@@ -251,12 +252,12 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   if (!initialReg) return null;
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" style={{ zIndex: 11000 }}>
+    <Modal show={show} onHide={onHide} size='lg' style={{ zIndex: 11000 }}>
       <Modal.Header closeButton>
         <Modal.Title>
           <h1
-            className="modal-title fs-5"
-            id="editModalLabel"
+            className='modal-title fs-5'
+            id='editModalLabel'
             style={{ fontWeight: 700 }}
           >
             Edit Group Registration
@@ -265,61 +266,61 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
       </Modal.Header>
       <Modal.Body>
         {/* Admin overview (read-only) */}
-        <section className="mb-4">
+        <section className='mb-4'>
           {/* Admin overview (read-only) */}
-          <h4 style={{ marginBottom: 12 }} className="fs-5">
+          <h4 style={{ marginBottom: 12 }} className='fs-5'>
             Admin Information
           </h4>
-          <div className="card w-100">
-            <div className="card-body">
-              <div className="d-flex flex-row">
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-building"></i>
+          <div className='card w-100'>
+            <div className='card-body'>
+              <div className='d-flex flex-row'>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i className='bi bi-building'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>Company</strong>
                   </h6>
-                  <p className="card-text">{initialReg.company}</p>
+                  <p className='card-text'>{initialReg.company}</p>
                 </div>
-                <div className="vr mx-3"></div>
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-person-circle"></i>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i className='bi bi-person-circle'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>Name</strong>
                   </h6>
-                  <p className="card-text">
+                  <p className='card-text'>
                     {initialReg.first_name} {initialReg.last_name}
                   </p>
                 </div>
-                <div className="vr mx-3"></div>
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-envelope-at-fill"></i>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i className='bi bi-envelope-at-fill'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>E-Mail</strong>
                   </h6>
-                  <p className="card-text">{initialReg.email}</p>
+                  <p className='card-text'>{initialReg.email}</p>
                 </div>
-                <div className="vr mx-3"></div>
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-cash"></i>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i className='bi bi-cash'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>Total Cost</strong>
                   </h6>
-                  <p className="card-text">${initialReg.total_cost}</p>
+                  <p className='card-text'>${initialReg.total_cost}</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
         <hr />
-        <h4 style={{ marginBottom: 12 }} className="fs-5">
+        <h4 style={{ marginBottom: 12 }} className='fs-5'>
           Attendees Information
         </h4>
         {renderAttendeeForm()}
