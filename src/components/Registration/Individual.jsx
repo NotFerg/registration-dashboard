@@ -155,7 +155,7 @@ const Individual = ({ filteredUsers = [] }) => {
     <>
       <div className="d-flex justify-content-between align-items-center my-3">
         <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
-          <div className="dropdown">
+          <div className="dropdown" style={{ zIndex: "100" }}>
             <button
               className="btn btn-outline-dark dropdown-toggle border"
               type="button"
@@ -238,7 +238,11 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-          <div className="dropdown ps-2" id="countryDropdown">
+          <div
+            className="dropdown ps-2"
+            id="countryDropdown"
+            style={{ zIndex: "100" }}
+          >
             <button
               className="btn btn-outline-dark dropdown-toggle border 
             "
@@ -278,16 +282,21 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-          <div className="dropdown ps-2" id="trainingDropdown">
+         <div
+            className="dropdown ps-2"
+            id="trainingDropdown"
+            style={{ zIndex: "100" }}
+          >
             <button
-              className="btn btn-outline-dark dropdown-toggle border"
+              className="btn btn-outline-dark dropdown-toggle border 
+            "
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
               data-bs-auto-close="outside"
             >
               <i className="bi bi-funnel-fill"></i> Training:{" "}
-              {activeTraining && activeTraining.length !== 0 ? (
+              {activeTraining && activeTraining.length != 0 ? (
                 <span className="badge bg-success ms-2">
                   {activeTraining.length}
                 </span>
@@ -301,16 +310,20 @@ const Individual = ({ filteredUsers = [] }) => {
             >
               {(trainingData || [])
                 .slice()
-                .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-                .map((training, index) => (
-                  <li key={training.id ?? index}>
+                .map((training) => training.name)
+                .filter(
+                  (name, index, self) => self.indexOf(name) === index
+                )
+                .sort((a, b) => a.localeCompare(b))
+                .map((name, index) => (
+                  <li key={index}>
                     <div className="form-check">
                       <input
                         className="form-check-input"
                         type="checkbox"
-                        value={training.name}
-                        id={`training-${training.id ?? index}`}
-                        checked={activeTraining.includes(training.name)}
+                        value={name}
+                        id={`training-${index}`}
+                        checked={activeTraining.includes(name)}
                         onChange={(e) => {
                           const newValue = e.target.value;
                           if (e.target.checked) {
@@ -324,9 +337,9 @@ const Individual = ({ filteredUsers = [] }) => {
                       />
                       <label
                         className="form-check-label"
-                        htmlFor={`training-${training.id ?? index}`}
+                        htmlFor={`training-${index}`}
                       >
-                        {training.name}
+                        {name}
                       </label>
                     </div>
                     <hr className="dropdown-divider" />
@@ -340,7 +353,7 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-          <div className="dropdown ps-2" id="paymentStatusDropdown">
+          <div className="dropdown ps-2" id="paymentStatusDropdown" style={{ zIndex: "100" }}>
             <button
               className="btn btn-outline-dark dropdown-toggle border 
             "
@@ -391,7 +404,7 @@ const Individual = ({ filteredUsers = [] }) => {
       >
         <div className="table">
           <table className="table table-bordered table-hover">
-            <thead className="table-dark sticky-top">
+            <thead className="table-dark sticky-top" style={{ zIndex: 99 }}>
               <tr className="small">
                 <th className="text-nowrap">Company</th>
                 <th className="text-nowrap">Date Submitted</th>

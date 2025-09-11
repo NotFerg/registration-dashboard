@@ -165,41 +165,44 @@ const AddAttendees = ({
           </div>
         </div>
 
-        {/* FIX CHECKED VALUE LATER */}
         <div className="mb-3">
           <label htmlFor="trainings" className="form-label">
             Trainings <span style={{ color: "red" }}> * </span>
           </label>
           <br />
           <div className="border rounded p-2">
+            <span className="text-muted ps-2">Early Bird Price</span> <br/>
             {trainings.map((training, i) => {
               const trainingString = `${training.date}: ${training.name} ($${training.price})`;
               const isChecked = form.trainings?.includes(trainingString);
               const checkboxId = `training-${training.id || i}`;
 
               return (
-                <div
-                  key={training.id || i}
-                  className="form-check form-check-inline"
-                >
-                  <input
-                    type="checkbox"
-                    className="btn-check"
-                    id={checkboxId}
-                    name="trainings"
-                    value={trainingString}
-                    checked={isChecked}
-                    onChange={(e) => {
-                      handleTrainingChange(trainingString, e.target.checked);
-                    }}
-                  />
-                  <label
-                    className="form-check-label btn btn-outline-success m-1"
-                    htmlFor={checkboxId}
+                <>
+                  <div
+                    key={training.id || i}
+                    className="form-check form-check-inline"
                   >
-                    {training.name} - ${training.price}
-                  </label>
-                </div>
+                    <input
+                      type="checkbox"
+                      className="btn-check"
+                      id={checkboxId}
+                      name="trainings"
+                      value={trainingString}
+                      checked={isChecked}
+                      onChange={(e) => {
+                        handleTrainingChange(trainingString, e.target.checked);
+                      }}
+                    />
+                    <label
+                      className="form-check-label btn btn-outline-success m-1"
+                      htmlFor={checkboxId}
+                    >
+                      {training.name} - ${training.price}
+                    </label>
+                  </div>
+                  {i == 4 && <hr className="w-100" />}
+                </>
               );
             })}
           </div>

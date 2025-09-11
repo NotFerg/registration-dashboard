@@ -288,26 +288,17 @@ function App() {
     setSearchTerm(event.target.value);
   };
 
-  const filteredUsers = excelData.filter((user) => {
-    if (activeTab === "individual" && user.registration_type !== "Myself") {
-      return false;
-    }
-    if (
-      activeTab === "group" &&
-      user.registration_type !== "Someone Else / Group"
-    ) {
-      return false;
-    }
-    if (
-      searchTerm !== "" &&
-      !user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !user.company.toLowerCase().includes(searchTerm.toLowerCase())
-    ) {
-      return false;
-    }
-    return true;
-  });
+  const filteredUsers = excelData.filter(
+    ({ registration_type, first_name, last_name, company }) =>
+      (activeTab === "individual" ? registration_type === "Myself" : true) &&
+      (activeTab === "group" ? registration_type === "Someone Else / Group" : true) &&
+      (searchTerm === "" ||
+        [
+          first_name.toLowerCase(),
+          last_name.toLowerCase(),
+          company.toLowerCase(),
+        ].some((field) => field.includes(searchTerm.toLowerCase())))
+  );
 
   // Split string into training lines
   function splitTrainingLines(cell) {
@@ -483,7 +474,7 @@ function App() {
           tabIndex='-1'
           aria-labelledby='addModalLabel'
           aria-hidden='true'
-          style={{ zIndex: 9999 }}
+          style={{ zIndex: 1200 }}
         >
           <div className='modal-dialog modal-dialog-centered modal-dialog-scrollable'>
             <div className='modal-content'>

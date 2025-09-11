@@ -163,6 +163,7 @@ const Form = ({}) => {
       text: "Registration added successfully",
       icon: "success",
       confirmButtonText: "OK",
+      target: document.getElementById("addRegistrationModal"),
     }).then((result) => {
       if (result.isConfirmed) {
         window.location.reload();
@@ -173,51 +174,51 @@ const Form = ({}) => {
   return (
     <>
       <form onSubmit={handleSubmit}>
-        <div className='mb-3'>
-          <label htmlFor='company' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="company" className="form-label">
             Company <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type='text'
-            className='form-control'
-            id='company'
-            name='company'
-            placeholder='Enter Company Name'
-            aria-describedby='company'
+            type="text"
+            className="form-control"
+            id="company"
+            name="company"
+            placeholder="Enter Company Name"
+            aria-describedby="company"
             onChange={handleChange}
             value={reg.company}
             required
           />
         </div>
-        <div className='d-flex flex-row justify-content-between'>
-          <div className='mb-3'>
-            <label htmlFor='first_name' className='form-label'>
+        <div className="d-flex flex-row justify-content-between">
+          <div className="mb-3">
+            <label htmlFor="first_name" className="form-label">
               First Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type='text'
-              className='form-control'
-              id='first_name'
-              name='first_name'
-              placeholder='Enter First Name'
-              aria-describedby='first_name'
+              type="text"
+              className="form-control"
+              id="first_name"
+              name="first_name"
+              placeholder="Enter First Name"
+              aria-describedby="first_name"
               onChange={handleChange}
               value={reg.first_name}
               required
             />
           </div>
 
-          <div className='mb-3'>
-            <label htmlFor='last_name' className='form-label'>
+          <div className="mb-3">
+            <label htmlFor="last_name" className="form-label">
               Last Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type='text'
-              className='form-control'
-              id='last_name'
-              name='last_name'
-              placeholder='Enter Last Name'
-              aria-describedby='last_name'
+              type="text"
+              className="form-control"
+              id="last_name"
+              name="last_name"
+              placeholder="Enter Last Name"
+              aria-describedby="last_name"
               onChange={handleChange}
               value={reg.last_name}
               required
@@ -225,80 +226,81 @@ const Form = ({}) => {
           </div>
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='email' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="email" className="form-label">
             Email <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type='email'
-            className='form-control'
-            id='email'
-            name='email'
-            placeholder='Enter Email'
-            aria-describedby='email'
+            type="email"
+            className="form-control"
+            id="email"
+            name="email"
+            placeholder="Enter Email"
+            aria-describedby="email"
             onChange={handleChange}
             value={reg.email}
             required
           />
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='position' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="position" className="form-label">
             Position <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type='text'
-            className='form-control'
-            id='position'
-            name='position'
-            placeholder='Enter Position'
-            aria-describedby='position'
+            type="text"
+            className="form-control"
+            id="position"
+            name="position"
+            placeholder="Enter Position"
+            aria-describedby="position"
             onChange={handleChange}
             value={reg.position}
             required
           />
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='designation' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="designation" className="form-label">
             Designation <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type='text'
-            className='form-control'
-            id='designation'
-            name='designation'
-            placeholder='Enter Designation'
-            aria-describedby='designation'
+            type="text"
+            className="form-control"
+            id="designation"
+            name="designation"
+            placeholder="Enter Designation"
+            aria-describedby="designation"
             onChange={handleChange}
             value={reg.designation}
             required
           />
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='country' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="country" className="form-label">
             Country <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type='text'
-            className='form-control'
-            id='country'
-            name='country'
-            placeholder='Enter Country'
-            aria-describedby='country'
+            type="text"
+            className="form-control"
+            id="country"
+            name="country"
+            placeholder="Enter Country"
+            aria-describedby="country"
             onChange={handleChange}
             value={reg.country}
             required
           />
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='trainings' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="trainings" className="form-label">
             Trainings <span style={{ color: "red" }}> * </span>
           </label>
           <br />
-          <div className='border rounded p-2'>
+          <div className="border rounded p-2">
+            <span className="text-muted ps-2 pb-2">Early Bird Price</span>
             {trainings.map((training, i) => {
               const trainingString = `${training.date}: ${training.name} ($${training.price})`;
               const isChecked = reg.trainings.includes(trainingString);
@@ -306,10 +308,10 @@ const Form = ({}) => {
               return (
                 <React.Fragment key={training.id || i}>
                   <input
-                    type='checkbox'
-                    className='btn-check'
+                    type="checkbox"
+                    className="btn-check"
                     id={`btn-check-${training.id || i}`}
-                    name='trainings'
+                    name="trainings"
                     value={trainingString}
                     checked={isChecked}
                     onChange={(e) => {
@@ -317,28 +319,29 @@ const Form = ({}) => {
                     }}
                   />
                   <label
-                    className='btn btn-outline-success m-1'
+                    className="btn btn-outline-success m-1"
                     htmlFor={`btn-check-${training.id || i}`}
                   >
                     {training.name} - ${training.price}
                   </label>
+                  {i == 4 && <hr />}
                 </React.Fragment>
               );
             })}
           </div>
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='total_cost' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="total_cost" className="form-label">
             Total Cost <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type='number'
-            className='form-control'
-            id='total_cost'
-            name='total_cost'
-            placeholder='Enter Total Cost'
-            aria-describedby='total_cost'
+            type="number"
+            className="form-control"
+            id="total_cost"
+            name="total_cost"
+            placeholder="Enter Total Cost"
+            aria-describedby="total_cost"
             onChange={handleChange}
             value={reg.total_cost}
             readOnly
@@ -346,45 +349,45 @@ const Form = ({}) => {
           />
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='payment_options' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="payment_options" className="form-label">
             Payment Options <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type='text'
-            className='form-control'
-            id='payment_options'
-            name='payment_options'
-            placeholder='Enter Full Payment Options'
-            aria-describedby='payment_options'
+            type="text"
+            className="form-control"
+            id="payment_options"
+            name="payment_options"
+            placeholder="Enter Full Payment Options"
+            aria-describedby="payment_options"
             onChange={handleChange}
             value={reg.payment_options}
             required
           />
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='payment_status' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="payment_status" className="form-label">
             Payment Status <span style={{ color: "red" }}> * </span>
           </label>
           <select
-            className='form-select'
-            id='payment_status'
-            name='payment_status'
-            aria-describedby='payment_status'
+            className="form-select"
+            id="payment_status"
+            name="payment_status"
+            aria-describedby="payment_status"
             onChange={handleChange}
             value={reg.payment_status}
             required
           >
-            <option value=''>Select Payment Status</option>
-            <option value='Paid'>Paid</option>
-            <option value='Unpaid'>Unpaid</option>
-            <option value='Partial Payment'>Partial Payment</option>
+            <option value="">Select Payment Status</option>
+            <option value="Paid">Paid</option>
+            <option value="Unpaid">Unpaid</option>
+            <option value="Partial Payment">Partial Payment</option>
           </select>
         </div>
 
-        <div className='mt-3'>
-          <button type='submit' className='btn btn-primary w-100'>
+        <div className="mt-3">
+          <button type="submit" className="btn btn-primary w-100">
             Submit
           </button>
         </div>

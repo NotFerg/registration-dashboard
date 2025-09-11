@@ -72,6 +72,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
   function handlePrev() {
     setStep(Math.max(step - 1, 0));
   }
+  
 
   async function handleSaveGroup(e) {
     e.preventDefault();
@@ -163,6 +164,8 @@ const AddMultiPageModal = ({ show, onHide }) => {
         title: "Group registration successfully saved!",
         icon: "success",
         confirmButtonText: "OK",
+        backdrop: true,
+        allowOutsideClick: false,
       }).then((result) => {
         if (result.isConfirmed) {
           window.location.reload();
@@ -174,6 +177,8 @@ const AddMultiPageModal = ({ show, onHide }) => {
         title: "Error!",
         text: "There was an error saving the registration. Please try again.",
         icon: "error",
+        backdrop: true,
+        allowOutsideClick: false,
       }).then((result) => {
         if (result.isConfirmed) {
           window.location.reload();
@@ -361,6 +366,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
           >
             <option value="">Select Payment Status</option>
             <option value="Paid">Paid</option>
+               <option value="Partial Payment">Partial Payment</option>
             <option value="Unpaid">Unpaid</option>
           </select>
         </div>
