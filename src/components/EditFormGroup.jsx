@@ -4,7 +4,7 @@ import supabase from "../utils/supabase";
 const EditFormGroup = ({
   reg: initialReg,
   onSave = () => {},
-  handleSubmitGroup = () => {},
+  handleSubmit = () => {},
   isFirst,
   isLast,
   next,
@@ -42,7 +42,7 @@ const EditFormGroup = ({
           ? [...prev.trainings, trainingName]
           : prev.trainings.filter((t) => t !== trainingName);
 
-        console.log(reg);
+        // console.log(reg);
         return {
           ...prev,
           trainings: updatedTrainings,
@@ -54,7 +54,7 @@ const EditFormGroup = ({
         ...prevFormData,
         [id]: value,
       }));
-      console.log(reg);
+      // console.log(reg);
     }
   };
 
@@ -120,9 +120,11 @@ const EditFormGroup = ({
   }
 
   async function handleSubmit(e) {
+    console.log("INSIDE HANDLE SUBMIT");
     e.preventDefault();
 
     if (initialReg) {
+      console.log("INSIDE STEP 1");
       // 1. Update REGISTRATION-level fields (if needed)
       await supabase
         .from("registrations")
@@ -140,8 +142,14 @@ const EditFormGroup = ({
         })
         .eq("id", initialReg.id);
 
+      console.log("REG", reg);
+      console.log("INITIAL REG", initialReg);
+
+      let currentAttendeeId = reg.id; // For existing attendees
+
       // 2. Update the ATTENDEE (by reg.id)
       if (reg.id) {
+        console.log("INSIDE STEP 2 - UPDATING EXISTING ATTENDEE");
         const { error: attendeeUpdateError } = await supabase
           .from("attendees")
           .update({
@@ -154,13 +162,23 @@ const EditFormGroup = ({
             trainings: reg.trainings.join(", "),
             subtotal: reg.total_cost,
           })
-          .eq("id", reg.id);
+          .eq("id", reg.registration_id);
 
         if (attendeeUpdateError) {
           console.error("Attendee update error:", attendeeUpdateError);
           return;
         }
+
+        // 3. Delete old training_references for this existing attendee
+        await supabase
+          .from("training_references")
+          .delete()
+          .eq("registration_id", reg.registration_id)
+          .eq("attendee_id", reg.id);
       } else {
+        console.log("INSIDE STEP 3 - INSERTING NEW ATTENDEE");
+
+        // Insert new attendee and get the generated ID
         const { data: inserted, error: insertError } = await supabase
           .from("attendees")
           .insert([
@@ -173,7 +191,7 @@ const EditFormGroup = ({
               country: reg.country,
               trainings: reg.trainings.join(", "),
               subtotal: reg.total_cost,
-              registration_id: initialReg.id,
+              registration_id: reg.registration_id,
             },
           ])
           .select()
@@ -183,16 +201,13 @@ const EditFormGroup = ({
           console.error("Attendee insert error:", insertError);
           return;
         }
+
+        // Use the newly inserted attendee's ID
+        currentAttendeeId = inserted.id;
+        console.log("New attendee ID:", currentAttendeeId);
       }
 
-      // // 3. Delete old training_references for this attendee
-      // await supabase
-      //   .from("training_references")
-      //   .delete()
-      //   .eq("registration_id", initialReg.id)
-      //   .eq("attendee_id", reg.id); // optional if you're storing this
-
-      // 4. Insert new training_references
+      // 4. Insert new training_references (works for both existing and new attendees)
       for (const line of reg.trainings) {
         const parsed = parseTrainingLine(line);
         if (!parsed) continue;
@@ -207,62 +222,64 @@ const EditFormGroup = ({
           await supabase.from("training_references").insert([
             {
               training_id: trainingId,
-              registration_id: initialReg.id,
-              attendee_id: reg.id, // optional: if `training_references` includes this
+              registration_id: reg.registration_id,
+              attendee_id: currentAttendeeId, // Use the correct attendee ID
             },
           ]);
         }
       }
     }
-    setTrainings(data || []);
+
+    // Reload the page after successful save
+    window.location.reload();
   }
 
   return (
     <>
       <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label htmlFor="company" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='company' className='form-label'>
             Company <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type="text"
-            className="form-control"
-            id="company"
+            type='text'
+            className='form-control'
+            id='company'
             value={reg.company}
             onChange={handleChange}
             required
           />
         </div>
 
-        <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3 flex-fill pe-3">
-            <label htmlFor="first_name" className="form-label">
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='mb-3 flex-fill pe-3'>
+            <label htmlFor='first_name' className='form-label'>
               First Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type="text"
-              className="form-control"
-              id="first_name"
-              name="first_name"
-              placeholder="Enter First Name"
-              aria-describedby="first_name"
+              type='text'
+              className='form-control'
+              id='first_name'
+              name='first_name'
+              placeholder='Enter First Name'
+              aria-describedby='first_name'
               onChange={handleChange}
               value={reg.first_name}
               required
             />
           </div>
 
-          <div className="mb-3 flex-fill">
-            <label htmlFor="last_name" className="form-label">
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='last_name' className='form-label'>
               Last Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type="text"
-              className="form-control"
-              id="last_name"
-              name="last_name"
-              placeholder="Enter Last Name"
-              aria-describedby="last_name"
+              type='text'
+              className='form-control'
+              id='last_name'
+              name='last_name'
+              placeholder='Enter Last Name'
+              aria-describedby='last_name'
               onChange={handleChange}
               value={reg.last_name}
               required
@@ -270,35 +287,35 @@ const EditFormGroup = ({
           </div>
         </div>
 
-        <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3 flex-fill pe-3">
-            <label htmlFor="email" className="form-label">
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='mb-3 flex-fill pe-3'>
+            <label htmlFor='email' className='form-label'>
               Email <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type="email"
-              className="form-control"
-              id="email"
-              name="email"
-              placeholder="Enter Email"
-              aria-describedby="email"
+              type='email'
+              className='form-control'
+              id='email'
+              name='email'
+              placeholder='Enter Email'
+              aria-describedby='email'
               onChange={handleChange}
               value={reg.email}
               required
             />
           </div>
 
-          <div className="mb-3 flex-fill">
-            <label htmlFor="position" className="form-label">
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='position' className='form-label'>
               Position <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type="text"
-              className="form-control"
-              id="position"
-              name="position"
-              placeholder="Enter Position"
-              aria-describedby="position"
+              type='text'
+              className='form-control'
+              id='position'
+              name='position'
+              placeholder='Enter Position'
+              aria-describedby='position'
               onChange={handleChange}
               value={reg.position}
               required
@@ -306,35 +323,35 @@ const EditFormGroup = ({
           </div>
         </div>
 
-        <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3 flex-fill pe-3">
-            <label htmlFor="designation" className="form-label">
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='mb-3 flex-fill pe-3'>
+            <label htmlFor='designation' className='form-label'>
               Designation <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type="text"
-              className="form-control"
-              id="designation"
-              name="designation"
-              placeholder="Enter Designation"
-              aria-describedby="designation"
+              type='text'
+              className='form-control'
+              id='designation'
+              name='designation'
+              placeholder='Enter Designation'
+              aria-describedby='designation'
               onChange={handleChange}
               value={reg.designation}
               required
             />
           </div>
 
-          <div className="mb-3 flex-fill">
-            <label htmlFor="country" className="form-label">
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='country' className='form-label'>
               Country <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type="text"
-              className="form-control"
-              id="country"
-              name="country"
-              placeholder="Enter Full country"
-              aria-describedby="country"
+              type='text'
+              className='form-control'
+              id='country'
+              name='country'
+              placeholder='Enter Full country'
+              aria-describedby='country'
               onChange={handleChange}
               value={reg.country}
               required
@@ -342,13 +359,13 @@ const EditFormGroup = ({
           </div>
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="trainings" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='trainings' className='form-label'>
             Trainings <span style={{ color: "red" }}> * </span>
           </label>
           <br />
-          <div className="border rounded p-2">
-            <span className="text-muted ps-2">Early Bird Price</span>
+          <div className='border rounded p-2'>
+            <span className='text-muted ps-2'>Early Bird Price</span>
             <br />
             {trainings.map((training, i) => {
               const trainingString = `${training.date}: ${training.name} ($${training.price})`;
@@ -356,22 +373,22 @@ const EditFormGroup = ({
               return (
                 <React.Fragment key={training.id}>
                   <input
-                    type="checkbox"
-                    className="btn-check"
+                    type='checkbox'
+                    className='btn-check'
                     id={`btn-check-${i}`}
-                    autoComplete="off"
+                    autoComplete='off'
                     checked={reg.trainings.includes(trainingString)}
                     value={trainingString}
                     onChange={handleChange}
                   />
                   <label
-                    className="btn btn-outline-success m-1"
+                    className='btn btn-outline-success m-1'
                     htmlFor={`btn-check-${i}`}
                   >
                     {reg.trainings.includes(trainingString) && (
-                      <i className="bi bi-check-lg"></i>
+                      <i className='bi bi-check-lg'></i>
                     )}{" "}
-                    {training.name}
+                    {training.name} ${training.price}
                   </label>
                   {i == 4 && <hr />}
                 </React.Fragment>
@@ -381,17 +398,17 @@ const EditFormGroup = ({
         </div>
 
         {/* <div className="d-flex flex-row justify-content-between"> */}
-        <div className="mb-3">
-          <label htmlFor="total_cost" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='total_cost' className='form-label'>
             Total Cost <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type="number"
-            className="form-control"
-            id="total_cost"
-            name="total_cost"
+            type='number'
+            className='form-control'
+            id='total_cost'
+            name='total_cost'
             value={reg.total_cost}
-            aria-describedby="total_cost"
+            aria-describedby='total_cost'
             onChange={handleChange}
             required
           />
@@ -417,51 +434,48 @@ const EditFormGroup = ({
             </select>
           </div> */}
         {/* </div> */}
-        <div className="text-center mt-4 mb-4">
+        <div className='text-center mt-4 mb-4'>
           <button
-            className="btn btn-outline-primary btn-sm"
+            className='btn btn-outline-primary btn-sm'
             onClick={prev}
             disabled={isFirst}
           >
-            <i className="bi bi-caret-left"></i>
+            <i className='bi bi-caret-left'></i>
           </button>
-          <small className="mx-3 text-muted">
+          <small className='mx-3 text-muted'>
             Attendee {attendees.length === 0 ? 0 : step + 1} of{" "}
             {attendees.length}
           </small>
           <button
-            className="btn btn-outline-primary btn-sm"
+            className='btn btn-outline-primary btn-sm'
             onClick={next}
             disabled={isLast}
           >
-            <i className="bi bi-caret-right"></i>
+            <i className='bi bi-caret-right'></i>
           </button>
         </div>
 
         <hr />
 
-        <div className="vstack gap-2">
-          <div className="d-flex">
-            <div className="px-1 w-100">
+        <div className='vstack gap-2'>
+          <div className='d-flex'>
+            <div className='px-1 w-100'>
               <button
-                type="button"
-                className="btn btn-success w-100"
+                type='button'
+                className='btn btn-success w-100'
                 onClick={() => onSave && onSave(reg)}
               >
-                <i className="bi bi-person-fill"></i> Save Attendee
+                <i className='bi bi-person-fill'></i> Save Attendee
               </button>
             </div>
-            <div className="px-1 w-100">
-              <button
-                className="btn btn-primary w-100"
-                onClick={handleSubmitGroup}
-              >
-                <i className="bi bi-people-fill"></i> Save Group
+            <div className='px-1 w-100'>
+              <button className='btn btn-primary w-100' onClick={handleSubmit}>
+                <i className='bi bi-people-fill'></i> Save Group
               </button>
             </div>
           </div>
-          <div className="px-1 w-100">
-            <button className="btn btn-outline-secondary w-100">Cancel</button>
+          <div className='px-1 w-100'>
+            <button className='btn btn-outline-secondary w-100'>Cancel</button>
           </div>
         </div>
       </form>
