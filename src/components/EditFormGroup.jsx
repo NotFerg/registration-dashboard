@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import supabase from "../utils/supabase";
 
 const EditFormGroup = ({
   reg: initialReg,
   onSave = () => {},
   handleSubmit = () => {},
+  handleSubmitGroup,
   isFirst,
   isLast,
   next,
@@ -24,11 +25,59 @@ const EditFormGroup = ({
     trainings: [],
     total_cost: "",
   });
+  const regRef = useRef(reg);
+
+  useEffect(() => {
+    regRef.current = reg;
+  }, [reg]);
 
   useEffect(() => {
     fetchTrainings();
     if (initialReg) {
-      setReg(initialReg);
+      console.log("Loading initialReg:", initialReg);
+
+      // Parse the trainings string from database into an array
+      let parsedTrainings = [];
+
+      if (initialReg.trainings) {
+        if (typeof initialReg.trainings === "string") {
+          // Split by \r\n and clean up whitespace
+          parsedTrainings = initialReg.trainings
+            .split(/\r?\n/)
+            .map((training) => training.trim())
+            .filter((training) => training.length > 0);
+        } else if (Array.isArray(initialReg.trainings)) {
+          // Handle array case - check if it's array with one string containing \r\n
+          if (
+            initialReg.trainings.length === 1 &&
+            typeof initialReg.trainings[0] === "string" &&
+            initialReg.trainings[0].includes("\r\n")
+          ) {
+            // Split the single string element
+            parsedTrainings = initialReg.trainings[0]
+              .split(/\r?\n/)
+              .map((training) => training.trim())
+              .filter((training) => training.length > 0);
+          } else {
+            parsedTrainings = initialReg.trainings;
+          }
+        }
+      }
+
+      console.log("Parsed trainings:", parsedTrainings);
+
+      // Calculate the correct total cost from parsed trainings
+      const calculatedTotal = calculateTotalCost(parsedTrainings);
+      console.log("Calculated total cost:", calculatedTotal);
+
+      const updatedReg = {
+        ...initialReg,
+        trainings: parsedTrainings,
+        total_cost: calculatedTotal, // Use calculated total instead of initialReg.total_cost
+      };
+
+      console.log("Setting reg to:", updatedReg);
+      setReg(updatedReg);
     }
   }, [initialReg]);
 
@@ -59,7 +108,8 @@ const EditFormGroup = ({
   };
 
   const handleSave = () => {
-    onSave(reg);
+    // Use current state from ref
+    onSave(regRef.current);
   };
 
   function calculateTotalCost(trainingStrings) {
@@ -231,6 +281,7 @@ const EditFormGroup = ({
     }
 
     // Reload the page after successful save
+    window.location.reload();
     window.location.reload();
   }
 
@@ -436,6 +487,7 @@ const EditFormGroup = ({
         {/* </div> */}
         <div className='text-center mt-4 mb-4'>
           <button
+            type='button'
             className='btn btn-outline-primary btn-sm'
             onClick={prev}
             disabled={isFirst}
@@ -447,6 +499,7 @@ const EditFormGroup = ({
             {attendees.length}
           </small>
           <button
+            type='button'
             className='btn btn-outline-primary btn-sm'
             onClick={next}
             disabled={isLast}
@@ -463,19 +516,25 @@ const EditFormGroup = ({
               <button
                 type='button'
                 className='btn btn-success w-100'
-                onClick={() => onSave && onSave(reg)}
+                onClick={handleSave}
               >
                 <i className='bi bi-person-fill'></i> Save Attendee
               </button>
             </div>
             <div className='px-1 w-100'>
-              <button className='btn btn-primary w-100' onClick={handleSubmit}>
+              <button
+                type='button'
+                className='btn btn-primary w-100'
+                onClick={handleSubmitGroup || handleSubmit}
+              >
                 <i className='bi bi-people-fill'></i> Save Group
               </button>
             </div>
           </div>
           <div className='px-1 w-100'>
-            <button className='btn btn-outline-secondary w-100'>Cancel</button>
+            <button type='button' className='btn btn-outline-secondary w-100'>
+              Cancel
+            </button>
           </div>
         </div>
       </form>
