@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import supabase from "../utils/supabase";
 import Swal from "sweetalert2";
 const EditForm = ({ reg: initialReg }) => {
+  console.log(initialReg);
   const [trainings, setTrainings] = useState([]);
   const [reg, setReg] = useState({
     company: "",
@@ -56,7 +57,9 @@ const EditForm = ({ reg: initialReg }) => {
         ...prevFormData,
         [id]: value,
       }));
+      
     }
+    
   };
 
   async function fetchTrainings() {
@@ -127,7 +130,9 @@ const EditForm = ({ reg: initialReg }) => {
           total_cost: reg.total_cost,
           payment_options: reg.payment_options,
           payment_status: reg.payment_status,
-          trainings: reg.trainings.join(", "),
+          trainings: typeof reg.trainings === "string"
+            ? [reg.trainings].join(", ")
+            : reg.trainings.join(", "),
           company: reg.company,
         })
         .eq("id", initialReg.id);
@@ -169,15 +174,16 @@ const EditForm = ({ reg: initialReg }) => {
         }
       }
 
-      // Swal.fire({
-      //   text: "Registration updated successfully.",
-      //   icon: "success",
-      //   confirmButtonText: "OK",
-      // }).then((result) => {
-      //   if (result.isConfirmed) {
-      //     window.location.reload();
-      //   }
-      // });
+      Swal.fire({
+        text: "Registration updated successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+        target: "#editModal",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
     } else {
       // INSERT CASE
       const { data: insertedRegistration, error: insertError } = await supabase
@@ -257,7 +263,7 @@ const EditForm = ({ reg: initialReg }) => {
             className="form-control"
             id="company"
             name="company"
-            placeholder="Enter Full company"
+            placeholder="Enter Full Company"
             aria-describedby="company"
             onChange={handleChange}
             value={reg.company}
@@ -274,7 +280,7 @@ const EditForm = ({ reg: initialReg }) => {
               className="form-control"
               id="first_name"
               name="first_name"
-              placeholder="Enter Full first_name"
+              placeholder="Enter First Name"
               aria-describedby="first_name"
               onChange={handleChange}
               value={reg.first_name}
@@ -291,7 +297,7 @@ const EditForm = ({ reg: initialReg }) => {
               className="form-control"
               id="last_name"
               name="last_name"
-              placeholder="Enter Full last_name"
+              placeholder="Enter Last Name"
               aria-describedby="last_name"
               onChange={handleChange}
               value={reg.last_name}
@@ -309,7 +315,7 @@ const EditForm = ({ reg: initialReg }) => {
             className="form-control"
             id="email"
             name="email"
-            placeholder="Enter Full email"
+            placeholder="Enter Email"
             aria-describedby="email"
             onChange={handleChange}
             value={reg.email}
@@ -326,7 +332,7 @@ const EditForm = ({ reg: initialReg }) => {
             className="form-control"
             id="position"
             name="position"
-            placeholder="Enter Full position"
+            placeholder="Enter Position"
             aria-describedby="position"
             onChange={handleChange}
             value={reg.position}
@@ -343,7 +349,7 @@ const EditForm = ({ reg: initialReg }) => {
             className="form-control"
             id="designation"
             name="designation"
-            placeholder="Enter Full designation"
+            placeholder="Enter Designation"
             aria-describedby="designation"
             onChange={handleChange}
             value={reg.designation}
@@ -360,7 +366,7 @@ const EditForm = ({ reg: initialReg }) => {
             className="form-control"
             id="country"
             name="country"
-            placeholder="Enter Full country"
+            placeholder="Enter Country"
             aria-describedby="country"
             onChange={handleChange}
             value={reg.country}
@@ -374,6 +380,7 @@ const EditForm = ({ reg: initialReg }) => {
           </label>
           <br />
           <div className="border rounded p-2">
+            <span className="text-muted ps-2">Early Bird Price</span>
             {trainings.map((training, i) => {
               const trainingString = `${training.date}: ${training.name} ($${training.price})`;
 
@@ -384,7 +391,7 @@ const EditForm = ({ reg: initialReg }) => {
                     className="btn-check"
                     id={`btn-check-${i}`}
                     autoComplete="off"
-                    checked={reg.trainings.includes(trainingString)}
+                    checked={reg.trainings?.includes(trainingString)}
                     value={trainingString}
                     onChange={handleChange}
                   />
@@ -394,6 +401,7 @@ const EditForm = ({ reg: initialReg }) => {
                   >
                     {training.name} - ${training.price}
                   </label>
+                  {i == 4 && <hr />}
                 </React.Fragment>
               );
             })}
@@ -427,7 +435,7 @@ const EditForm = ({ reg: initialReg }) => {
             className="form-control"
             id="payment_options"
             name="payment_options"
-            placeholder="Enter Full payment_options"
+            placeholder="Enter Payment Option"
             aria-describedby="payment_options"
             onChange={handleChange}
             value={reg.payment_options}
@@ -451,7 +459,7 @@ const EditForm = ({ reg: initialReg }) => {
             <option value="">Select Payment Status</option>
             <option value="Paid">Paid</option>
             <option value="Unpaid">Unpaid</option>
-            <option value='Partial Payment'>Partial Payment</option>
+            <option value="Partial Payment">Partial Payment</option>
           </select>
         </div>
 

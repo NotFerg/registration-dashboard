@@ -300,7 +300,7 @@ const Group = ({ filteredUsers = [] }) => {
       {/* Filters */}
       <div className="d-flex justify-content-between align-items-center my-3">
         <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
-          <div className="dropdown" style={{ zIndex: "10000" }}>
+          <div className="dropdown" style={{ zIndex: "100" }}>
             <button
               className="btn btn-outline-dark dropdown-toggle border"
               type="button"
@@ -387,7 +387,7 @@ const Group = ({ filteredUsers = [] }) => {
           <div
             className="dropdown ps-2"
             id="countryDropdown"
-            style={{ zIndex: "10000" }}
+            style={{ zIndex: "100" }}
           >
             <button
               className="btn btn-outline-dark dropdown-toggle border"
@@ -401,7 +401,11 @@ const Group = ({ filteredUsers = [] }) => {
             </button>
             <ul
               className="dropdown-menu"
-              style={{ maxHeight: "300px", overflowY: "scroll", zIndex: "10000"  }}
+              style={{
+                maxHeight: "300px",
+                overflowY: "scroll",
+                zIndex: "100",
+              }}
             >
               {filteredUsers
                 .map((u) => u.country)
@@ -432,21 +436,21 @@ const Group = ({ filteredUsers = [] }) => {
             </ul>
           </div>
 
-          {/* Training (driven by trainingData.name) */}
           <div
             className="dropdown ps-2"
             id="trainingDropdown"
-            style={{ zIndex: "10000" }}
+            style={{ zIndex: "100" }}
           >
             <button
-              className="btn btn-outline-dark dropdown-toggle border"
+              className="btn btn-outline-dark dropdown-toggle border 
+            "
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
               data-bs-auto-close="outside"
             >
-              <i className="bi bi-funnel-fill" /> Training:{" "}
-              {activeTraining && activeTraining.length !== 0 ? (
+              <i className="bi bi-funnel-fill"></i> Training:{" "}
+              {activeTraining && activeTraining.length != 0 ? (
                 <span className="badge bg-success ms-2">
                   {activeTraining.length}
                 </span>
@@ -460,16 +464,18 @@ const Group = ({ filteredUsers = [] }) => {
             >
               {(trainingData || [])
                 .slice()
-                .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-                .map((training, index) => (
-                  <li key={training.id ?? index}>
+                .map((training) => training.name)
+                .filter((name, index, self) => self.indexOf(name) === index)
+                .sort((a, b) => a.localeCompare(b))
+                .map((name, index) => (
+                  <li key={index}>
                     <div className="form-check">
                       <input
                         className="form-check-input"
                         type="checkbox"
-                        value={training.name}
-                        id={`group-training-${training.id ?? index}`}
-                        checked={activeTraining.includes(training.name)}
+                        value={name}
+                        id={`training-${index}`}
+                        checked={activeTraining.includes(name)}
                         onChange={(e) => {
                           const newValue = e.target.value;
                           if (e.target.checked) {
@@ -483,13 +489,9 @@ const Group = ({ filteredUsers = [] }) => {
                       />
                       <label
                         className="form-check-label"
-                        htmlFor={`group-training-${training.id ?? index}`}
+                        htmlFor={`training-${index}`}
                       >
-                        {training.name}
-                        {training.date ? ` — ${training.date}` : ""}
-                        {typeof training.price !== "undefined"
-                          ? ` (${formatCurrency(training.price)})`
-                          : ""}
+                        {name}
                       </label>
                     </div>
                     <hr className="dropdown-divider" />
@@ -505,7 +507,11 @@ const Group = ({ filteredUsers = [] }) => {
           </div>
 
           {/* Payment Status */}
-          <div className="dropdown ps-2" id="paymentStatusDropdown" style={{ zIndex: "10000" }}>
+          <div
+            className="dropdown ps-2"
+            id="paymentStatusDropdown"
+            style={{ zIndex: "100" }}
+          >
             <button
               className="btn btn-outline-dark dropdown-toggle border"
               type="button"
@@ -559,7 +565,7 @@ const Group = ({ filteredUsers = [] }) => {
           <table className="table table-bordered table-hover">
             <thead
               className="table-dark"
-              style={{ position: "sticky", top: 0, zIndex: 9999 }}
+              style={{ position: "sticky", top: 0, zIndex: 99 }}
             >
               <tr className="small">
                 <th className="text-nowrap">Company / Institution</th>
@@ -777,10 +783,8 @@ const Group = ({ filteredUsers = [] }) => {
                               aria-label="Add attendee"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                console.log((reg.attendees || []).length);
                                 setActiveStep((reg.attendees || []).length);
                                 setEditRegistration(reg);
-                                console.log(reg);
                                 setShowModal(true);
                               }}
                               style={{ cursor: "pointer" }}

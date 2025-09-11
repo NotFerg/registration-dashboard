@@ -136,7 +136,7 @@ const AddFormGroup = () => {
         />
       </div>
 
-      {/* <div className="mb-3">
+      <div className="mb-3">
         <label htmlFor="payment_options" className="form-label">
           Payment Options <span style={{ color: "red" }}> * </span>
         </label>
@@ -145,13 +145,13 @@ const AddFormGroup = () => {
           className="form-control"
           id="payment_options"
           name="payment_options"
-          placeholder="Enter Full Payment Options"
+          placeholder="Enter Payment Options"
           aria-describedby="payment_options"
           onChange={handleChange}
           value={reg.payment_options}
           required
         />
-      </div> */}
+      </div>
     </>
   );
 };

@@ -153,11 +153,14 @@ const All = ({ filteredUsers = [] }) => {
               : "No Current Designation",
           company: user.company,
           country: attendee.country,
-          trainings: attendee.training_references || [],
+          training_references: attendee.training_references || [],
           payment_status: user.payment_status,
           total_cost:
             attendee.total_cost ?? attendee.subtotal ?? user.total_cost,
           submission_date: user.submission_date,
+          trainings: attendee.trainings,
+          trainings: user.trainings,
+          payment_options: user.payment_options,
         }))
       : [
           {
@@ -172,10 +175,12 @@ const All = ({ filteredUsers = [] }) => {
                 : "No Current Designation",
             company: user.company,
             country: user.country,
-            trainings: user.training_references || [],
+            training_references: user.training_references || [],
             payment_status: user.payment_status,
             total_cost: user.total_cost,
             submission_date: user.submission_date,
+            trainings: user.trainings,
+            payment_options: user.payment_options,
           },
         ]
   );
@@ -271,7 +276,7 @@ const All = ({ filteredUsers = [] }) => {
     <>
       <div className="d-flex justify-content-between align-items-center my-3">
         <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
-          <div className="dropdown" style={{ zIndex: "10000" }}>
+          <div className="dropdown" style={{ zIndex: "100" }}>
             <button
               className="btn btn-outline-dark dropdown-toggle border"
               type="button"
@@ -357,7 +362,7 @@ const All = ({ filteredUsers = [] }) => {
           <div
             className="dropdown ps-2"
             id="countryDropdown"
-            style={{ zIndex: "10000" }}
+            style={{ zIndex: "100" }}
           >
             <button
               className="btn btn-outline-dark dropdown-toggle border 
@@ -407,7 +412,7 @@ const All = ({ filteredUsers = [] }) => {
           <div
             className="dropdown ps-2"
             id="trainingDropdown"
-            style={{ zIndex: "10000" }}
+            style={{ zIndex: "100" }}
           >
             <button
               className="btn btn-outline-dark dropdown-toggle border 
@@ -432,16 +437,18 @@ const All = ({ filteredUsers = [] }) => {
             >
               {(trainingData || [])
                 .slice()
-                .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-                .map((training, index) => (
-                  <li key={training.id ?? index}>
+                .map((training) => training.name)
+                .filter((name, index, self) => self.indexOf(name) === index)
+                .sort((a, b) => a.localeCompare(b))
+                .map((name, index) => (
+                  <li key={index}>
                     <div className="form-check">
                       <input
                         className="form-check-input"
                         type="checkbox"
-                        value={training.name}
-                        id={`training-${training.id ?? index}`}
-                        checked={activeTraining.includes(training.name)}
+                        value={name}
+                        id={`training-${index}`}
+                        checked={activeTraining.includes(name)}
                         onChange={(e) => {
                           const newValue = e.target.value;
                           if (e.target.checked) {
@@ -455,9 +462,9 @@ const All = ({ filteredUsers = [] }) => {
                       />
                       <label
                         className="form-check-label"
-                        htmlFor={`training-${training.id ?? index}`}
+                        htmlFor={`training-${index}`}
                       >
-                        {training.name}
+                        {name}
                       </label>
                     </div>
                     <hr className="dropdown-divider" />
@@ -474,7 +481,7 @@ const All = ({ filteredUsers = [] }) => {
           <div
             className="dropdown ps-2"
             id="paymentStatusDropdown"
-            style={{ zIndex: "10000" }}
+            style={{ zIndex: "100" }}
           >
             <button
               className="btn btn-outline-dark dropdown-toggle border 
@@ -528,7 +535,7 @@ const All = ({ filteredUsers = [] }) => {
             <table className="table table-bordered table-hover">
               <thead
                 className="table-dark"
-                style={{ position: "sticky", top: 0, zIndex: 9999 }}
+                style={{ position: "sticky", top: 0, zIndex: 99 }}
               >
                 <tr className="small">
                   <th
@@ -566,7 +573,7 @@ const All = ({ filteredUsers = [] }) => {
                 ) : (
                   displayedUsers.map((reg, i) => {
                     return (
-                      <tr key={reg.id ?? i}>
+                      <tr key={i}>
                         <td
                           className="small sticky-col text-wrap"
                           style={{
@@ -595,8 +602,8 @@ const All = ({ filteredUsers = [] }) => {
                         {/* <td className="small text-wrap">{reg.designation}</td> */}
                         <td className="small text-wrap">{reg.country}</td>
                         <td className="small text-wrap">
-                          <ul className=" mb-0">
-                            {(reg.trainings || [])
+                          <ul className="mb-0">
+                            {(reg.training_references || [])
                               .map((tr) =>
                                 tr.trainings ? (
                                   <li className="mb-2" key={tr.trainings.id}>
