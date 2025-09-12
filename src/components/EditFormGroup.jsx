@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import supabase from "../utils/supabase";
 
 const EditFormGroup = ({
   reg: initialReg,
   onSave = () => {},
-  handleSubmit = () => {},
-  handleSubmitGroup,
+  onSubmitGroup = () => {},
   isFirst,
   isLast,
   next,
@@ -25,11 +24,6 @@ const EditFormGroup = ({
     trainings: [],
     total_cost: "",
   });
-  const regRef = useRef(reg);
-
-  useEffect(() => {
-    regRef.current = reg;
-  }, [reg]);
 
   useEffect(() => {
     fetchTrainings();
@@ -108,8 +102,7 @@ const EditFormGroup = ({
   };
 
   const handleSave = () => {
-    // Use current state from ref
-    onSave(regRef.current);
+    onSave(reg);
   };
 
   function calculateTotalCost(trainingStrings) {
@@ -127,167 +120,15 @@ const EditFormGroup = ({
     setTrainings(data);
   }
 
-  function parseTrainingLine(line) {
-    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
-    if (!match) return null;
-    return {
-      date: match[1].trim(),
-      name: match[2].trim(),
-      price: parseFloat(match[3]),
-    };
-  }
-
-  async function upsertTrainingByNameDatePrice(name, date, price) {
-    const { data: existing, error: fetchError } = await supabase
-      .from("trainings")
-      .select("id")
-      .eq("name", name)
-      .eq("date", date)
-      .eq("price", price)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error("Fetch error:", fetchError);
-      return null;
-    }
-
-    if (existing) {
-      return existing.id;
-    }
-
-    const { data: inserted, error: insertError } = await supabase
-      .from("trainings")
-      .insert([{ name, date, price }])
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error("Insert error:", insertError);
-      return null;
-    }
-
-    return inserted.id;
-  }
-
-  async function handleSubmit(e) {
-    console.log("INSIDE HANDLE SUBMIT");
+  const handleSubmitGroup = (e) => {
     e.preventDefault();
-
-    if (initialReg) {
-      console.log("INSIDE STEP 1");
-      // 1. Update REGISTRATION-level fields (if needed)
-      await supabase
-        .from("registrations")
-        .update({
-          submission_date: reg.submission_date,
-          first_name: reg.first_name,
-          last_name: reg.last_name,
-          email: reg.email,
-          position: reg.position,
-          designation: reg.designation,
-          country: reg.country,
-          total_cost: reg.total_cost,
-          payment_options: reg.payment_options,
-          payment_status: reg.payment_status,
-        })
-        .eq("id", initialReg.id);
-
-      console.log("REG", reg);
-      console.log("INITIAL REG", initialReg);
-
-      let currentAttendeeId = reg.id; // For existing attendees
-
-      // 2. Update the ATTENDEE (by reg.id)
-      if (reg.id) {
-        console.log("INSIDE STEP 2 - UPDATING EXISTING ATTENDEE");
-        const { error: attendeeUpdateError } = await supabase
-          .from("attendees")
-          .update({
-            first_name: reg.first_name,
-            last_name: reg.last_name,
-            email: reg.email,
-            position: reg.position,
-            designation: reg.designation,
-            country: reg.country,
-            trainings: reg.trainings.join(", "),
-            subtotal: reg.total_cost,
-          })
-          .eq("id", reg.registration_id);
-
-        if (attendeeUpdateError) {
-          console.error("Attendee update error:", attendeeUpdateError);
-          return;
-        }
-
-        // 3. Delete old training_references for this existing attendee
-        await supabase
-          .from("training_references")
-          .delete()
-          .eq("registration_id", reg.registration_id)
-          .eq("attendee_id", reg.id);
-      } else {
-        console.log("INSIDE STEP 3 - INSERTING NEW ATTENDEE");
-
-        // Insert new attendee and get the generated ID
-        const { data: inserted, error: insertError } = await supabase
-          .from("attendees")
-          .insert([
-            {
-              first_name: reg.first_name,
-              last_name: reg.last_name,
-              email: reg.email,
-              position: reg.position,
-              designation: reg.designation,
-              country: reg.country,
-              trainings: reg.trainings.join(", "),
-              subtotal: reg.total_cost,
-              registration_id: reg.registration_id,
-            },
-          ])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error("Attendee insert error:", insertError);
-          return;
-        }
-
-        // Use the newly inserted attendee's ID
-        currentAttendeeId = inserted.id;
-        console.log("New attendee ID:", currentAttendeeId);
-      }
-
-      // 4. Insert new training_references (works for both existing and new attendees)
-      for (const line of reg.trainings) {
-        const parsed = parseTrainingLine(line);
-        if (!parsed) continue;
-
-        const trainingId = await upsertTrainingByNameDatePrice(
-          parsed.name,
-          parsed.date,
-          parsed.price
-        );
-
-        if (trainingId) {
-          await supabase.from("training_references").insert([
-            {
-              training_id: trainingId,
-              registration_id: reg.registration_id,
-              attendee_id: currentAttendeeId, // Use the correct attendee ID
-            },
-          ]);
-        }
-      }
-    }
-
-    // Reload the page after successful save
-    window.location.reload();
-    window.location.reload();
-  }
+    // Pass current form data directly to group submission
+    onSubmitGroup(reg);
+  };
 
   return (
     <>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmitGroup}>
         <div className='mb-3'>
           <label htmlFor='company' className='form-label'>
             Company <span style={{ color: "red" }}> * </span>
@@ -489,7 +330,10 @@ const EditFormGroup = ({
           <button
             type='button'
             className='btn btn-outline-primary btn-sm'
-            onClick={prev}
+            onClick={() => {
+              handleSave(); // Save current attendee before navigating
+              prev();
+            }}
             disabled={isFirst}
           >
             <i className='bi bi-caret-left'></i>
@@ -501,7 +345,10 @@ const EditFormGroup = ({
           <button
             type='button'
             className='btn btn-outline-primary btn-sm'
-            onClick={next}
+            onClick={() => {
+              handleSave(); // Save current attendee before navigating
+              next();
+            }}
             disabled={isLast}
           >
             <i className='bi bi-caret-right'></i>
@@ -522,11 +369,7 @@ const EditFormGroup = ({
               </button>
             </div>
             <div className='px-1 w-100'>
-              <button
-                type='button'
-                className='btn btn-primary w-100'
-                onClick={handleSubmitGroup || handleSubmit}
-              >
+              <button type='submit' className='btn btn-primary w-100'>
                 <i className='bi bi-people-fill'></i> Save Group
               </button>
             </div>
