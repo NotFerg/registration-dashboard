@@ -76,14 +76,14 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
 
   const next = () => {
     if (step < attendees.length - 1) {
-      handleAttendeeSave(attendees[step]); // Save current step before moving
+      // The current attendee will be saved by EditFormGroup's onSave call
       setStep(step + 1);
     }
   };
 
   const prev = () => {
     if (step > 0) {
-      handleAttendeeSave(attendees[step]);
+      // The current attendee will be saved by EditFormGroup's onSave call
       setStep(step - 1);
     }
   };
@@ -107,36 +107,73 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   }
 
   // Save all changes to backend
-  async function handleSubmitGroup(e) {
-    e.preventDefault();
+  async function handleSubmitGroup(currentAttendeeData) {
     try {
-      // 1. Update registration
-      const { error: regError } = await supabase
-        .from("registrations")
-        .update({
-          first_name: reg.first_name,
-          last_name: reg.last_name,
-          email: reg.email,
-          company: reg.company,
-          total_cost: reg.total_cost,
-          payment_options: reg.payment_options,
-          payment_status: reg.payment_status,
-        })
-        .eq("id", initialReg.id);
+      // If currentAttendeeData is provided, save it first
+      if (currentAttendeeData) {
+        const copy = [...attendees];
+        copy[step] = currentAttendeeData;
 
-      if (regError) throw regError;
-
-      // 2. Update each attendee and their trainings
-      for (const attendee of attendees) {
-        const trainingsText = Array.isArray(attendee.trainings)
-          ? attendee.trainings.join(", ")
-          : attendee.trainings;
-
-        const subtotal = (attendee.trainings || []).reduce((acc, t) => {
-          const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
-          return acc + (match ? parseFloat(match[1]) : 0);
+        // Update total cost for reg
+        const totalCost = copy.reduce((acc, att) => {
+          const cost = (att.trainings || []).reduce((sum, t) => {
+            const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+            return sum + (match ? parseFloat(match[1]) : 0);
+          }, 0);
+          return acc + cost;
         }, 0);
 
+        // Use the updated attendees array for saving
+        await saveAllAttendeesToDB(copy, totalCost);
+      } else {
+        // Use current attendees state
+        await saveAllAttendeesToDB(attendees, reg.total_cost);
+      }
+
+      onHide();
+      // Refresh the page to show updated data
+      window.location.reload();
+    } catch (err) {
+      console.error("Error updating group:", err);
+      alert("There was an error updating the group. Please try again.");
+    }
+  }
+
+  // Helper function to save all attendees to database
+  async function saveAllAttendeesToDB(attendeesToSave, totalCost) {
+    // 1. Update registration
+    const { error: regError } = await supabase
+      .from("registrations")
+      .update({
+        first_name: reg.first_name,
+        last_name: reg.last_name,
+        email: reg.email,
+        company: reg.company,
+        total_cost: totalCost,
+        payment_options: reg.payment_options,
+        payment_status: reg.payment_status,
+      })
+      .eq("id", initialReg.id);
+
+    if (regError) throw regError;
+
+    // 2. Update each attendee and their trainings
+    for (const attendee of attendeesToSave) {
+      // Skip attendees that don't have required data
+      if (!attendee.first_name || !attendee.last_name) continue;
+
+      const trainingsText = Array.isArray(attendee.trainings)
+        ? attendee.trainings.join(", ")
+        : attendee.trainings;
+
+      const subtotal = (attendee.trainings || []).reduce((acc, t) => {
+        const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+        return acc + (match ? parseFloat(match[1]) : 0);
+      }, 0);
+
+      // Handle both existing and new attendees
+      if (attendee.id) {
+        // Update existing attendee
         const { error: attError } = await supabase
           .from("attendees")
           .update({
@@ -156,40 +193,62 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
           continue;
         }
 
-        // 3. Delete old training_references
+        // Delete old training_references
         await supabase
           .from("training_references")
           .delete()
           .eq("registration_id", initialReg.id)
           .eq("attendee_id", attendee.id);
-
-        // 4. Insert new training_references
-        for (const line of attendee.trainings || []) {
-          const parsed = parseTrainingLine(line);
-          if (!parsed) continue;
-
-          const trainingId = await upsertTrainingByNameDatePrice(
-            parsed.name,
-            parsed.date,
-            parsed.price
-          );
-
-          if (!trainingId) continue;
-
-          await supabase.from("training_references").insert([
+      } else {
+        // Insert new attendee
+        const { data: inserted, error: insertError } = await supabase
+          .from("attendees")
+          .insert([
             {
-              training_id: trainingId,
+              first_name: attendee.first_name,
+              last_name: attendee.last_name,
+              email: attendee.email,
+              position: attendee.position,
+              designation: attendee.designation,
+              country: attendee.country,
+              trainings: trainingsText,
+              subtotal,
               registration_id: initialReg.id,
-              attendee_id: attendee.id,
             },
-          ]);
+          ])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Attendee insert failed:", insertError);
+          continue;
         }
+
+        // Update attendee object with new ID for training references
+        attendee.id = inserted.id;
       }
 
-      onHide();
-    } catch (err) {
-      console.error("Error updating group:", err);
-      alert("There was an error updating the group. Please try again.");
+      // Insert new training_references
+      for (const line of attendee.trainings || []) {
+        const parsed = parseTrainingLine(line);
+        if (!parsed) continue;
+
+        const trainingId = await upsertTrainingByNameDatePrice(
+          parsed.name,
+          parsed.date,
+          parsed.price
+        );
+
+        if (!trainingId) continue;
+
+        await supabase.from("training_references").insert([
+          {
+            training_id: trainingId,
+            registration_id: initialReg.id,
+            attendee_id: attendee.id,
+          },
+        ]);
+      }
     }
   }
 
@@ -244,7 +303,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         }}
         {...{ isFirst, isLast, next, prev, attendees, step }}
         onSave={handleAttendeeSave}
-        handleSubmitGroup={handleSubmitGroup}
+        onSubmitGroup={handleSubmitGroup}
       />
     );
   };
