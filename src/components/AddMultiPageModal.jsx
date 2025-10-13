@@ -64,7 +64,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
     if (currentAttendeeData) {
       handleAttendeeSave(currentAttendeeData);
     }
-    
+
     if (step < attendees.length - 1) {
       setStep(step + 1);
     } else {
@@ -79,10 +79,9 @@ const AddMultiPageModal = ({ show, onHide }) => {
     if (currentAttendeeData) {
       handleAttendeeSave(currentAttendeeData);
     }
-    
+
     setStep(Math.max(step - 1, 0));
   }
-  
 
   async function handleSaveGroup(e) {
     e.preventDefault();
@@ -240,12 +239,12 @@ const AddMultiPageModal = ({ show, onHide }) => {
   }
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" style={{ zIndex: 11000 }}>
+    <Modal show={show} onHide={onHide} size='lg' style={{ zIndex: 11000 }}>
       <Modal.Header closeButton>
         <Modal.Title>
           <h1
-            className="modal-title fs-5"
-            id="editModalLabel"
+            className='modal-title fs-5'
+            id='editModalLabel'
             style={{ fontWeight: 700 }}
           >
             Add Group Registration
@@ -253,55 +252,55 @@ const AddMultiPageModal = ({ show, onHide }) => {
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <h4 style={{ marginBottom: 12 }} className="fs-5">
+        <h4 style={{ marginBottom: 12 }} className='fs-5'>
           Admin Information
         </h4>
-        <div className="mb-3">
-          <label htmlFor="company" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='company' className='form-label'>
             Company <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type="text"
-            className="form-control"
-            id="company"
-            name="company"
-            placeholder="Enter Company Name"
-            aria-describedby="company"
+            type='text'
+            className='form-control'
+            id='company'
+            name='company'
+            placeholder='Enter Company Name'
+            aria-describedby='company'
             onChange={handleChange}
             value={reg.company}
             required
           />
         </div>
 
-        <div className="d-flex flex-row justify-content-between">
-          <div className="w-50 p-1 ">
-            <label htmlFor="first_name" className="form-label">
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='w-50 p-1 '>
+            <label htmlFor='first_name' className='form-label'>
               First Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type="text"
-              className="form-control"
-              id="first_name"
-              name="first_name"
-              placeholder="Enter First Name"
-              aria-describedby="first_name"
+              type='text'
+              className='form-control'
+              id='first_name'
+              name='first_name'
+              placeholder='Enter First Name'
+              aria-describedby='first_name'
               onChange={handleChange}
               value={reg.first_name}
               required
             />
           </div>
 
-          <div className="w-50 mb-3">
-            <label htmlFor="last_name" className="form-label">
+          <div className='w-50 mb-3'>
+            <label htmlFor='last_name' className='form-label'>
               Last Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type="text"
-              className="form-control"
-              id="last_name"
-              name="last_name"
-              placeholder="Enter Last Name"
-              aria-describedby="last_name"
+              type='text'
+              className='form-control'
+              id='last_name'
+              name='last_name'
+              placeholder='Enter Last Name'
+              aria-describedby='last_name'
               onChange={handleChange}
               value={reg.last_name}
               required
@@ -309,34 +308,34 @@ const AddMultiPageModal = ({ show, onHide }) => {
           </div>
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="email" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='email' className='form-label'>
             Email <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type="email"
-            className="form-control"
-            id="email"
-            name="email"
-            placeholder="Enter Email"
-            aria-describedby="email"
+            type='email'
+            className='form-control'
+            id='email'
+            name='email'
+            placeholder='Enter Email'
+            aria-describedby='email'
             onChange={handleChange}
             value={reg.email}
             required
           />
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="total_cost" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='total_cost' className='form-label'>
             Total Cost <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type="number"
-            className="form-control"
-            id="total_cost"
-            name="total_cost"
-            placeholder="Enter Total Cost"
-            aria-describedby="total_cost"
+            type='number'
+            className='form-control'
+            id='total_cost'
+            name='total_cost'
+            placeholder='Enter Total Cost'
+            aria-describedby='total_cost'
             onChange={handleChange}
             value={reg.total_cost}
             readOnly
@@ -344,44 +343,44 @@ const AddMultiPageModal = ({ show, onHide }) => {
           />
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="payment_options" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='payment_options' className='form-label'>
             Payment Options <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type="text"
-            className="form-control"
-            id="payment_options"
-            name="payment_options"
-            placeholder="Enter Full Payment Options"
-            aria-describedby="payment_options"
+            type='text'
+            className='form-control'
+            id='payment_options'
+            name='payment_options'
+            placeholder='Enter Full Payment Options'
+            aria-describedby='payment_options'
             onChange={handleChange}
             value={reg.payment_options}
             required
           />
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="payment_status" className="form-label">
+        <div className='mb-3'>
+          <label htmlFor='payment_status' className='form-label'>
             Payment Status <span style={{ color: "red" }}> * </span>
           </label>
           <select
-            className="form-select"
-            id="payment_status"
-            name="payment_status"
-            aria-describedby="payment_status"
+            className='form-select'
+            id='payment_status'
+            name='payment_status'
+            aria-describedby='payment_status'
             onChange={handleChange}
             value={reg.payment_status}
             required
           >
-            <option value="">Select Payment Status</option>
-            <option value="Paid">Paid</option>
-               <option value="Partial Payment">Partial Payment</option>
-            <option value="Unpaid">Unpaid</option>
+            <option value=''>Select Payment Status</option>
+            <option value='Paid'>Paid</option>
+            <option value='Partial Payment'>Partial Payment</option>
+            <option value='Unpaid'>Unpaid</option>
           </select>
         </div>
         <hr />
-        <h4 style={{ marginBottom: 12 }} className="fs-5">
+        <h4 style={{ marginBottom: 12 }} className='fs-5'>
           Attendees Information
         </h4>
         <AddAttendees
