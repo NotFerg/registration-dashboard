@@ -209,8 +209,9 @@ const AddAttendees = ({
         </div>
         <div className="text-center mt-4 mb-4">
           <button
+            type="button"
             className="btn btn-outline-primary btn-sm"
-            onClick={handlePrev}
+            onClick={() => handlePrev(form)}
             disabled={step === 0}
           >
             <i className="bi bi-caret-left"></i>
@@ -220,8 +221,9 @@ const AddAttendees = ({
             Attendee {step + 1} of {attendees.length || 1}
           </small>
           <button
+            type="button"
             className="btn btn-outline-primary btn-sm"
-            onClick={handleNext}
+            onClick={() => handleNext(form)}
           >
             <i className="bi bi-caret-right"></i>
           </button>

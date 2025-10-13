@@ -59,7 +59,12 @@ const AddMultiPageModal = ({ show, onHide }) => {
     });
   }
 
-  function handleNext() {
+  function handleNext(currentAttendeeData = null) {
+    // Save current attendee data before navigating
+    if (currentAttendeeData) {
+      handleAttendeeSave(currentAttendeeData);
+    }
+    
     if (step < attendees.length - 1) {
       setStep(step + 1);
     } else {
@@ -69,7 +74,12 @@ const AddMultiPageModal = ({ show, onHide }) => {
     }
   }
 
-  function handlePrev() {
+  function handlePrev(currentAttendeeData = null) {
+    // Save current attendee data before navigating
+    if (currentAttendeeData) {
+      handleAttendeeSave(currentAttendeeData);
+    }
+    
     setStep(Math.max(step - 1, 0));
   }
   
