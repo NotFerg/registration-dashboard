@@ -119,88 +119,280 @@ function App() {
   }
 
   async function uploadToSupabase(data) {
-    for (const row of data) {
+    let finalTrainingReferences = [];
+    console.log("Starting optimized batch upload for", data.length, "rows");
+    console.log("Sample data structure:", JSON.stringify(data[0], null, 2));
+
+    // Step 1: Batch insert all registrations
+    const registrationInserts = data.map((row) => {
       const { Attendees = [], ...regData } = row;
+      console.log(`Row has ${Attendees.length} attendees:`, Attendees);
+      return {
+        submission_date: regData["Submission Date"],
+        registration_type: regData["Registration Type"],
+        first_name: regData["First Name"],
+        last_name: regData["Last Name"],
+        email: regData["Email"],
+        company: regData["Company / Institution"],
+        position: regData["Job Position"],
+        designation: regData["Designation"],
+        country: regData["Country"],
+        trainings: regData["Trainings"],
+        total_cost:
+          parseFloat(
+            (regData["Total Cost"] || "").toString().replace(/[$,]/g, "")
+          ) || 0,
+        payment_options: regData["Payment Option"],
+      };
+    });
 
-      // Insert main registration
-      const { data: reg, error } = await supabase
-        .from("registrations")
-        .insert([
-          {
-            submission_date: regData["Submission Date"],
-            registration_type: regData["Registration Type"],
-            first_name: regData["First Name"],
-            last_name: regData["Last Name"],
-            email: regData["Email"],
-            company: regData["Company / Institution"],
-            position: regData["Job Position"],
-            designation: regData["Designation"],
-            country: regData["Country"],
-            trainings: regData["Trainings"],
-            total_cost:
-              parseFloat(
-                (regData["Total Cost"] || "").toString().replace(/[$,]/g, "")
-              ) || 0,
-            payment_options: regData["Payment Option"],
-          },
-        ])
-        .select()
-        .single();
+    console.log("Batch inserting", registrationInserts.length, "registrations");
+    const { data: registrations, error: regError } = await supabase
+      .from("registrations")
+      .insert(registrationInserts)
+      .select();
 
-      if (error) {
-        console.error("Insert error:", error);
-        continue;
+    if (regError) {
+      console.error("Registration batch insert error:", regError);
+      return;
+    }
+    console.log("Successfully inserted registrations");
+
+    // Step 2: Collect all unique trainings first to minimize duplicates
+    const uniqueTrainings = new Map();
+    data.forEach((row, rowIndex) => {
+      const { Attendees = [] } = row;
+
+      // Collect trainings from attendees (group registrations)
+      Attendees.forEach((attendee) => {
+        const attTrainingLines = splitTrainingLines(attendee["Trainings"]);
+        attTrainingLines.forEach((line) => {
+          const parsed = parseTrainingLine(line);
+          if (parsed) {
+            const key = `${parsed.name}|${parsed.date}|${parsed.price}`;
+            uniqueTrainings.set(key, parsed);
+          }
+        });
+      });
+
+      // Also collect trainings from individual registrations
+      if (row["Trainings"] && Attendees.length === 0) {
+        const indTrainingLines = splitTrainingLines(row["Trainings"]);
+        indTrainingLines.forEach((line) => {
+          const parsed = parseTrainingLine(line);
+          if (parsed) {
+            const key = `${parsed.name}|${parsed.date}|${parsed.price}`;
+            uniqueTrainings.set(key, parsed);
+          }
+        });
+      }
+    });
+
+    console.log("Found", uniqueTrainings.size, "unique training combinations");
+
+    // Step 3: Batch upsert trainings
+    const trainingMap = new Map();
+    if (uniqueTrainings.size > 0) {
+      // Get existing trainings
+      const trainingArray = Array.from(uniqueTrainings.values());
+      const { data: existingTrainings } = await supabase
+        .from("trainings")
+        .select("*");
+
+      console.log(
+        "Found",
+        existingTrainings?.length || 0,
+        "existing trainings"
+      );
+
+      // Map existing trainings
+      if (existingTrainings) {
+        existingTrainings.forEach((training) => {
+          const key = `${training.name}|${training.date}|${training.price}`;
+          trainingMap.set(key, training.id);
+        });
       }
 
-      // Handle attendees
-      for (const a of Attendees) {
-        const { data: attendee, error: attErr } = await supabase
-          .from("attendees")
-          .insert([
-            {
-              registration_id: reg.id,
-              first_name: a["First Name"],
-              last_name: a["Last Name"],
-              email: a["Email"],
-              position: a["Job Position"],
-              designation: a["Designation"],
-              country: a["Country"],
-              trainings: a["Trainings"],
-              subtotal:
-                parseFloat(
-                  (a["Subtotal"] || "").toString().replace(/[$,]/g, "")
-                ) || 0,
-            },
-          ])
-          .select()
-          .single();
+      // Insert new trainings
+      const newTrainings = trainingArray.filter((training) => {
+        const key = `${training.name}|${training.date}|${training.price}`;
+        return !trainingMap.has(key);
+      });
 
-        if (attErr || !attendee) {
-          console.error("Attendee insert error:", attErr);
-          continue;
-        }
+      if (newTrainings.length > 0) {
+        console.log("Batch inserting", newTrainings.length, "new trainings");
+        const { data: insertedTrainings } = await supabase
+          .from("trainings")
+          .insert(newTrainings)
+          .select();
 
-        const attTrainingLines = splitTrainingLines(a["Trainings"]);
-        for (const line of attTrainingLines) {
-          const parsed = parseTrainingLine(line);
-          if (!parsed) continue;
-
-          const trainingId = await upsertTrainingByNameDatePrice(
-            parsed.name,
-            parsed.date,
-            parsed.price
-          );
-          if (trainingId) {
-            await supabase.from("training_references").insert([
-              {
-                training_id: trainingId,
-                attendee_id: attendee.id,
-              },
-            ]);
-          }
+        if (insertedTrainings) {
+          insertedTrainings.forEach((training) => {
+            const key = `${training.name}|${training.date}|${training.price}`;
+            trainingMap.set(key, training.id);
+          });
         }
       }
     }
+
+    // Step 4: Batch insert attendees and training references
+    const attendeeInserts = [];
+    const trainingReferences = [];
+
+    data.forEach((row, rowIndex) => {
+      const { Attendees = [] } = row;
+      const registration = registrations[rowIndex];
+
+      console.log(
+        `Processing row ${rowIndex}: Found ${Attendees.length} attendees`
+      );
+      if (Attendees.length > 0) {
+        console.log("First attendee:", Attendees[0]);
+      }
+
+      Attendees.forEach((attendee, attendeeIndex) => {
+        const attendeeId = `temp_${rowIndex}_${attendeeIndex}`;
+
+        attendeeInserts.push({
+          registration_id: registration.id,
+          first_name: attendee["First Name"],
+          last_name: attendee["Last Name"],
+          email: attendee["Email"],
+          position: attendee["Job Position"],
+          designation: attendee["Designation"],
+          country: attendee["Country"],
+          trainings: attendee["Trainings"],
+          subtotal:
+            parseFloat(
+              (attendee["Subtotal"] || "").toString().replace(/[$,]/g, "")
+            ) || 0,
+        });
+
+        // Prepare training references for this attendee
+        const attTrainingLines = splitTrainingLines(attendee["Trainings"]);
+        attTrainingLines.forEach((line) => {
+          const parsed = parseTrainingLine(line);
+          if (parsed) {
+            const key = `${parsed.name}|${parsed.date}|${parsed.price}`;
+            const trainingId = trainingMap.get(key);
+            if (trainingId) {
+              trainingReferences.push({
+                training_id: trainingId,
+                attendee_temp_id: attendeeId,
+                registration_id: registration.id, // Include registration ID for group attendees
+              });
+            }
+          }
+        });
+      });
+
+      // Handle individual registration training references (no attendees)
+      if (Attendees.length === 0 && row["Trainings"]) {
+        console.log(
+          `Processing individual registration trainings for row ${rowIndex}`
+        );
+        const indTrainingLines = splitTrainingLines(row["Trainings"]);
+        indTrainingLines.forEach((line) => {
+          const parsed = parseTrainingLine(line);
+          if (parsed) {
+            const key = `${parsed.name}|${parsed.date}|${parsed.price}`;
+            const trainingId = trainingMap.get(key);
+            if (trainingId) {
+              trainingReferences.push({
+                training_id: trainingId,
+                registration_id: registration.id, // Direct link to registration for individual
+                attendee_id: null, // No attendee for individual registrations
+              });
+            }
+          }
+        });
+      }
+    });
+
+    // Insert attendees
+    if (attendeeInserts.length > 0) {
+      console.log("Batch inserting", attendeeInserts.length, "attendees");
+      const { data: insertedAttendees, error: attendeeError } = await supabase
+        .from("attendees")
+        .insert(attendeeInserts)
+        .select();
+
+      if (attendeeError) {
+        console.error("Attendee batch insert error:", attendeeError);
+        return;
+      }
+
+      // Update training references with actual attendee IDs
+      trainingReferences.forEach((ref, index) => {
+        if (ref.attendee_temp_id) {
+          // This is an attendee-based reference (group registration)
+          const attendeeIndex = parseInt(ref.attendee_temp_id.split("_")[2]);
+          const rowIndex = parseInt(ref.attendee_temp_id.split("_")[1]);
+          const attendeeDbIndex =
+            data
+              .slice(0, rowIndex)
+              .reduce((sum, row) => sum + (row.Attendees?.length || 0), 0) +
+            attendeeIndex;
+
+          if (insertedAttendees[attendeeDbIndex]) {
+            finalTrainingReferences.push({
+              training_id: ref.training_id,
+              attendee_id: insertedAttendees[attendeeDbIndex].id,
+              registration_id: ref.registration_id,
+            });
+          }
+        } else {
+          // This is a direct registration reference (individual registration)
+          finalTrainingReferences.push({
+            training_id: ref.training_id,
+            registration_id: ref.registration_id,
+            attendee_id: null,
+          });
+        }
+      });
+    } else {
+      // No attendees to insert, but we still need to process individual registration training references
+      const finalTrainingReferences = trainingReferences.filter(
+        (ref) => !ref.attendee_temp_id
+      );
+
+      if (finalTrainingReferences.length > 0) {
+        console.log(
+          "Batch inserting",
+          finalTrainingReferences.length,
+          "individual training references"
+        );
+        const { error: refError } = await supabase
+          .from("training_references")
+          .insert(finalTrainingReferences);
+
+        if (refError) {
+          console.error(
+            "Individual training references batch insert error:",
+            refError
+          );
+        }
+      }
+      return; // Exit early since no attendees to process
+    }
+
+    // Insert all training references (both attendee-based and individual)
+    if (finalTrainingReferences.length > 0) {
+      console.log(
+        "Batch inserting",
+        finalTrainingReferences.length,
+        "training references"
+      );
+      const { error: refError } = await supabase
+        .from("training_references")
+        .insert(finalTrainingReferences);
+
+      if (refError) {
+        console.error("Training references batch insert error:", refError);
+      }
+    }
+
+    console.log("Optimized batch upload completed successfully");
   }
 
   function excelDateToISOString(serial) {
@@ -220,48 +412,72 @@ function App() {
     const normalized = [];
 
     rows.forEach((row) => {
+      // Skip empty rows
+      if (
+        !row ||
+        row.length === 0 ||
+        !row.some((cell) => cell && cell.toString().trim())
+      ) {
+        return;
+      }
+
       const rowObj = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
       const regType = rowObj["SELECT YOUR REGISTRATION TYPE"]?.trim();
+
+      // Skip rows without registration type
+      if (!regType) {
+        return;
+      }
+
       const isGroup = regType === "Someone Else / Group";
       const attendeeCount =
         parseInt(rowObj["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) ||
         0;
 
       const base = {
-        "Submission Date": excelDateToISOString(row[0]),
+        "Submission Date": row[0] ? excelDateToISOString(row[0]) : "",
         "Registration Type": regType,
-        "First Name": isGroup ? row[2] : row[5],
+        "First Name": isGroup ? row[2] : row[5], // Group admin name vs individual name
         "Last Name": isGroup ? row[3] : row[6],
-        Email: isGroup ? row[4] : row[7],
-        "Company / Institution": isGroup ? row[15] : row[8],
+        Email: isGroup ? row[4] : row[7], // Admin email vs individual email
+        "Company / Institution": isGroup ? row[15] : row[8], // Group company vs individual company
         "Total Cost":
-          rowObj["TOTAL COST (GROUP)"] || rowObj["TOTAL (Individual Attendee)"],
+          rowObj["TOTAL COST (GROUP)"] ||
+          rowObj["TOTAL (Individual Attendee)"] ||
+          "",
         "Payment Option": rowObj["Please select one payment option."] || "",
-        "Job Position": row[9],
-        Designation: row[10],
-        Country: row[11],
-        Trainings: rowObj["TRAININGS (Individual Attendee)"],
+        "Job Position": isGroup ? "" : row[9], // Individual job position
+        Designation: isGroup ? "" : row[10], // Individual designation
+        Country: isGroup ? "" : row[11], // Individual country
+        Trainings: rowObj["TRAININGS (Individual Attendee)"] || "",
       };
 
       console.log("BASE", base);
 
       if (isGroup && attendeeCount > 0) {
         const attendees = [];
-        let startIndex =
-          headers.indexOf("HOW MANY ATTENDEES ARE YOU REGISTERING FOR?") + 1;
+
+        // Use direct column indices based on CSV structure
+        // Starting from column 16 (after group company), each attendee takes 8 columns
         for (let i = 0; i < attendeeCount; i++) {
-          const offset = i * 8;
-          const a = {
-            "First Name": row[startIndex + offset + 1],
-            "Last Name": row[startIndex + offset + 2],
-            Email: row[startIndex + offset + 3],
-            "Job Position": row[startIndex + offset + 4],
-            Designation: row[startIndex + offset + 5],
-            Country: row[startIndex + offset + 6],
-            Trainings: row[startIndex + offset + 7],
-            Subtotal: row[startIndex + offset + 8],
+          const baseIndex = 16 + i * 8; // Column 16 is first attendee's First Name
+
+          const attendeeData = {
+            "First Name": row[baseIndex] || "",
+            "Last Name": row[baseIndex + 1] || "",
+            Email: row[baseIndex + 2] || "",
+            "Job Position": row[baseIndex + 3] || "",
+            Designation: row[baseIndex + 4] || "",
+            Country: row[baseIndex + 5] || "",
+            Trainings: row[baseIndex + 6] || "",
+            Subtotal: row[baseIndex + 7] || "",
           };
-          attendees.push(a);
+
+          // Only add attendee if they have at least a name
+          if (attendeeData["First Name"] && attendeeData["Last Name"]) {
+            console.log(`Adding attendee ${i + 1}:`, attendeeData);
+            attendees.push(attendeeData);
+          }
         }
 
         normalized.push({ ...base, Attendees: attendees });
@@ -291,7 +507,9 @@ function App() {
   const filteredUsers = excelData.filter(
     ({ registration_type, first_name, last_name, company }) =>
       (activeTab === "individual" ? registration_type === "Myself" : true) &&
-      (activeTab === "group" ? registration_type === "Someone Else / Group" : true) &&
+      (activeTab === "group"
+        ? registration_type === "Someone Else / Group"
+        : true) &&
       (searchTerm === "" ||
         [
           first_name.toLowerCase(),
@@ -319,38 +537,7 @@ function App() {
     };
   }
 
-  // Upsert into trainings table
-  async function upsertTrainingByNameDatePrice(name, date, price) {
-    const { data: existing, error: fetchError } = await supabase
-      .from("trainings")
-      .select("id")
-      .eq("name", name)
-      .eq("date", date)
-      .eq("price", price)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error("Fetch error:", fetchError);
-      return null;
-    }
-
-    if (existing) {
-      return existing.id;
-    }
-
-    const { data: inserted, error: insertError } = await supabase
-      .from("trainings")
-      .insert([{ name, date, price }])
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error("Insert error:", insertError);
-      return null;
-    }
-
-    return inserted.id;
-  }
+  // Function removed - now using batch operations in uploadToSupabase
 
   const handleAddRegistration = () => {
     setIndividualRegistration(!individualRegistration);
