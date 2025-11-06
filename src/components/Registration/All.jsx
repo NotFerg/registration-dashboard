@@ -274,17 +274,17 @@ const All = ({ filteredUsers = [] }) => {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center my-3">
-        <div className="d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center">
-          <div className="dropdown" style={{ zIndex: "100" }}>
+      <div className='d-flex justify-content-between align-items-center my-3'>
+        <div className='d-flex flex-column flex-md-row flex-wrap gap-2 align-items-start align-items-center'>
+          <div className='dropdown' style={{ zIndex: "100" }}>
             <button
-              className="btn btn-outline-dark dropdown-toggle border"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
+              className='btn btn-outline-dark dropdown-toggle border'
+              type='button'
+              data-bs-toggle='dropdown'
+              aria-expanded='false'
             >
-              <i className="bi bi-sort-alpha-down"></i> Sort:{" "}
-              <span className="fw-bold">
+              <i className='bi bi-sort-alpha-down'></i> Sort:{" "}
+              <span className='fw-bold'>
                 {sortBy
                   ? sortBy === "company"
                     ? "Company"
@@ -294,41 +294,41 @@ const All = ({ filteredUsers = [] }) => {
                   : "None"}
               </span>
               {sortBy && (
-                <span className="ms-2">
+                <span className='ms-2'>
                   (
                   {sortDirection === "asc" ? (
-                    <i className="bi bi-arrow-up-short" />
+                    <i className='bi bi-arrow-up-short' />
                   ) : (
-                    <i className="bi bi-arrow-down-short" />
+                    <i className='bi bi-arrow-down-short' />
                   )}
                   )
                 </span>
               )}
             </button>
-            <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
-              <li className="dropdown-header">Property</li>
+            <ul className='dropdown-menu p-2' style={{ minWidth: "200px" }}>
+              <li className='dropdown-header'>Property</li>
               <li
-                className="dropdown-item"
+                className='dropdown-item'
                 onClick={() => handleSort("company")}
               >
                 Company
               </li>
               <li
-                className="dropdown-item"
+                className='dropdown-item'
                 onClick={() => handleSort("first_name")}
               >
                 First Name
               </li>
               <li
-                className="dropdown-item"
+                className='dropdown-item'
                 onClick={() => handleSort("last_name")}
               >
                 Last Name
               </li>
               <li>
-                <hr className="dropdown-divider" />
+                <hr className='dropdown-divider' />
               </li>
-              <li className="dropdown-header">Direction</li>
+              <li className='dropdown-header'>Direction</li>
               <li
                 className={
                   "dropdown-item " + (sortDirection === "asc" ? "active" : "")
@@ -346,10 +346,10 @@ const All = ({ filteredUsers = [] }) => {
                 Descending
               </li>
               <li>
-                <hr className="dropdown-divider" />
+                <hr className='dropdown-divider' />
               </li>
               <li
-                className="dropdown-item text-center fw-bold"
+                className='dropdown-item text-center fw-bold'
                 onClick={() => {
                   setSortBy("");
                   setSortDirection("asc");
@@ -360,23 +360,23 @@ const All = ({ filteredUsers = [] }) => {
             </ul>
           </div>
           <div
-            className="dropdown ps-2"
-            id="countryDropdown"
+            className='dropdown ps-2'
+            id='countryDropdown'
             style={{ zIndex: "100" }}
           >
             <button
-              className="btn btn-outline-dark dropdown-toggle border 
-            "
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              data-bs-auto-close="outside"
+              className='btn btn-outline-dark dropdown-toggle border 
+            '
+              type='button'
+              data-bs-toggle='dropdown'
+              aria-expanded='false'
+              data-bs-auto-close='outside'
             >
-              <i className="bi bi-globe-americas-fill" /> Country:{" "}
-              <span className="fw-bold">{activeCountry}</span>
+              <i className='bi bi-globe-americas-fill' /> Country:{" "}
+              <span className='fw-bold'>{activeCountry}</span>
             </button>
             <ul
-              className="dropdown-menu"
+              className='dropdown-menu'
               style={{ maxHeight: "300px", overflowY: "scroll" }}
             >
               {filteredUsers
@@ -393,16 +393,16 @@ const All = ({ filteredUsers = [] }) => {
                 .map((country, index) => (
                   <li key={index}>
                     <div
-                      className="dropdown-item"
+                      className='dropdown-item'
                       onClick={() => setActiveCountry(country)}
                     >
                       {country}
                     </div>
-                    <hr className="dropdown-divider" />
+                    <hr className='dropdown-divider' />
                   </li>
                 ))}
               <li
-                className="dropdown-item text-center fw-bold"
+                className='dropdown-item text-center fw-bold'
                 onClick={() => setActiveCountry("")}
               >
                 Clear Filter
@@ -410,21 +410,21 @@ const All = ({ filteredUsers = [] }) => {
             </ul>
           </div>
           <div
-            className="dropdown ps-2"
-            id="trainingDropdown"
+            className='dropdown ps-2'
+            id='trainingDropdown'
             style={{ zIndex: "100" }}
           >
             <button
-              className="btn btn-outline-dark dropdown-toggle border 
-            "
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              data-bs-auto-close="outside"
+              className='btn btn-outline-dark dropdown-toggle border 
+            '
+              type='button'
+              data-bs-toggle='dropdown'
+              aria-expanded='false'
+              data-bs-auto-close='outside'
             >
-              <i className="bi bi-funnel-fill"></i> Training:{" "}
+              <i className='bi bi-funnel-fill'></i> Training:{" "}
               {activeTraining && activeTraining.length != 0 ? (
-                <span className="badge bg-success ms-2">
+                <span className='badge bg-success ms-2'>
                   {activeTraining.length}
                 </span>
               ) : (
@@ -432,7 +432,7 @@ const All = ({ filteredUsers = [] }) => {
               )}
             </button>
             <ul
-              className="dropdown-menu p-2"
+              className='dropdown-menu p-2'
               style={{ maxHeight: "300px", overflowY: "scroll" }}
             >
               {(trainingData || [])
@@ -442,10 +442,10 @@ const All = ({ filteredUsers = [] }) => {
                 .sort((a, b) => a.localeCompare(b))
                 .map((name, index) => (
                   <li key={index}>
-                    <div className="form-check">
+                    <div className='form-check'>
                       <input
-                        className="form-check-input"
-                        type="checkbox"
+                        className='form-check-input'
+                        type='checkbox'
                         value={name}
                         id={`training-${index}`}
                         checked={activeTraining.includes(name)}
@@ -461,17 +461,17 @@ const All = ({ filteredUsers = [] }) => {
                         }}
                       />
                       <label
-                        className="form-check-label"
+                        className='form-check-label'
                         htmlFor={`training-${index}`}
                       >
                         {name}
                       </label>
                     </div>
-                    <hr className="dropdown-divider" />
+                    <hr className='dropdown-divider' />
                   </li>
                 ))}
               <li
-                className="dropdown-item text-center fw-bold"
+                className='dropdown-item text-center fw-bold'
                 onClick={() => setActiveTraining([])}
               >
                 Clear Filter
@@ -479,38 +479,38 @@ const All = ({ filteredUsers = [] }) => {
             </ul>
           </div>
           <div
-            className="dropdown ps-2"
-            id="paymentStatusDropdown"
+            className='dropdown ps-2'
+            id='paymentStatusDropdown'
             style={{ zIndex: "100" }}
           >
             <button
-              className="btn btn-outline-dark dropdown-toggle border 
-            "
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              data-bs-auto-close="outside"
+              className='btn btn-outline-dark dropdown-toggle border 
+            '
+              type='button'
+              data-bs-toggle='dropdown'
+              aria-expanded='false'
+              data-bs-auto-close='outside'
             >
-              <i className="bi bi-wallet-fill"></i> Payment Status:{" "}
-              <span className="fw-bold">{activePaymentStatus}</span>
+              <i className='bi bi-wallet-fill'></i> Payment Status:{" "}
+              <span className='fw-bold'>{activePaymentStatus}</span>
             </button>
             <ul
-              className="dropdown-menu"
+              className='dropdown-menu'
               style={{ maxHeight: "300px", overflowY: "scroll" }}
             >
               {["Paid", "Unpaid"].map((payment_status, index) => (
                 <li key={index}>
                   <div
-                    className="dropdown-item"
+                    className='dropdown-item'
                     onClick={() => setActivePaymentStatus(payment_status)}
                   >
                     {payment_status}
                   </div>
-                  <hr className="dropdown-divider" />
+                  <hr className='dropdown-divider' />
                 </li>
               ))}
               <li
-                className="dropdown-item text-center fw-bold"
+                className='dropdown-item text-center fw-bold'
                 onClick={() => setActivePaymentStatus("")}
               >
                 Clear Filter
@@ -518,11 +518,11 @@ const All = ({ filteredUsers = [] }) => {
             </ul>
           </div>
         </div>
-        <button className="btn btn-outline-danger" onClick={clearFilters}>
-          <i className="bi bi-x-circle"></i> Clear Filters
+        <button className='btn btn-outline-danger' onClick={clearFilters}>
+          <i className='bi bi-x-circle'></i> Clear Filters
         </button>
       </div>
-      <div className="pb-2 d-flex justify-content-between align-items-center">
+      <div className='pb-2 d-flex justify-content-between align-items-center'>
         <h6>
           <b>Total Count: {totalRecords}</b>
         </h6>
@@ -530,16 +530,16 @@ const All = ({ filteredUsers = [] }) => {
       <div
         style={{ maxHeight: "75vh", overflowY: "auto", scrollbarWidth: "thin" }}
       >
-        <div className="table">
+        <div className='table'>
           <div>
-            <table className="table table-bordered table-hover">
+            <table className='table table-bordered table-hover'>
               <thead
-                className="table-dark"
+                className='table-dark'
                 style={{ position: "sticky", top: 0, zIndex: 99 }}
               >
-                <tr className="small">
+                <tr className='small'>
                   <th
-                    className="text-nowrap"
+                    className='text-nowrap'
                     style={{
                       position: "sticky",
                       left: 0,
@@ -549,25 +549,25 @@ const All = ({ filteredUsers = [] }) => {
                   >
                     Company
                   </th>
-                  <th className="text-nowrap">Date Submitted</th>
-                  <th className="text-nowrap">Full Name</th>
-                  <th className="text-nowrap">Email</th>
-                  <th className="text-nowrap">Position</th>
+                  <th className='text-nowrap'>Date Submitted</th>
+                  <th className='text-nowrap'>Full Name</th>
+                  <th className='text-nowrap'>Email</th>
+                  <th className='text-nowrap'>Position</th>
                   {/* <th className="text-nowrap">Designation</th> */}
-                  <th className="text-nowrap">Country</th>
-                  <th className="text-nowrap">Trainings</th>
-                  <th className="text-nowrap">Total Cost</th>
-                  <th className="text-nowrap">Payment Status</th>
-                  <th className="text-nowrap text-center" colSpan={2}>
+                  <th className='text-nowrap'>Country</th>
+                  <th className='text-nowrap'>Trainings</th>
+                  <th className='text-nowrap'>Total Cost</th>
+                  <th className='text-nowrap'>Payment Status</th>
+                  {/* <th className="text-nowrap text-center" colSpan={2}>
                     Actions
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody>
                 {displayedUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="text-center">
-                      <h1 className="m-5"> No records satisfy the filter</h1>
+                    <td colSpan={12} className='text-center'>
+                      <h1 className='m-5'> No records satisfy the filter</h1>
                     </td>
                   </tr>
                 ) : (
@@ -575,7 +575,7 @@ const All = ({ filteredUsers = [] }) => {
                     return (
                       <tr key={i}>
                         <td
-                          className="small sticky-col text-wrap"
+                          className='small sticky-col text-wrap'
                           style={{
                             position: "sticky",
                             left: 0,
@@ -586,27 +586,27 @@ const All = ({ filteredUsers = [] }) => {
                         >
                           {reg.company}
                         </td>
-                        <td className="small">
+                        <td className='small'>
                           {formatDate(reg.submission_date)}
                         </td>
-                        <td className="small text-wrap">
+                        <td className='small text-wrap'>
                           {reg.first_name} {reg.last_name}
                         </td>
                         <td
-                          className="small text-wrap"
+                          className='small text-wrap'
                           style={{ maxWidth: "150px" }}
                         >
                           {reg.email}
                         </td>
-                        <td className="small text-wrap">{reg.position}</td>
+                        <td className='small text-wrap'>{reg.position}</td>
                         {/* <td className="small text-wrap">{reg.designation}</td> */}
-                        <td className="small text-wrap">{reg.country}</td>
-                        <td className="small text-wrap">
-                          <ul className="mb-0">
+                        <td className='small text-wrap'>{reg.country}</td>
+                        <td className='small text-wrap'>
+                          <ul className='mb-0'>
                             {(reg.training_references || [])
                               .map((tr) =>
                                 tr.trainings ? (
-                                  <li className="mb-2" key={tr.trainings.id}>
+                                  <li className='mb-2' key={tr.trainings.id}>
                                     {tr.trainings.name}
                                   </li>
                                 ) : null
@@ -614,10 +614,10 @@ const All = ({ filteredUsers = [] }) => {
                               .filter(Boolean)}
                           </ul>
                         </td>
-                        <td className="small text-wrap">
+                        <td className='small text-wrap'>
                           {formatCurrency(reg.total_cost)}
                         </td>
-                        <td className="small">
+                        <td className='small'>
                           <span
                             className={`badge ${
                               reg.payment_status === "Paid"
@@ -630,7 +630,7 @@ const All = ({ filteredUsers = [] }) => {
                             {reg.payment_status}
                           </span>
                         </td>
-                        <td colSpan={2} className="sticky-col">
+                        {/* <td colSpan={2} className="sticky-col">
                           <div className="btn-group">
                             <button
                               className="btn"
@@ -647,7 +647,7 @@ const All = ({ filteredUsers = [] }) => {
                               <i className="bi bi-trash-fill text-danger" />
                             </button>
                           </div>
-                        </td>
+                        </td> */}
                       </tr>
                     );
                   })
@@ -661,32 +661,32 @@ const All = ({ filteredUsers = [] }) => {
       {/* Edit Modal */}
       <div>
         <div
-          className="modal fade"
-          id="editModal"
-          tabIndex="-1"
-          aria-labelledby="editModalLabel"
-          aria-hidden="true"
+          className='modal fade'
+          id='editModal'
+          tabIndex='-1'
+          aria-labelledby='editModalLabel'
+          aria-hidden='true'
           style={{ zIndex: 11000 }}
         >
-          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
+          <div className='modal-dialog modal-dialog-centered modal-dialog-scrollable'>
+            <div className='modal-content'>
+              <div className='modal-header'>
                 <h1
-                  className="modal-title fs-5"
-                  id="editModalLabel"
+                  className='modal-title fs-5'
+                  id='editModalLabel'
                   style={{ fontWeight: 700 }}
                 >
                   Edit Registration
                 </h1>
                 <button
-                  type="button"
-                  className="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"
+                  type='button'
+                  className='btn-close'
+                  data-bs-dismiss='modal'
+                  aria-label='Close'
                   onClick={() => setEditRegistration(null)}
                 ></button>
               </div>
-              <div className="modal-body">
+              <div className='modal-body'>
                 <EditForm reg={editRegistration} />
               </div>
             </div>
