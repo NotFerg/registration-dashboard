@@ -76,14 +76,14 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
 
   const next = () => {
     if (step < attendees.length - 1) {
-      handleAttendeeSave(attendees[step]); // Save current step before moving
+      // The current attendee will be saved by EditFormGroup's onSave call
       setStep(step + 1);
     }
   };
 
   const prev = () => {
     if (step > 0) {
-      handleAttendeeSave(attendees[step]);
+      // The current attendee will be saved by EditFormGroup's onSave call
       setStep(step - 1);
     }
   };
@@ -107,36 +107,73 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   }
 
   // Save all changes to backend
-  async function handleSubmitGroup(e) {
-    e.preventDefault();
+  async function handleSubmitGroup(currentAttendeeData) {
     try {
-      // 1. Update registration
-      const { error: regError } = await supabase
-        .from("registrations")
-        .update({
-          first_name: reg.first_name,
-          last_name: reg.last_name,
-          email: reg.email,
-          company: reg.company,
-          total_cost: reg.total_cost,
-          payment_options: reg.payment_options,
-          payment_status: reg.payment_status,
-        })
-        .eq("id", initialReg.id);
+      // If currentAttendeeData is provided, save it first
+      if (currentAttendeeData) {
+        const copy = [...attendees];
+        copy[step] = currentAttendeeData;
 
-      if (regError) throw regError;
-
-      // 2. Update each attendee and their trainings
-      for (const attendee of attendees) {
-        const trainingsText = Array.isArray(attendee.trainings)
-          ? attendee.trainings.join(", ")
-          : attendee.trainings;
-
-        const subtotal = (attendee.trainings || []).reduce((acc, t) => {
-          const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
-          return acc + (match ? parseFloat(match[1]) : 0);
+        // Update total cost for reg
+        const totalCost = copy.reduce((acc, att) => {
+          const cost = (att.trainings || []).reduce((sum, t) => {
+            const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+            return sum + (match ? parseFloat(match[1]) : 0);
+          }, 0);
+          return acc + cost;
         }, 0);
 
+        // Use the updated attendees array for saving
+        await saveAllAttendeesToDB(copy, totalCost);
+      } else {
+        // Use current attendees state
+        await saveAllAttendeesToDB(attendees, reg.total_cost);
+      }
+
+      onHide();
+      // Refresh the page to show updated data
+      window.location.reload();
+    } catch (err) {
+      console.error("Error updating group:", err);
+      alert("There was an error updating the group. Please try again.");
+    }
+  }
+
+  // Helper function to save all attendees to database
+  async function saveAllAttendeesToDB(attendeesToSave, totalCost) {
+    // 1. Update registration
+    const { error: regError } = await supabase
+      .from("registrations")
+      .update({
+        first_name: reg.first_name,
+        last_name: reg.last_name,
+        email: reg.email,
+        company: reg.company,
+        total_cost: totalCost,
+        payment_options: reg.payment_options,
+        payment_status: reg.payment_status,
+      })
+      .eq("id", initialReg.id);
+
+    if (regError) throw regError;
+
+    // 2. Update each attendee and their trainings
+    for (const attendee of attendeesToSave) {
+      // Skip attendees that don't have required data
+      if (!attendee.first_name || !attendee.last_name) continue;
+
+      const trainingsText = Array.isArray(attendee.trainings)
+        ? attendee.trainings.join(", ")
+        : attendee.trainings;
+
+      const subtotal = (attendee.trainings || []).reduce((acc, t) => {
+        const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+        return acc + (match ? parseFloat(match[1]) : 0);
+      }, 0);
+
+      // Handle both existing and new attendees
+      if (attendee.id) {
+        // Update existing attendee
         const { error: attError } = await supabase
           .from("attendees")
           .update({
@@ -156,40 +193,62 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
           continue;
         }
 
-        // 3. Delete old training_references
+        // Delete old training_references
         await supabase
           .from("training_references")
           .delete()
           .eq("registration_id", initialReg.id)
           .eq("attendee_id", attendee.id);
-
-        // 4. Insert new training_references
-        for (const line of attendee.trainings || []) {
-          const parsed = parseTrainingLine(line);
-          if (!parsed) continue;
-
-          const trainingId = await upsertTrainingByNameDatePrice(
-            parsed.name,
-            parsed.date,
-            parsed.price
-          );
-
-          if (!trainingId) continue;
-
-          await supabase.from("training_references").insert([
+      } else {
+        // Insert new attendee
+        const { data: inserted, error: insertError } = await supabase
+          .from("attendees")
+          .insert([
             {
-              training_id: trainingId,
+              first_name: attendee.first_name,
+              last_name: attendee.last_name,
+              email: attendee.email,
+              position: attendee.position,
+              designation: attendee.designation,
+              country: attendee.country,
+              trainings: trainingsText,
+              subtotal,
               registration_id: initialReg.id,
-              attendee_id: attendee.id,
             },
-          ]);
+          ])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Attendee insert failed:", insertError);
+          continue;
         }
+
+        // Update attendee object with new ID for training references
+        attendee.id = inserted.id;
       }
 
-      onHide();
-    } catch (err) {
-      console.error("Error updating group:", err);
-      alert("There was an error updating the group. Please try again.");
+      // Insert new training_references
+      for (const line of attendee.trainings || []) {
+        const parsed = parseTrainingLine(line);
+        if (!parsed) continue;
+
+        const trainingId = await upsertTrainingByNameDatePrice(
+          parsed.name,
+          parsed.date,
+          parsed.price
+        );
+
+        if (!trainingId) continue;
+
+        await supabase.from("training_references").insert([
+          {
+            training_id: trainingId,
+            registration_id: initialReg.id,
+            attendee_id: attendee.id,
+          },
+        ]);
+      }
     }
   }
 
@@ -234,6 +293,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         reg={{
           ...initialReg,
           ...attendee,
+          registration_id: initialReg.id,
           trainings: Array.isArray(attendee.trainings)
             ? attendee.trainings
             : typeof attendee.trainings === "string"
@@ -243,7 +303,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         }}
         {...{ isFirst, isLast, next, prev, attendees, step }}
         onSave={handleAttendeeSave}
-        handleSubmitGroup={handleSubmitGroup}
+        onSubmitGroup={handleSubmitGroup}
       />
     );
   };
@@ -251,12 +311,12 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   if (!initialReg) return null;
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" style={{ zIndex: 11000 }}>
+    <Modal show={show} onHide={onHide} size='lg' style={{ zIndex: 11000 }}>
       <Modal.Header closeButton>
         <Modal.Title>
           <h1
-            className="modal-title fs-5"
-            id="editModalLabel"
+            className='modal-title fs-5'
+            id='editModalLabel'
             style={{ fontWeight: 700 }}
           >
             Edit Group Registration
@@ -265,61 +325,61 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
       </Modal.Header>
       <Modal.Body>
         {/* Admin overview (read-only) */}
-        <section className="mb-4">
+        <section className='mb-4'>
           {/* Admin overview (read-only) */}
-          <h4 style={{ marginBottom: 12 }} className="fs-5">
+          <h4 style={{ marginBottom: 12 }} className='fs-5'>
             Admin Information
           </h4>
-          <div className="card w-100">
-            <div className="card-body">
-              <div className="d-flex flex-row">
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-building"></i>
+          <div className='card w-100'>
+            <div className='card-body'>
+              <div className='d-flex flex-row'>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i className='bi bi-building'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>Company</strong>
                   </h6>
-                  <p className="card-text">{initialReg.company}</p>
+                  <p className='card-text'>{initialReg.company}</p>
                 </div>
-                <div className="vr mx-3"></div>
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-person-circle"></i>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i className='bi bi-person-circle'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>Name</strong>
                   </h6>
-                  <p className="card-text">
+                  <p className='card-text'>
                     {initialReg.first_name} {initialReg.last_name}
                   </p>
                 </div>
-                <div className="vr mx-3"></div>
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-envelope-at-fill"></i>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i className='bi bi-envelope-at-fill'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>E-Mail</strong>
                   </h6>
-                  <p className="card-text">{initialReg.email}</p>
+                  <p className='card-text'>{initialReg.email}</p>
                 </div>
-                <div className="vr mx-3"></div>
-                <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-cash"></i>
+                <div className='vr mx-3'></div>
+                <div className='flex-fill'>
+                  <h3 className='card-title'>
+                    <i className='bi bi-cash'></i>
                   </h3>
-                  <h6 className="card-title">
+                  <h6 className='card-title'>
                     <strong>Total Cost</strong>
                   </h6>
-                  <p className="card-text">${initialReg.total_cost}</p>
+                  <p className='card-text'>${initialReg.total_cost}</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
         <hr />
-        <h4 style={{ marginBottom: 12 }} className="fs-5">
+        <h4 style={{ marginBottom: 12 }} className='fs-5'>
           Attendees Information
         </h4>
         {renderAttendeeForm()}

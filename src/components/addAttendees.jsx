@@ -93,9 +93,9 @@ const AddAttendees = ({
   return (
     <>
       <form onSubmit={handleSubmit}>
-        <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3 flex-fill pe-3">
-            <label htmlFor="first_name" className="form-label">
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='mb-3 flex-fill pe-3'>
+            <label htmlFor='first_name' className='form-label'>
               First Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -110,8 +110,8 @@ const AddAttendees = ({
             />
           </div>
 
-          <div className="mb-3 flex-fill">
-            <label htmlFor="last_name" className="form-label">
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='last_name' className='form-label'>
               Last Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -127,9 +127,9 @@ const AddAttendees = ({
           </div>
         </div>
 
-        <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3 flex-fill pe-3">
-            <label htmlFor="email" className="form-label">
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='mb-3 flex-fill pe-3'>
+            <label htmlFor='email' className='form-label'>
               Email <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -144,8 +144,8 @@ const AddAttendees = ({
             />
           </div>
 
-          <div className="mb-3 flex-fill">
-            <label htmlFor="position" className="form-label">
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='position' className='form-label'>
               Position <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -161,9 +161,9 @@ const AddAttendees = ({
           </div>
         </div>
 
-        <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3 flex-fill pe-3">
-            <label htmlFor="designation" className="form-label">
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='mb-3 flex-fill pe-3'>
+            <label htmlFor='designation' className='form-label'>
               Designation <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -178,8 +178,8 @@ const AddAttendees = ({
             />
           </div>
 
-          <div className="mb-3 flex-fill">
-            <label htmlFor="country" className="form-label">
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='country' className='form-label'>
               Country <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -213,10 +213,10 @@ const AddAttendees = ({
                 <React.Fragment key={training.id || i}>
                   <div className="form-check form-check-inline">
                     <input
-                      type="checkbox"
-                      className="btn-check"
+                      type='checkbox'
+                      className='btn-check'
                       id={checkboxId}
-                      name="trainings"
+                      name='trainings'
                       value={trainingString}
                       checked={isChecked}
                       onChange={(e) => handleTrainingToggle(training, e.target.checked)}
@@ -245,7 +245,7 @@ const AddAttendees = ({
             onClick={handlePrev}
             disabled={step === 0}
           >
-            <i className="bi bi-caret-left"></i>
+            <i className='bi bi-caret-left'></i>
           </button>
           <small className="mx-3 text-muted">
             Attendee {step + 1} of {attendees.length || 1}
@@ -255,7 +255,7 @@ const AddAttendees = ({
             className="btn btn-outline-primary btn-sm"
             onClick={handleNext}
           >
-            <i className="bi bi-caret-right"></i>
+            <i className='bi bi-caret-right'></i>
           </button>
         </div>
 
