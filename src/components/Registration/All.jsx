@@ -195,6 +195,7 @@ const All = ({ filteredUsers = [] }) => {
   };
 
   async function handleDelete(id) {
+    console.log(id);
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "Do you really want to delete this registration?",
@@ -209,14 +210,15 @@ const All = ({ filteredUsers = [] }) => {
       const { error: trainRefError } = await supabase
         .from("training_references")
         .delete()
-        .eq("registration_id", id);
+        .eq("attendee_id", id);
 
       const { error: regError } = await supabase
-        .from("registrations")
+        .from("attendees")
         .delete()
         .eq("id", id);
 
       if (regError || trainRefError) {
+        console.error("Error deleting registration:", regError ?? trainRefError);
         Swal.fire(
           "Error!",
           "There was a problem deleting the registration.",

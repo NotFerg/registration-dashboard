@@ -200,7 +200,7 @@ const EditFormGroup = ({
         const trainingId = await upsertTrainingByNameDatePrice(
           parsed.name,
           parsed.date,
-          parsed.price
+          parsed.price,
         );
 
         if (trainingId) {
@@ -348,7 +348,6 @@ const EditFormGroup = ({
           </label>
           <br />
           <div className="border rounded p-2">
-            <span className="text-muted ps-2">Early Bird Price</span>
             <br />
             {trainings.map((training, i) => {
               const trainingString = `${training.date}: ${training.name} ($${training.price})`;
@@ -373,7 +372,6 @@ const EditFormGroup = ({
                     )}{" "}
                     {training.name}
                   </label>
-                  {i == 4 && <hr />}
                 </React.Fragment>
               );
             })}

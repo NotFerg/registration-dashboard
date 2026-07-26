@@ -166,6 +166,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
         confirmButtonText: "OK",
         backdrop: true,
         allowOutsideClick: false,
+        target
       }).then((result) => {
         if (result.isConfirmed) {
           window.location.reload();

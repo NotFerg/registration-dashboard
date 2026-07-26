@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 import TopNavbar from "./components/Navbar.jsx";
 
 function App() {
-  const [excelData, setExcelData] = useState([]);
+const [excelData, setExcelData] = useState([]);
   const [activeTab, setActiveTab] = useState("individual");
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -122,12 +122,12 @@ function App() {
     for (const row of data) {
       const { Attendees = [], ...regData } = row;
 
-      // Insert main registration
+      // 1. Insert main registration
       const { data: reg, error } = await supabase
         .from("registrations")
         .insert([
           {
-            submission_date: regData["Submission Date"],
+            submission_date: excelDateToISOString(regData["Submission Date"]),
             registration_type: regData["Registration Type"],
             first_name: regData["First Name"],
             last_name: regData["Last Name"],
@@ -147,41 +147,65 @@ function App() {
         .select()
         .single();
 
-      if (error) {
+      if (error || !reg) {
         console.error("Insert error:", error);
         continue;
       }
 
-      // Handle attendees
-      for (const a of Attendees) {
-        const { data: attendee, error: attErr } = await supabase
-          .from("attendees")
-          .insert([
-            {
-              registration_id: reg.id,
-              first_name: a["First Name"],
-              last_name: a["Last Name"],
-              email: a["Email"],
-              position: a["Job Position"],
-              designation: a["Designation"],
-              country: a["Country"],
-              trainings: a["Trainings"],
-              subtotal:
-                parseFloat(
-                  (a["Subtotal"] || "").toString().replace(/[$,]/g, "")
-                ) || 0,
-            },
-          ])
-          .select()
-          .single();
+      // 2. CASE A: Group Registrations (Attaches references to individual Attendees)
+      if (Attendees.length > 0) {
+        for (const a of Attendees) {
+          const { data: attendee, error: attErr } = await supabase
+            .from("attendees")
+            .insert([
+              {
+                registration_id: reg.id,
+                first_name: a["First Name"],
+                last_name: a["Last Name"],
+                email: a["Email"],
+                position: a["Job Position"],
+                designation: a["Designation"],
+                country: a["Country"],
+                trainings: a["Trainings"],
+                subtotal:
+                  parseFloat(
+                    (a["Subtotal"] || "").toString().replace(/[$,]/g, "")
+                  ) || 0,
+              },
+            ])
+            .select()
+            .single();
 
-        if (attErr || !attendee) {
-          console.error("Attendee insert error:", attErr);
-          continue;
+          if (attErr || !attendee) {
+            console.error("Attendee insert error:", attErr);
+            continue;
+          }
+
+          const attTrainingLines = splitTrainingLines(a["Trainings"]);
+          for (const line of attTrainingLines) {
+            const parsed = parseTrainingLine(line);
+            if (!parsed) continue;
+
+            const trainingId = await upsertTrainingByNameDatePrice(
+              parsed.name,
+              parsed.date,
+              parsed.price
+            );
+            if (trainingId) {
+              await supabase.from("training_references").insert([
+                {
+                  training_id: trainingId,
+                  attendee_id: attendee.id,
+                },
+              ]);
+            }
+          }
         }
-
-        const attTrainingLines = splitTrainingLines(a["Trainings"]);
-        for (const line of attTrainingLines) {
+      } 
+      // 3. CASE B: Individual Registrations (Attaches references directly to Registration ID)
+      else {
+        const indivTrainingLines = splitTrainingLines(regData["Trainings"]);
+        for (const line of indivTrainingLines) {
           const parsed = parseTrainingLine(line);
           if (!parsed) continue;
 
@@ -194,7 +218,7 @@ function App() {
             await supabase.from("training_references").insert([
               {
                 training_id: trainingId,
-                attendee_id: attendee.id,
+                registration_id: reg.id,
               },
             ]);
           }
@@ -203,32 +227,49 @@ function App() {
     }
   }
 
-  function excelDateToISOString(serial) {
-    if (!serial || isNaN(serial)) return "";
-    console.log("SERIAL", serial);
-    // Excel's day 1 is 1900-01-01, but JS Date's month is 0-based
-    const utc_days = Math.floor(serial - 25569);
-    const utc_value = utc_days * 86400; // seconds
-    const date_info = new Date(utc_value * 1000);
-    // Return ISO string (e.g., "2025-08-28T00:00:00.000Z")
-    console.log("DATE INFO", date_info);
-    return date_info.toISOString();
+  function excelDateToISOString(val) {
+    if (!val) return null;
+
+    if (typeof val === "string" || val instanceof Date) {
+      const parsedDate = new Date(val);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate.toISOString();
+      }
+    }
+
+    const serial = Number(val);
+    if (!isNaN(serial) && serial > 0) {
+      const utc_days = Math.floor(serial - 25569);
+      const utc_value = utc_days * 86400;
+      const date_info = new Date(utc_value * 1000);
+      return isNaN(date_info.getTime()) ? null : date_info.toISOString();
+    }
+
+    return null;
   }
 
+  /* 🔴 CHANGED: Filter out empty rows and fix offset indices */
   function normalizeExcelDataFromArray(data) {
     const [headers, ...rows] = data;
     const normalized = [];
 
     rows.forEach((row) => {
+      // Ignore completely empty rows in Excel sheet
+      if (!row || row.every((cell) => cell === "" || cell === null)) return;
+
       const rowObj = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
       const regType = rowObj["SELECT YOUR REGISTRATION TYPE"]?.trim();
       const isGroup = regType === "Someone Else / Group";
+
+      // If registration type is missing/invalid, ignore this row
+      if (!regType) return;
+
       const attendeeCount =
         parseInt(rowObj["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) ||
         0;
 
       const base = {
-        "Submission Date": excelDateToISOString(row[0]),
+        "Submission Date": row[0],
         "Registration Type": regType,
         "First Name": isGroup ? row[2] : row[5],
         "Last Name": isGroup ? row[3] : row[6],
@@ -243,25 +284,27 @@ function App() {
         Trainings: rowObj["TRAININGS (Individual Attendee)"],
       };
 
-      console.log("BASE", base);
-
       if (isGroup && attendeeCount > 0) {
         const attendees = [];
-        let startIndex =
-          headers.indexOf("HOW MANY ATTENDEES ARE YOU REGISTERING FOR?") + 1;
-        for (let i = 0; i < attendeeCount; i++) {
-          const offset = i * 8;
-          const a = {
-            "First Name": row[startIndex + offset + 1],
-            "Last Name": row[startIndex + offset + 2],
-            Email: row[startIndex + offset + 3],
-            "Job Position": row[startIndex + offset + 4],
-            Designation: row[startIndex + offset + 5],
-            Country: row[startIndex + offset + 6],
-            Trainings: row[startIndex + offset + 7],
-            Subtotal: row[startIndex + offset + 8],
-          };
-          attendees.push(a);
+        let startIndex = headers.indexOf(
+          "HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"
+        );
+        if (startIndex !== -1) {
+          startIndex += 1;
+          for (let i = 0; i < attendeeCount; i++) {
+            const offset = i * 8;
+            const a = {
+              "First Name": row[startIndex + offset],
+              "Last Name": row[startIndex + offset + 1],
+              Email: row[startIndex + offset + 2],
+              "Job Position": row[startIndex + offset + 3],
+              Designation: row[startIndex + offset + 4],
+              Country: row[startIndex + offset + 5],
+              Trainings: row[startIndex + offset + 6],
+              Subtotal: row[startIndex + offset + 7],
+            };
+            attendees.push(a);
+          }
         }
 
         normalized.push({ ...base, Attendees: attendees });
@@ -283,7 +326,6 @@ function App() {
     });
   }
 
-  // Search for participants
   const handleInputChange = (event) => {
     setSearchTerm(event.target.value);
   };
@@ -291,16 +333,17 @@ function App() {
   const filteredUsers = excelData.filter(
     ({ registration_type, first_name, last_name, company }) =>
       (activeTab === "individual" ? registration_type === "Myself" : true) &&
-      (activeTab === "group" ? registration_type === "Someone Else / Group" : true) &&
+      (activeTab === "group"
+        ? registration_type === "Someone Else / Group"
+        : true) &&
       (searchTerm === "" ||
         [
-          first_name.toLowerCase(),
-          last_name.toLowerCase(),
-          company.toLowerCase(),
+          (first_name || "").toLowerCase(),
+          (last_name || "").toLowerCase(),
+          (company || "").toLowerCase(),
         ].some((field) => field.includes(searchTerm.toLowerCase())))
   );
 
-  // Split string into training lines
   function splitTrainingLines(cell) {
     return (cell || "")
       .split(/\r?\n/)
@@ -308,25 +351,33 @@ function App() {
       .filter(Boolean);
   }
 
-  // Parse "Nov 18-19: Training Name ($1234)" into { date, name, price }
   function parseTrainingLine(line) {
-    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
-    if (!match) return null;
+    if (!line || typeof line !== "string") return null;
+
+    const regex = /^(.+?)\s*-\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/;
+    const match = line.trim().match(regex);
+
+    if (!match) {
+      console.warn("Failed to parse training line:", line);
+      return null;
+    }
+
     return {
-      date: match[1].trim(),
-      name: match[2].trim(),
+      name: match[1].trim(),
+      date: match[2].trim(),
       price: parseFloat(match[3]),
     };
   }
 
-  // Upsert into trainings table
+  /* 🔴 CHANGED: Added .eq("price", price) to prevent PGRST116 multiple row error */
   async function upsertTrainingByNameDatePrice(name, date, price) {
+    // 1. Check if training exists by Name, Date, AND Price
     const { data: existing, error: fetchError } = await supabase
       .from("trainings")
       .select("id")
       .eq("name", name)
       .eq("date", date)
-      .eq("price", price)
+      .eq("price", price) // Added price match to uniquely target 1 row
       .maybeSingle();
 
     if (fetchError) {
@@ -338,6 +389,7 @@ function App() {
       return existing.id;
     }
 
+    // 2. Insert new record if it doesn't exist
     const { data: inserted, error: insertError } = await supabase
       .from("trainings")
       .insert([{ name, date, price }])
@@ -355,25 +407,24 @@ function App() {
   const handleAddRegistration = () => {
     setIndividualRegistration(!individualRegistration);
   };
-
   return (
     <>
-      <div className='overflow-hidden'>
-        <div className='min-vh-100'>
+      <div className="overflow-hidden">
+        <div className="min-vh-100">
           <TopNavbar />
-          <div className='container-fluid px-5 mt-3'>
-            <div className='d-flex justify-content-between mb-3'>
+          <div className="container-fluid px-5 mt-3">
+            <div className="d-flex justify-content-between mb-3">
               {" "}
               <h2>Registrations</h2>
               <div>
-                <label htmlFor='myFile' className='btn btn-success fw-bold'>
-                  <i className='bi bi-upload' /> Upload File
+                <label htmlFor="myFile" className="btn btn-success fw-bold">
+                  <i className="bi bi-upload" /> Upload File
                 </label>
                 <input
-                  id='myFile'
-                  className='d-none'
-                  type='file'
-                  accept='.xlsx, .xls'
+                  id="myFile"
+                  className="d-none"
+                  type="file"
+                  accept=".xlsx, .xls"
                   onChange={handleFileUpload}
                 />
                 <ExportExcel excelData={excelData} />
@@ -381,30 +432,30 @@ function App() {
             </div>
           </div>
 
-          <div className='container-fluid px-5 my-3'>
+          <div className="container-fluid px-5 my-3">
             <Dashboard excelData={excelData} />
-            <div className='card'>
-              <div className='card-body'>
+            <div className="card">
+              <div className="card-body">
                 {" "}
-                <div className='d-flex justify-content-end'>
+                <div className="d-flex justify-content-end">
                   <button
-                    className='btn btn-primary text-white fw-bold mx-3'
-                    data-bs-toggle='modal'
-                    data-bs-target='#addRegistrationModal'
+                    className="btn btn-primary text-white fw-bold mx-3"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addRegistrationModal"
                   >
-                    <i className='bi bi-person-plus-fill' />
-                    <span className='ms-2'>Add Registration</span>
+                    <i className="bi bi-person-plus-fill" />
+                    <span className="ms-2">Add Registration</span>
                   </button>
                   <button
-                    className='btn btn-primary text-white fw-bold'
+                    className="btn btn-primary text-white fw-bold"
                     onClick={() => setShowAddGroupModal(true)}
                   >
-                    <i className='bi bi-person-lines-fill' />
-                    <span className='ms-2'>Add Group Registration</span>
+                    <i className="bi bi-person-lines-fill" />
+                    <span className="ms-2">Add Group Registration</span>
                   </button>
                 </div>
-                <ul className='nav nav-tabs'>
-                  <li className='nav-item'>
+                <ul className="nav nav-tabs">
+                  <li className="nav-item">
                     <a
                       className={`nav-link ${
                         activeTab === "individual"
@@ -417,7 +468,7 @@ function App() {
                       Individual
                     </a>
                   </li>
-                  <li className='nav-item'>
+                  <li className="nav-item">
                     <a
                       className={`nav-link ${
                         activeTab === "group"
@@ -430,7 +481,7 @@ function App() {
                       Group
                     </a>
                   </li>
-                  <li className='nav-item'>
+                  <li className="nav-item">
                     <a
                       className={`nav-link ${
                         activeTab === "all"
@@ -445,10 +496,10 @@ function App() {
                   </li>
                 </ul>
                 <input
-                  type='text'
-                  className='form-control'
-                  id='guestSearch'
-                  placeholder='Search participants...'
+                  type="text"
+                  className="form-control"
+                  id="guestSearch"
+                  placeholder="Search participants..."
                   onChange={handleInputChange}
                   style={{ marginTop: 12, marginBottom: 1 }}
                 />
@@ -469,31 +520,31 @@ function App() {
       {/* Insert Modal */}
       <div>
         <div
-          className='modal fade'
-          id='addRegistrationModal'
-          tabIndex='-1'
-          aria-labelledby='addModalLabel'
-          aria-hidden='true'
+          className="modal fade"
+          id="addRegistrationModal"
+          tabIndex="-1"
+          aria-labelledby="addModalLabel"
+          aria-hidden="true"
           style={{ zIndex: 1200 }}
         >
-          <div className='modal-dialog modal-dialog-centered modal-dialog-scrollable'>
-            <div className='modal-content'>
-              <div className='modal-header'>
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header">
                 <h1
-                  className='modal-title fs-5'
-                  id='editModalLabel'
+                  className="modal-title fs-5"
+                  id="editModalLabel"
                   style={{ fontWeight: 700 }}
                 >
                   Add Registration
                 </h1>
                 <button
-                  type='button'
-                  className='btn-close'
-                  data-bs-dismiss='modal'
-                  aria-label='Close'
+                  type="button"
+                  className="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
                 ></button>
               </div>
-              <div className='modal-body'>
+              <div className="modal-body">
                 <Form />
               </div>
             </div>
