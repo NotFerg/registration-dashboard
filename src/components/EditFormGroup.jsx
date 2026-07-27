@@ -154,7 +154,7 @@ const EditFormGroup = ({
     setTrainings(data || []);
   }
 
-  // FIXED: Added async keyword to handleSubmitGroup
+
   const handleSubmitGroup = async (e) => {
     e.preventDefault();
 
