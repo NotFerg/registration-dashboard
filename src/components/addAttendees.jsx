@@ -122,8 +122,8 @@ const AddAttendees = ({
             />
           </div>
 
-          <div className="mb-3 flex-fill">
-            <label htmlFor="last_name" className="form-label">
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='last_name' className='form-label'>
               Last Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -139,9 +139,9 @@ const AddAttendees = ({
           </div>
         </div>
 
-        <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3 flex-fill pe-3">
-            <label htmlFor="email" className="form-label">
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='mb-3 flex-fill pe-3'>
+            <label htmlFor='email' className='form-label'>
               Email <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -156,8 +156,8 @@ const AddAttendees = ({
             />
           </div>
 
-          <div className="mb-3 flex-fill">
-            <label htmlFor="position" className="form-label">
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='position' className='form-label'>
               Position <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -173,9 +173,9 @@ const AddAttendees = ({
           </div>
         </div>
 
-        <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3 flex-fill pe-3">
-            <label htmlFor="designation" className="form-label">
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='mb-3 flex-fill pe-3'>
+            <label htmlFor='designation' className='form-label'>
               Designation <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -190,8 +190,8 @@ const AddAttendees = ({
             />
           </div>
 
-          <div className="mb-3 flex-fill">
-            <label htmlFor="country" className="form-label">
+          <div className='mb-3 flex-fill'>
+            <label htmlFor='country' className='form-label'>
               Country <span style={{ color: "red" }}> * </span>
             </label>
             <input
@@ -223,10 +223,10 @@ const AddAttendees = ({
                 <React.Fragment key={training.id || i}>
                   <div className="form-check form-check-inline">
                     <input
-                      type="checkbox"
-                      className="btn-check"
+                      type='checkbox'
+                      className='btn-check'
                       id={checkboxId}
-                      name="trainings"
+                      name='trainings'
                       value={trainingString}
                       checked={isChecked}
                       onChange={(e) => handleTrainingToggle(training, e.target.checked)}

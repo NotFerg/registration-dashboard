@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 import TopNavbar from "./components/Navbar.jsx";
 
 function App() {
-const [excelData, setExcelData] = useState([]);
+  const [excelData, setExcelData] = useState([]);
   const [activeTab, setActiveTab] = useState("individual");
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,7 +35,7 @@ const [excelData, setExcelData] = useState([]);
     try {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        navigate("/");
+        // Option to remain on current dashboard route if authenticated
       } else {
         navigate("/login");
       }
@@ -50,19 +50,19 @@ const [excelData, setExcelData] = useState([]);
     setIsLoading(true);
     const { data: registrations, error } = await supabase.from("registrations")
       .select(`
-    *,
-    attendees (
-      *,
-      training_references (
-        training_id,
-        trainings ( name, date, price )
-      )
-    ),
-    training_references (
-      training_id,
-      trainings ( name, date, price )
-    )
-  `);
+        *,
+        attendees (
+          *,
+          training_references (
+            training_id,
+            trainings ( name, date, price )
+          )
+        ),
+        training_references (
+          training_id,
+          trainings ( name, date, price )
+        )
+      `);
 
     if (error) {
       console.error("Error fetching data:", error);
@@ -70,7 +70,7 @@ const [excelData, setExcelData] = useState([]);
       return;
     }
 
-    setExcelData(registrations);
+    setExcelData(registrations || []);
     setIsLoading(false);
   }
 
@@ -93,136 +93,184 @@ const [excelData, setExcelData] = useState([]);
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
+        setIsLoading(true);
         const arrayBuffer = evt.target.result;
         const workbook = XLSX.read(arrayBuffer, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
         const normalized = normalizeExcelDataFromArray(data);
 
-        // await purgeSupabaseData();
         await uploadToSupabase(normalized);
         await fetchDataFromSupabase();
 
-        Swal.fire("Success!", "Data uploaded to Supabase.", "success");
+        Swal.fire("Success!", "Data uploaded successfully.", "success");
       } catch (err) {
-        console.error(err);
+        console.error("File upload error:", err);
         Swal.fire("Error!", "Failed to process Excel file.", "error");
+      } finally {
+        setIsLoading(false);
+        e.target.value = null; // Clear input
       }
     };
 
     reader.readAsArrayBuffer(file);
   }
 
-  async function purgeSupabaseData() {
-    await supabase.from("attendees").delete().neq("id", 0);
-    await supabase.from("registrations").delete().neq("id", 0);
+  async function upsertTrainingsBatch(uniqueTrainingsMap) {
+    const trainingMap = new Map();
+    const trainingItems = Array.from(uniqueTrainingsMap.values());
+
+    for (const item of trainingItems) {
+      const id = await upsertTrainingByNameDatePrice(item.name, item.date, item.price);
+      if (id) {
+        const key = `${item.name}|${item.date}|${item.price}`;
+        trainingMap.set(key, id);
+      }
+    }
+    return trainingMap;
   }
 
   async function uploadToSupabase(data) {
-    for (const row of data) {
-      const { Attendees = [], ...regData } = row;
+    if (!data || data.length === 0) return;
 
-      // 1. Insert main registration
-      const { data: reg, error } = await supabase
-        .from("registrations")
-        .insert([
-          {
-            submission_date: excelDateToISOString(regData["Submission Date"]),
-            registration_type: regData["Registration Type"],
-            first_name: regData["First Name"],
-            last_name: regData["Last Name"],
-            email: regData["Email"],
-            company: regData["Company / Institution"],
-            position: regData["Job Position"],
-            designation: regData["Designation"],
-            country: regData["Country"],
-            trainings: regData["Trainings"],
-            total_cost:
-              parseFloat(
-                (regData["Total Cost"] || "").toString().replace(/[$,]/g, "")
-              ) || 0,
-            payment_options: regData["Payment Option"],
-          },
-        ])
-        .select()
-        .single();
+    // 1. Collect unique trainings
+    const uniqueTrainings = new Map();
+    data.forEach((row) => {
+      const { Attendees = [] } = row;
+      const trainingSources = [row["Trainings"]];
+      Attendees.forEach((a) => trainingSources.push(a["Trainings"]));
 
-      if (error || !reg) {
-        console.error("Insert error:", error);
-        continue;
-      }
-
-      // 2. CASE A: Group Registrations (Attaches references to individual Attendees)
-      if (Attendees.length > 0) {
-        for (const a of Attendees) {
-          const { data: attendee, error: attErr } = await supabase
-            .from("attendees")
-            .insert([
-              {
-                registration_id: reg.id,
-                first_name: a["First Name"],
-                last_name: a["Last Name"],
-                email: a["Email"],
-                position: a["Job Position"],
-                designation: a["Designation"],
-                country: a["Country"],
-                trainings: a["Trainings"],
-                subtotal:
-                  parseFloat(
-                    (a["Subtotal"] || "").toString().replace(/[$,]/g, "")
-                  ) || 0,
-              },
-            ])
-            .select()
-            .single();
-
-          if (attErr || !attendee) {
-            console.error("Attendee insert error:", attErr);
-            continue;
+      trainingSources.forEach((raw) => {
+        splitTrainingLines(raw).forEach((line) => {
+          const parsed = parseTrainingLine(line);
+          if (parsed) {
+            const key = `${parsed.name}|${parsed.date}|${parsed.price}`;
+            uniqueTrainings.set(key, parsed);
           }
+        });
+      });
+    });
 
-          const attTrainingLines = splitTrainingLines(a["Trainings"]);
-          for (const line of attTrainingLines) {
-            const parsed = parseTrainingLine(line);
-            if (!parsed) continue;
+    const trainingMap = await upsertTrainingsBatch(uniqueTrainings);
 
-            const trainingId = await upsertTrainingByNameDatePrice(
-              parsed.name,
-              parsed.date,
-              parsed.price
-            );
+    // 2. Insert Registrations Batch
+    const registrationInserts = data.map((row) => ({
+      submission_date: excelDateToISOString(row["Submission Date"]),
+      registration_type: row["Registration Type"],
+      first_name: row["First Name"],
+      last_name: row["Last Name"],
+      email: row["Email"],
+      company: row["Company / Institution"],
+      position: row["Job Position"],
+      designation: row["Designation"],
+      country: row["Country"],
+      trainings: row["Trainings"],
+      total_cost:
+        parseFloat((row["Total Cost"] || "").toString().replace(/[$,]/g, "")) || 0,
+      payment_options: row["Payment Option"],
+    }));
+
+    const { data: insertedRegistrations, error: regError } = await supabase
+      .from("registrations")
+      .insert(registrationInserts)
+      .select();
+
+    if (regError || !insertedRegistrations) {
+      console.error("Registration batch insert error:", regError);
+      return;
+    }
+
+    // 3. Prepare Attendees & direct Training References
+    const attendeeInserts = [];
+    const attendeeRefTracker = [];
+    const directTrainingRefs = [];
+
+    data.forEach((row, rowIndex) => {
+      const dbRegistration = insertedRegistrations[rowIndex];
+      if (!dbRegistration) return;
+
+      const { Attendees = [] } = row;
+
+      if (Attendees.length > 0) {
+        Attendees.forEach((att) => {
+          attendeeInserts.push({
+            registration_id: dbRegistration.id,
+            first_name: att["First Name"],
+            last_name: att["Last Name"],
+            email: att["Email"],
+            position: att["Job Position"],
+            designation: att["Designation"],
+            country: att["Country"],
+            trainings: att["Trainings"],
+            subtotal:
+              parseFloat((att["Subtotal"] || "").toString().replace(/[$,]/g, "")) || 0,
+          });
+
+          attendeeRefTracker.push({
+            rawTrainings: att["Trainings"],
+            registrationId: dbRegistration.id,
+          });
+        });
+      } else if (row["Trainings"]) {
+        splitTrainingLines(row["Trainings"]).forEach((line) => {
+          const parsed = parseTrainingLine(line);
+          if (parsed) {
+            const key = `${parsed.name}|${parsed.date}|${parsed.price}`;
+            const trainingId = trainingMap.get(key);
             if (trainingId) {
-              await supabase.from("training_references").insert([
-                {
-                  training_id: trainingId,
-                  attendee_id: attendee.id,
-                },
-              ]);
+              directTrainingRefs.push({
+                registration_id: dbRegistration.id,
+                training_id: trainingId,
+              });
             }
           }
-        }
-      } 
-      // 3. CASE B: Individual Registrations (Attaches references directly to Registration ID)
-      else {
-        const indivTrainingLines = splitTrainingLines(regData["Trainings"]);
-        for (const line of indivTrainingLines) {
-          const parsed = parseTrainingLine(line);
-          if (!parsed) continue;
+        });
+      }
+    });
 
-          const trainingId = await upsertTrainingByNameDatePrice(
-            parsed.name,
-            parsed.date,
-            parsed.price
-          );
-          if (trainingId) {
-            await supabase.from("training_references").insert([
-              {
-                training_id: trainingId,
-                registration_id: reg.id,
-              },
-            ]);
-          }
+    // 4. Batch Insert Attendees & build their Training References
+    const finalTrainingRefs = [...directTrainingRefs];
+
+    if (attendeeInserts.length > 0) {
+      const { data: insertedAttendees, error: attError } = await supabase
+        .from("attendees")
+        .insert(attendeeInserts)
+        .select();
+
+      if (attError) {
+        console.error("Attendees batch insert error:", attError);
+        return;
+      }
+
+      insertedAttendees.forEach((attDb, idx) => {
+        const tracker = attendeeRefTracker[idx];
+        if (tracker && tracker.rawTrainings) {
+          splitTrainingLines(tracker.rawTrainings).forEach((line) => {
+            const parsed = parseTrainingLine(line);
+            if (parsed) {
+              const key = `${parsed.name}|${parsed.date}|${parsed.price}`;
+              const trainingId = trainingMap.get(key);
+              if (trainingId) {
+                finalTrainingRefs.push({
+                  attendee_id: attDb.id,
+                  registration_id: tracker.registrationId,
+                  training_id: trainingId,
+                });
+              }
+            }
+          });
         }
+      });
+    }
+
+    // 5. Insert Final Training References
+    if (finalTrainingRefs.length > 0) {
+      const { error: refError } = await supabase
+        .from("training_references")
+        .insert(finalTrainingRefs);
+
+      if (refError) {
+        console.error("Training references batch insert error:", refError);
       }
     }
   }
@@ -248,88 +296,73 @@ const [excelData, setExcelData] = useState([]);
     return null;
   }
 
-  /* 🔴 CHANGED: Filter out empty rows and fix offset indices */
-function normalizeExcelDataFromArray(data) {
-  const [headers, ...rows] = data;
-  const normalized = [];
+  function normalizeExcelDataFromArray(data) {
+    const [headers, ...rows] = data;
+    if (!headers || !rows.length) return [];
 
-  rows.forEach((row) => {
-    // 1. Skip completely empty rows
-    if (!row || row.every((cell) => cell === "" || cell === null || cell === undefined)) return;
+    const normalized = [];
 
-    const rowObj = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
-    const regType = rowObj["SELECT YOUR REGISTRATION TYPE"]?.trim();
-    const isGroup = regType === "Someone Else / Group";
+    rows.forEach((row) => {
+      if (!row || row.every((cell) => cell === "" || cell === null || cell === undefined)) return;
 
-    if (!regType) return;
+      const rowObj = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
+      const regType = rowObj["SELECT YOUR REGISTRATION TYPE"]?.trim();
 
-    const attendeeCount =
-      parseInt(rowObj["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) || 0;
+      if (!regType) return;
 
-    // 2. Extract Base Registration Info
-    const base = {
-      "Submission Date": row[0],
-      "Registration Type": regType,
-      "First Name": isGroup ? row[2] : row[5],
-      "Last Name": isGroup ? row[3] : row[6],
-      Email: isGroup ? row[4] : row[7],
-      "Company / Institution": row[8], // Shared column for both
-      "Job Position": isGroup ? "" : row[9],
-      Designation: isGroup ? "" : row[10],
-      Country: isGroup ? "" : row[11],
-      Trainings: rowObj["TRAININGS (Individual Attendee)"],
-      "Total Cost":
-        rowObj["TOTAL COST (GROUP)"] || rowObj["TOTAL (Individual Attendee)"],
-      "Payment Option": rowObj["Please select one payment option."] || "",
-    };
+      const isGroup = regType === "Someone Else / Group";
+      const attendeeCount =
+        parseInt(rowObj["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) || 0;
 
-    // 3. Extract Group Attendees Loop
-    if (isGroup && attendeeCount > 0) {
-      const attendees = [];
-      
-      // Dynamic lookup for where Attendee 1 fields start
-      let startIndex = headers.indexOf("TOTAL COST (GROUP)");
-      
-      if (startIndex !== -1) {
-        startIndex += 1; // Index 17 (Attendee 1 First Name)
+      const base = {
+        "Submission Date": row[0],
+        "Registration Type": regType,
+        "First Name": isGroup ? row[2] : row[5],
+        "Last Name": isGroup ? row[3] : row[6],
+        Email: isGroup ? row[4] : row[7],
+        "Company / Institution": isGroup ? row[15] : row[8],
+        "Total Cost":
+          rowObj["TOTAL COST (GROUP)"] ||
+          rowObj["TOTAL (Individual Attendee)"] ||
+          "",
+        "Payment Option": rowObj["Please select one payment option."] || "",
+        "Job Position": isGroup ? "" : row[9],
+        Designation: isGroup ? "" : row[10],
+        Country: isGroup ? "" : row[11],
+        Trainings: rowObj["TRAININGS (Individual Attendee)"] || "",
+      };
 
-        for (let i = 0; i < attendeeCount; i++) {
-          const offset = i * 8; // Each attendee has 8 attributes
-          
-          const attendeeFirstName = row[startIndex + offset];
-          
+      if (isGroup && attendeeCount > 0) {
+        const attendees = [];
+        let startIndex = headers.indexOf("TOTAL COST (GROUP)");
 
-          const a = {
-            "First Name": attendeeFirstName,
-            "Last Name": row[startIndex + offset + 1],
-            Email: row[startIndex + offset + 2],
-            "Job Position": row[startIndex + offset + 3],
-            Designation: row[startIndex + offset + 4],
-            Country: row[startIndex + offset + 5],
-            Trainings: row[startIndex + offset + 6],
-            Subtotal: row[startIndex + offset + 7],
-          };
+        if (startIndex !== -1) {
+          startIndex += 1;
 
-          attendees.push(a);
+          for (let i = 0; i < attendeeCount; i++) {
+            const offset = i * 8;
+            const attendeeFirstName = row[startIndex + offset];
+            if (!attendeeFirstName) continue;
+
+            attendees.push({
+              "First Name": attendeeFirstName,
+              "Last Name": row[startIndex + offset + 1],
+              Email: row[startIndex + offset + 2],
+              "Job Position": row[startIndex + offset + 3],
+              Designation: row[startIndex + offset + 4],
+              Country: row[startIndex + offset + 5],
+              Trainings: row[startIndex + offset + 6],
+              Subtotal: row[startIndex + offset + 7],
+            });
+          }
         }
+        normalized.push({ ...base, Attendees: attendees });
+      } else {
+        normalized.push(base);
       }
-
-      normalized.push({ ...base, Attendees: attendees });
-    } else {
-      normalized.push(base);
-    }
-  });
-
-  return normalized;
-}
-  function formatCurrency(amount) {
-    const num = parseFloat(amount);
-    if (isNaN(num)) return "$0.00";
-
-    return num.toLocaleString("en-US", {
-      style: "currency",
-      currency: "USD",
     });
+
+    return normalized;
   }
 
   const handleInputChange = (event) => {
@@ -375,15 +408,13 @@ function normalizeExcelDataFromArray(data) {
     };
   }
 
-  /* 🔴 CHANGED: Added .eq("price", price) to prevent PGRST116 multiple row error */
   async function upsertTrainingByNameDatePrice(name, date, price) {
-    // 1. Check if training exists by Name, Date, AND Price
     const { data: existing, error: fetchError } = await supabase
       .from("trainings")
       .select("id")
       .eq("name", name)
       .eq("date", date)
-      .eq("price", price) // Added price match to uniquely target 1 row
+      .eq("price", price)
       .maybeSingle();
 
     if (fetchError) {
@@ -395,7 +426,6 @@ function normalizeExcelDataFromArray(data) {
       return existing.id;
     }
 
-    // 2. Insert new record if it doesn't exist
     const { data: inserted, error: insertError } = await supabase
       .from("trainings")
       .insert([{ name, date, price }])
@@ -410,9 +440,6 @@ function normalizeExcelDataFromArray(data) {
     return inserted.id;
   }
 
-  const handleAddRegistration = () => {
-    setIndividualRegistration(!individualRegistration);
-  };
   return (
     <>
       <div className="overflow-hidden">
@@ -420,7 +447,6 @@ function normalizeExcelDataFromArray(data) {
           <TopNavbar />
           <div className="container-fluid px-5 mt-3">
             <div className="d-flex justify-content-between mb-3">
-              {" "}
               <h2>Registrations</h2>
               <div>
                 <label htmlFor="myFile" className="btn btn-success fw-bold">
@@ -442,7 +468,6 @@ function normalizeExcelDataFromArray(data) {
             <Dashboard excelData={excelData} />
             <div className="card">
               <div className="card-body">
-                {" "}
                 <div className="d-flex justify-content-end">
                   <button
                     className="btn btn-primary text-white fw-bold mx-3"
@@ -510,49 +535,37 @@ function normalizeExcelDataFromArray(data) {
                   style={{ marginTop: 12, marginBottom: 1 }}
                 />
                 {activeTab === "group" ? (
-                  <Group filteredUsers={filteredUsers} />
+                  <Group filteredUsers={filteredUsers} onRefresh={fetchDataFromSupabase} />
                 ) : activeTab === "individual" ? (
-                  <Individual filteredUsers={filteredUsers} />
+                  <Individual filteredUsers={filteredUsers} onRefresh={fetchDataFromSupabase} />
                 ) : (
-                  <All filteredUsers={filteredUsers} />
+                  <All filteredUsers={filteredUsers} onRefresh={fetchDataFromSupabase} />
                 )}
               </div>
             </div>
           </div>
-          {/* </div> */}
         </div>
       </div>
 
       {/* Insert Modal */}
-      <div>
-        <div
-          className="modal fade"
-          id="addRegistrationModal"
-          tabIndex="-1"
-          aria-labelledby="addModalLabel"
-          aria-hidden="true"
-          style={{ zIndex: 1200 }}
-        >
-          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h1
-                  className="modal-title fs-5"
-                  id="editModalLabel"
-                  style={{ fontWeight: 700 }}
-                >
-                  Add Registration
-                </h1>
-                <button
-                  type="button"
-                  className="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"
-                ></button>
-              </div>
-              <div className="modal-body">
-                <Form />
-              </div>
+      <div
+        className="modal fade"
+        id="addRegistrationModal"
+        tabIndex="-1"
+        aria-labelledby="addModalLabel"
+        aria-hidden="true"
+        style={{ zIndex: 1200 }}
+      >
+        <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h1 className="modal-title fs-5" id="editModalLabel" style={{ fontWeight: 700 }}>
+                Add Registration
+              </h1>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" />
+            </div>
+            <div className="modal-body">
+              <Form onSuccess={fetchDataFromSupabase} />
             </div>
           </div>
         </div>
@@ -561,7 +574,7 @@ function normalizeExcelDataFromArray(data) {
       <AddMultiPageModal
         show={showAddGroupModal}
         onHide={() => setShowAddGroupModal(false)}
-        initialReg={undefined}
+        onSuccess={fetchDataFromSupabase}
       />
     </>
   );
