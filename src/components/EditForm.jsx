@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import supabase from "../utils/supabase";
 import Swal from "sweetalert2";
+import TrainingSelector from "./TrainingSelector";
 
 const EditForm = ({ reg: initialReg }) => {
   const [trainings, setTrainings] = useState([]);
@@ -180,7 +181,6 @@ const EditForm = ({ reg: initialReg }) => {
         text: "Registration updated successfully.",
         icon: "success",
         confirmButtonText: "OK",
-        target: "#editModal",
       }).then((result) => {
         if (result.isConfirmed) {
           window.location.reload();
@@ -345,36 +345,13 @@ const EditForm = ({ reg: initialReg }) => {
       </div>
 
       {/* MULTI-SELECT CHECKBOXES */}
-      <div className="mb-3">
-        <label className="form-label">
-          Trainings <span style={{ color: "red" }}> * </span>
-        </label>
-        <div className="border rounded p-2 d-flex flex-wrap gap-1">
-          {trainings.map((training, index) => {
-            const isChecked = selectedIds.includes(training.id);
-            const uniqueInputId = `edit-training-checkbox-${training.id ?? index}`;
-
-            return (
-              <div key={training.id ?? index}>
-                <input
-                  type="checkbox"
-                  className="btn-check"
-                  id={uniqueInputId}
-                  autoComplete="off"
-                  checked={isChecked}
-                  onChange={() => handleCheckboxChange(training.id)}
-                />
-                <label
-                  className="btn btn-outline-success"
-                  htmlFor={uniqueInputId}
-                >
-                  {training.name} - ${training.price}
-                </label>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <TrainingSelector
+        trainings={trainings}
+        idPrefix="edit-registration"
+        caption="Select options for this registration"
+        isSelected={(training) => selectedIds.includes(training.id)}
+        onToggle={(training) => handleCheckboxChange(training.id)}
+      />
 
       <div className="mb-3">
         <label htmlFor="total_cost" className="form-label">

@@ -144,7 +144,11 @@ function Trainings() {
             text: "Training added successfully",
             icon: "success",
             confirmButtonText: "OK",
-          }).then(() => window.location.reload());
+          }).then((result) => {
+            if (result.isConfirmed) {
+              window.location.reload();
+            }
+          });
         }
       });
   }

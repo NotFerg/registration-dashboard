@@ -143,3 +143,10 @@ tbody {
 li {
   font-family: "Poppins";
 }
+
+/* Modals in this app are raised to z-index 11000, well above SweetAlert's
+   default 1060, which left alerts fired from inside a modal hidden behind it.
+   Keeping this above every modal means no call site needs a `target:` option. */
+.swal2-container {
+  z-index: 12000 !important;
+}

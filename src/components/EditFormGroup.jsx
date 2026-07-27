@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import supabase from "../utils/supabase";
+import TrainingSelector from "./TrainingSelector";
 
 const EditFormGroup = ({
   reg: initialReg,
@@ -76,27 +77,32 @@ const EditFormGroup = ({
   }, [initialReg]);
 
   const handleChange = (e) => {
-    const { id, value, type, checked } = e.target;
+    const { id, value } = e.target;
+    setReg((prevFormData) => ({
+      ...prevFormData,
+      [id]: value,
+    }));
+  };
 
-    if (type === "checkbox") {
-      const trainingName = value;
-      setReg((prev) => {
-        const updatedTrainings = checked
-          ? [...prev.trainings, trainingName]
-          : prev.trainings.filter((t) => t !== trainingName);
+  // Same string shape the attendee `trainings` column is persisted in, so
+  // parseTrainingLine / calculateTotalCost keep working unchanged.
+  const getTrainingString = (training) =>
+    `${training.date}: ${training.name} ($${training.price})`;
 
-        return {
-          ...prev,
-          trainings: updatedTrainings,
-          total_cost: calculateTotalCost(updatedTrainings),
-        };
-      });
-    } else {
-      setReg((prevFormData) => ({
-        ...prevFormData,
-        [id]: value,
-      }));
-    }
+  const handleTrainingToggle = (training, checked) => {
+    const trainingString = getTrainingString(training);
+    setReg((prev) => {
+      const current = Array.isArray(prev.trainings) ? prev.trainings : [];
+      const updatedTrainings = checked
+        ? [...current, trainingString]
+        : current.filter((t) => t !== trainingString);
+
+      return {
+        ...prev,
+        trainings: updatedTrainings,
+        total_cost: calculateTotalCost(updatedTrainings),
+      };
+    });
   };
 
   const handleSave = () => {
@@ -365,40 +371,14 @@ const EditFormGroup = ({
         </div>
       </div>
 
-      <div className='mb-3'>
-        <label htmlFor='trainings' className='form-label'>
-          Trainings <span style={{ color: "red" }}> * </span>
-        </label>
-        <br />
-        <div className="border rounded p-2">
-          {trainings.map((training, i) => {
-            const trainingString = `${training.date}: ${training.name} ($${training.price})`;
-
-            return (
-              <React.Fragment key={training.id}>
-                <input
-                  type='checkbox'
-                  className='btn-check'
-                  id={`btn-check-${i}`}
-                  autoComplete='off'
-                  checked={reg.trainings.includes(trainingString)}
-                  value={trainingString}
-                  onChange={handleChange}
-                />
-                <label
-                  className='btn btn-outline-success m-1'
-                  htmlFor={`btn-check-${i}`}
-                >
-                  {reg.trainings.includes(trainingString) && (
-                    <i className='bi bi-check-lg me-1'></i>
-                  )}
-                  {training.name} ${training.price}
-                </label>
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </div>
+      <TrainingSelector
+        trainings={trainings}
+        idPrefix={`edit-group-step${step}`}
+        isSelected={(training) =>
+          (reg.trainings || []).includes(getTrainingString(training))
+        }
+        onToggle={handleTrainingToggle}
+      />
 
       <div className='mb-3'>
         <label htmlFor='total_cost' className='form-label'>

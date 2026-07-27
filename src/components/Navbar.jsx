@@ -24,7 +24,10 @@ const TopNavbar = () => {
       variant="dark"
       expand="md"
       className="sticky-top nav-bar"
-      style={{ backgroundColor: "#202030", zIndex: 1100 }}
+      // No z-index override: `sticky-top` is 1020 on Bootstrap's scale, which
+      // sits above the sidebar (1000) but below modals (1055). Raising it past
+      // the modal layer is what pushed the Trainings modals behind the header.
+      style={{ backgroundColor: "#202030" }}
     >
       <Container fluid>
         <Navbar.Brand as={NavLink} to="/" className="d-flex align-items-center">
