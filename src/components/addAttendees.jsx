@@ -25,43 +25,52 @@ const AddAttendees = ({
     fetchTrainings();
   }, []);
 
+  // Update form state AND propagate to parent on every input change
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setForm((prevFormData) => ({
-      ...prevFormData,
+    const updatedForm = {
+      ...form,
       [id]: value,
-    }));
+    };
+    setForm(updatedForm);
+
+    if (onSave) {
+      onSave(updatedForm);
+    }
   };
 
-  // Check if a specific training option is selected for this attendee
+  const getTrainingString = (training) => {
+    return `${training.date ? training.date + ": " : ""}${training.name} ($${training.price})`;
+  };
+
   const isTrainingSelected = (training) => {
     if (!form.trainings || !Array.isArray(form.trainings)) return false;
-    const trainingString = `${training.date}: ${training.name} ($${training.price})`;
+    const targetString = getTrainingString(training);
 
-    return form.trainings.some(
-      (t) =>
-        t === trainingString ||
-        (typeof t === "string" && t.toLowerCase().includes(training.name.toLowerCase()))
-    );
+    return form.trainings.some((t) => {
+      if (typeof t === "object" && t !== null) {
+        return t.id === training.id;
+      }
+      return t === targetString;
+    });
   };
 
-  // Dynamic toggle for adding/removing trainings and auto-updating subtotal
   const handleTrainingToggle = (training, checked) => {
-    const trainingString = `${training.date}: ${training.name} ($${training.price})`;
+    const trainingString = getTrainingString(training);
     const prevTrainings = Array.isArray(form.trainings) ? [...form.trainings] : [];
 
     let updatedTrainings;
     if (checked) {
       updatedTrainings = [...prevTrainings, trainingString];
     } else {
-      updatedTrainings = prevTrainings.filter(
-        (t) =>
-          t !== trainingString &&
-          !(typeof t === "string" && t.toLowerCase().includes(training.name.toLowerCase()))
-      );
+      updatedTrainings = prevTrainings.filter((t) => {
+        if (typeof t === "object" && t !== null) {
+          return t.id !== training.id;
+        }
+        return t !== trainingString;
+      });
     }
 
-    // Recalculate subtotal for this attendee based on selected trainings
     const priceDelta = parseFloat(training.price) || 0;
     const currentSubtotal = parseFloat(form.subtotal || form.total_cost) || 0;
     const updatedSubtotal = checked
@@ -77,22 +86,25 @@ const AddAttendees = ({
 
     setForm(updatedForm);
 
-    // Save attendee state back to parent container instantly
     if (onSave) {
       onSave(updatedForm);
     }
   };
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (onSave) {
-      onSave(form);
-    }
-  }
+  // Auto-save before changing steps
+  const onNavigatePrev = () => {
+    if (onSave) onSave(form);
+    handlePrev();
+  };
+
+  const onNavigateNext = () => {
+    if (onSave) onSave(form);
+    handleNext();
+  };
 
   return (
     <>
-      <form onSubmit={handleSubmit}>
+      <div>
         <div className="d-flex flex-row justify-content-between">
           <div className="mb-3 flex-fill pe-3">
             <label htmlFor="first_name" className="form-label">
@@ -203,10 +215,8 @@ const AddAttendees = ({
           <div className="border rounded p-2 bg-light">
             <span className="text-muted ps-2 small">Select options for this attendee</span> <br />
             {trainings.map((training, i) => {
-              const trainingString = `${training.date}: ${training.name} ($${training.price})`;
+              const trainingString = getTrainingString(training);
               const isChecked = isTrainingSelected(training);
-              
-              // Key Fix: Combine attendee step + training ID for globally unique HTML IDs
               const checkboxId = `add-step${step}-training-${training.id || i}`;
 
               return (
@@ -237,44 +247,43 @@ const AddAttendees = ({
           </div>
         </div>
 
-        {/* Step Navigation Controls */}
-        <div className="text-center mt-4 mb-4">
+        {/* Navigation Controls */}
+        <div className="d-flex justify-content-between align-items-center mt-4 mb-3">
           <button
             type="button"
             className="btn btn-outline-primary btn-sm"
-            onClick={handlePrev}
+            onClick={onNavigatePrev}
             disabled={step === 0}
           >
-            <i className="bi bi-caret-left"></i>
+            <i className="bi bi-caret-left me-1"></i> Previous Attendee
           </button>
-          <small className="mx-3 text-muted">
+          
+          <small className="text-muted fw-bold">
             Attendee {step + 1} of {attendees.length || 1}
           </small>
+
           <button
             type="button"
             className="btn btn-outline-primary btn-sm"
-            onClick={handleNext}
+            onClick={onNavigateNext}
           >
-            <i className="bi bi-caret-right"></i>
+            + Add / Next Attendee <i className="bi bi-caret-right ms-1"></i>
           </button>
         </div>
 
         <hr />
 
-        {/* Save Controls */}
+        {/* Single Primary Action */}
         <div className="vstack gap-2">
-          <button type="submit" className="btn btn-success w-100">
-            <i className="bi bi-person-fill"></i> Save Attendee
-          </button>
           <button
             type="button"
-            className="btn btn-primary w-100"
+            className="btn btn-primary btn-lg w-100"
             onClick={handleSaveGroup}
           >
-            <i className="bi bi-people-fill"></i> Save Group Registration
+            <i className="bi bi-people-fill me-2"></i> Save Group Registration
           </button>
         </div>
-      </form>
+      </div>
     </>
   );
 };

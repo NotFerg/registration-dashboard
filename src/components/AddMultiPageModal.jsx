@@ -166,7 +166,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
         confirmButtonText: "OK",
         backdrop: true,
         allowOutsideClick: false,
-        target
+        target: "#editModal",
       }).then((result) => {
         if (result.isConfirmed) {
           window.location.reload();
@@ -231,7 +231,7 @@ const AddMultiPageModal = ({ show, onHide }) => {
   }
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" style={{ zIndex: 11000 }}>
+    <Modal show={show} onHide={onHide} size="lg" style={{ zIndex: 11000 }} id="editModal">
       <Modal.Header closeButton>
         <Modal.Title>
           <h1

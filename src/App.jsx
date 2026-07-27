@@ -249,73 +249,79 @@ const [excelData, setExcelData] = useState([]);
   }
 
   /* 🔴 CHANGED: Filter out empty rows and fix offset indices */
-  function normalizeExcelDataFromArray(data) {
-    const [headers, ...rows] = data;
-    const normalized = [];
+function normalizeExcelDataFromArray(data) {
+  const [headers, ...rows] = data;
+  const normalized = [];
 
-    rows.forEach((row) => {
-      // Ignore completely empty rows in Excel sheet
-      if (!row || row.every((cell) => cell === "" || cell === null)) return;
+  rows.forEach((row) => {
+    // 1. Skip completely empty rows
+    if (!row || row.every((cell) => cell === "" || cell === null || cell === undefined)) return;
 
-      const rowObj = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
-      const regType = rowObj["SELECT YOUR REGISTRATION TYPE"]?.trim();
-      const isGroup = regType === "Someone Else / Group";
+    const rowObj = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
+    const regType = rowObj["SELECT YOUR REGISTRATION TYPE"]?.trim();
+    const isGroup = regType === "Someone Else / Group";
 
-      // If registration type is missing/invalid, ignore this row
-      if (!regType) return;
+    if (!regType) return;
 
-      const attendeeCount =
-        parseInt(rowObj["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) ||
-        0;
+    const attendeeCount =
+      parseInt(rowObj["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) || 0;
 
-      const base = {
-        "Submission Date": row[0],
-        "Registration Type": regType,
-        "First Name": isGroup ? row[2] : row[5],
-        "Last Name": isGroup ? row[3] : row[6],
-        Email: isGroup ? row[4] : row[7],
-        "Company / Institution": isGroup ? row[15] : row[8],
-        "Total Cost":
-          rowObj["TOTAL COST (GROUP)"] || rowObj["TOTAL (Individual Attendee)"],
-        "Payment Option": rowObj["Please select one payment option."] || "",
-        "Job Position": row[9],
-        Designation: row[10],
-        Country: row[11],
-        Trainings: rowObj["TRAININGS (Individual Attendee)"],
-      };
+    // 2. Extract Base Registration Info
+    const base = {
+      "Submission Date": row[0],
+      "Registration Type": regType,
+      "First Name": isGroup ? row[2] : row[5],
+      "Last Name": isGroup ? row[3] : row[6],
+      Email: isGroup ? row[4] : row[7],
+      "Company / Institution": row[8], // Shared column for both
+      "Job Position": isGroup ? "" : row[9],
+      Designation: isGroup ? "" : row[10],
+      Country: isGroup ? "" : row[11],
+      Trainings: rowObj["TRAININGS (Individual Attendee)"],
+      "Total Cost":
+        rowObj["TOTAL COST (GROUP)"] || rowObj["TOTAL (Individual Attendee)"],
+      "Payment Option": rowObj["Please select one payment option."] || "",
+    };
 
-      if (isGroup && attendeeCount > 0) {
-        const attendees = [];
-        let startIndex = headers.indexOf(
-          "HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"
-        );
-        if (startIndex !== -1) {
-          startIndex += 1;
-          for (let i = 0; i < attendeeCount; i++) {
-            const offset = i * 8;
-            const a = {
-              "First Name": row[startIndex + offset],
-              "Last Name": row[startIndex + offset + 1],
-              Email: row[startIndex + offset + 2],
-              "Job Position": row[startIndex + offset + 3],
-              Designation: row[startIndex + offset + 4],
-              Country: row[startIndex + offset + 5],
-              Trainings: row[startIndex + offset + 6],
-              Subtotal: row[startIndex + offset + 7],
-            };
-            attendees.push(a);
-          }
+    // 3. Extract Group Attendees Loop
+    if (isGroup && attendeeCount > 0) {
+      const attendees = [];
+      
+      // Dynamic lookup for where Attendee 1 fields start
+      let startIndex = headers.indexOf("TOTAL COST (GROUP)");
+      
+      if (startIndex !== -1) {
+        startIndex += 1; // Index 17 (Attendee 1 First Name)
+
+        for (let i = 0; i < attendeeCount; i++) {
+          const offset = i * 8; // Each attendee has 8 attributes
+          
+          const attendeeFirstName = row[startIndex + offset];
+          
+
+          const a = {
+            "First Name": attendeeFirstName,
+            "Last Name": row[startIndex + offset + 1],
+            Email: row[startIndex + offset + 2],
+            "Job Position": row[startIndex + offset + 3],
+            Designation: row[startIndex + offset + 4],
+            Country: row[startIndex + offset + 5],
+            Trainings: row[startIndex + offset + 6],
+            Subtotal: row[startIndex + offset + 7],
+          };
+
+          attendees.push(a);
         }
-
-        normalized.push({ ...base, Attendees: attendees });
-      } else {
-        normalized.push(base);
       }
-    });
 
-    return normalized;
-  }
+      normalized.push({ ...base, Attendees: attendees });
+    } else {
+      normalized.push(base);
+    }
+  });
 
+  return normalized;
+}
   function formatCurrency(amount) {
     const num = parseFloat(amount);
     if (isNaN(num)) return "$0.00";
