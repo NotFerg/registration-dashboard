@@ -331,7 +331,7 @@ function App() {
         "First Name": isGroup ? row[2] : row[5],
         "Last Name": isGroup ? row[3] : row[6],
         Email: isGroup ? row[4] : row[7],
-        "Company / Institution": isGroup ? row[15] : row[8],
+        "Company / Institution": row[8],
         "Total Cost":
           rowObj["TOTAL COST (GROUP)"] ||
           rowObj["TOTAL (Individual Attendee)"] ||
