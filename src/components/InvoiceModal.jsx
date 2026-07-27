@@ -5,28 +5,39 @@ import supabase from "../utils/supabase";
 
 const InvoiceModal = (attendee = {}) => {
   const [showModal, setShowModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const openModal = () => setShowModal(true);
   const closeModal = () => setShowModal(false);
 
   async function uploadFile(file) {
+    if (!file) return;
+
+    setIsUploading(true);
     try {
-      const { data: storageData } = await supabase.storage
+      const { data: storageData, error: storageError } = await supabase.storage
         .from("Invoices")
         .upload(file.name, file, {
           cacheControl: "3600",
           upsert: true,
         });
 
-      const { data: fileData } = await supabase.storage
+      if (storageError || !storageData) {
+        throw storageError || new Error("Upload failed. Please try again.");
+      }
+
+      const { data: fileData } = supabase.storage
         .from("Invoices")
         .getPublicUrl(storageData.path);
       const publicUrl = fileData.publicUrl;
 
-      const { data: updateData } = await supabase
+      const { error: updateError } = await supabase
         .from("registrations")
         .update({ invoice_storage_url: publicUrl })
         .eq("id", attendee.attendee.id);
+
+      if (updateError) throw updateError;
+
       Swal.fire({
         title: "Success!",
         text: "Invoice uploaded successfully.",
@@ -39,16 +50,15 @@ const InvoiceModal = (attendee = {}) => {
       });
     } catch (error) {
       console.error("Error uploading file:", error);
+      // No reload here - keep the modal open so the user can retry.
       Swal.fire({
         title: "Error!",
         text: error.message,
         icon: "error",
         confirmButtonText: "Close",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          window.location.reload();
-        }
       });
+    } finally {
+      setIsUploading(false);
     }
   }
 
@@ -100,13 +110,32 @@ const InvoiceModal = (attendee = {}) => {
               ? "View"
               : "No Invoice Uploaded"}
           </Button>
-          <label class="btn btn-success w-100">
-            Upload{" "}
+          <label
+            className={`btn btn-success w-100 ${isUploading ? "disabled" : ""}`}
+            aria-disabled={isUploading}
+          >
+            {isUploading ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                />
+                Uploading...
+              </>
+            ) : (
+              "Upload"
+            )}
             <input
               type="file"
               className="d-none"
               accept="application/pdf"
-              onChange={(e) => uploadFile(e.target.files[0])}
+              disabled={isUploading}
+              onChange={async (e) => {
+                const input = e.target;
+                await uploadFile(input.files[0]);
+                input.value = null; // Allow re-picking the same file
+              }}
             />
           </label>
         </Modal.Body>

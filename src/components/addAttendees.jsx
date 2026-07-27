@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import supabase from "../utils/supabase";
+import TrainingSelector from "./TrainingSelector";
 
 const AddAttendees = ({
   attendee = {},
@@ -19,7 +20,10 @@ const AddAttendees = ({
 
   useEffect(() => {
     async function fetchTrainings() {
-      const { data } = await supabase.from("trainings").select("*");
+      const { data } = await supabase
+        .from("trainings")
+        .select("*")
+        .order("id", { ascending: true });
       setTrainings(data || []);
     }
     fetchTrainings();
@@ -207,45 +211,12 @@ const AddAttendees = ({
           </div>
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="trainings" className="form-label fw-bold">
-            Trainings <span style={{ color: "red" }}> * </span>
-          </label>
-          <br />
-          <div className="border rounded p-2 bg-light">
-            <span className="text-muted ps-2 small">Select options for this attendee</span> <br />
-            {trainings.map((training, i) => {
-              const trainingString = getTrainingString(training);
-              const isChecked = isTrainingSelected(training);
-              const checkboxId = `add-step${step}-training-${training.id || i}`;
-
-              return (
-                <React.Fragment key={training.id || i}>
-                  <div className="form-check form-check-inline">
-                    <input
-                      type='checkbox'
-                      className='btn-check'
-                      id={checkboxId}
-                      name='trainings'
-                      value={trainingString}
-                      checked={isChecked}
-                      onChange={(e) => handleTrainingToggle(training, e.target.checked)}
-                    />
-                    <label
-                      className={`form-check-label btn btn-sm m-1 ${
-                        isChecked ? "btn-success" : "btn-outline-secondary"
-                      }`}
-                      htmlFor={checkboxId}
-                    >
-                      {isChecked && <i className="bi bi-check-lg me-1"></i>}
-                      {training.name} - ${training.price}
-                    </label>
-                  </div>
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
+        <TrainingSelector
+          trainings={trainings}
+          idPrefix={`add-step${step}`}
+          isSelected={isTrainingSelected}
+          onToggle={handleTrainingToggle}
+        />
 
         {/* Navigation Controls */}
         <div className="d-flex justify-content-between align-items-center mt-4 mb-3">

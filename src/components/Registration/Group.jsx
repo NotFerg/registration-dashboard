@@ -198,7 +198,12 @@ const Group = ({ filteredUsers = [] }) => {
       Swal.fire({
         icon: "success",
         text: "Attendee deleted successfully.",
-      }).then(() => window.location.reload());
+        confirmButtonText: "OK",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
     } catch (err) {
       console.error("Unexpected error during deletion:", err);
       Swal.fire({
@@ -245,12 +250,16 @@ const Group = ({ filteredUsers = [] }) => {
                 icon: "error",
               });
             } else {
-              Swal.fire(
-                "Deleted!",
-                "Group Attendee has been deleted.",
-                "success"
-              );
-              window.location.reload();
+              Swal.fire({
+                title: "Deleted!",
+                text: "Group Attendee has been deleted.",
+                icon: "success",
+                confirmButtonText: "OK",
+              }).then((confirm) => {
+                if (confirm.isConfirmed) {
+                  window.location.reload();
+                }
+              });
             }
           })
           .catch((error) => {

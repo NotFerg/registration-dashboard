@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import EditFormGroup from "./EditFormGroup";
 import supabase from "../utils/supabase";
+import Swal from "sweetalert2";
 
 const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   // Step is attendee index (0-based)
@@ -131,11 +132,26 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
       }
 
       onHide();
-      // Refresh the page to show updated data
-      window.location.reload();
+      Swal.fire({
+        title: "Saved!",
+        text: "Group registration updated successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+      }).then((result) => {
+        // Only refresh once the user has actually seen the confirmation.
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
     } catch (err) {
       console.error("Error updating group:", err);
-      alert("There was an error updating the group. Please try again.");
+      // No reload here - keep the unsaved edits available for a retry.
+      Swal.fire({
+        title: "Error!",
+        text: "There was an error updating the group. Please try again.",
+        icon: "error",
+        confirmButtonText: "Close",
+      });
     }
   }
 

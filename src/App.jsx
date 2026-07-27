@@ -19,6 +19,7 @@ function App() {
   const [excelData, setExcelData] = useState([]);
   const [activeTab, setActiveTab] = useState("individual");
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [individualRegistration, setIndividualRegistration] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
@@ -87,10 +88,18 @@ function App() {
         text: "Invalid or missing file.",
         icon: "error",
       });
+      e.target.value = null; // Allow re-picking the same file
       return;
     }
 
     const reader = new FileReader();
+    reader.onerror = () => {
+      console.error("File read error:", reader.error);
+      Swal.fire("Error!", "Could not read the selected file.", "error");
+      setIsUploading(false);
+      setIsLoading(false);
+      e.target.value = null;
+    };
     reader.onload = async (evt) => {
       try {
         setIsLoading(true);
@@ -109,10 +118,12 @@ function App() {
         Swal.fire("Error!", "Failed to process Excel file.", "error");
       } finally {
         setIsLoading(false);
+        setIsUploading(false);
         e.target.value = null; // Clear input
       }
     };
 
+    setIsUploading(true);
     reader.readAsArrayBuffer(file);
   }
 
@@ -449,14 +460,34 @@ function App() {
             <div className="d-flex justify-content-between mb-3">
               <h2>Registrations</h2>
               <div>
-                <label htmlFor="myFile" className="btn btn-success fw-bold">
-                  <i className="bi bi-upload" /> Upload File
+                <label
+                  htmlFor="myFile"
+                  className={`btn btn-success fw-bold ${
+                    isUploading ? "disabled" : ""
+                  }`}
+                  aria-disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-upload" /> Upload File
+                    </>
+                  )}
                 </label>
                 <input
                   id="myFile"
                   className="d-none"
                   type="file"
                   accept=".xlsx, .xls"
+                  disabled={isUploading}
                   onChange={handleFileUpload}
                 />
                 <ExportExcel excelData={excelData} />
