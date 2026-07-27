@@ -7,8 +7,8 @@ const AddAttendees = ({
   handleSaveGroup,
   handleNext,
   handlePrev,
-  attendees,
-  step,
+  attendees = [],
+  step = 0,
 }) => {
   const [form, setForm] = useState(attendee);
   const [trainings, setTrainings] = useState([]);
@@ -25,50 +25,97 @@ const AddAttendees = ({
     fetchTrainings();
   }, []);
 
+  // Update form state AND propagate to parent on every input change
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setForm((prevFormData) => ({
-      ...prevFormData,
+    const updatedForm = {
+      ...form,
       [id]: value,
-    }));
+    };
+    setForm(updatedForm);
+
+    if (onSave) {
+      onSave(updatedForm);
+    }
   };
 
-  const handleTrainingChange = (trainingString, checked) => {
-    setForm((prev) => {
-      const prevTrainings = Array.isArray(prev.trainings) ? prev.trainings : [];
-      const updatedTrainings = checked
-        ? [...prevTrainings, trainingString]
-        : prevTrainings.filter((t) => t !== trainingString);
+  const getTrainingString = (training) => {
+    return `${training.date ? training.date + ": " : ""}${training.name} ($${training.price})`;
+  };
 
-      return {
-        ...prev,
-        trainings: updatedTrainings,
-      };
+  const isTrainingSelected = (training) => {
+    if (!form.trainings || !Array.isArray(form.trainings)) return false;
+    const targetString = getTrainingString(training);
+
+    return form.trainings.some((t) => {
+      if (typeof t === "object" && t !== null) {
+        return t.id === training.id;
+      }
+      return t === targetString;
     });
   };
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (onSave) {
-      onSave(form);
+  const handleTrainingToggle = (training, checked) => {
+    const trainingString = getTrainingString(training);
+    const prevTrainings = Array.isArray(form.trainings) ? [...form.trainings] : [];
+
+    let updatedTrainings;
+    if (checked) {
+      updatedTrainings = [...prevTrainings, trainingString];
+    } else {
+      updatedTrainings = prevTrainings.filter((t) => {
+        if (typeof t === "object" && t !== null) {
+          return t.id !== training.id;
+        }
+        return t !== trainingString;
+      });
     }
-  }
+
+    const priceDelta = parseFloat(training.price) || 0;
+    const currentSubtotal = parseFloat(form.subtotal || form.total_cost) || 0;
+    const updatedSubtotal = checked
+      ? currentSubtotal + priceDelta
+      : Math.max(0, currentSubtotal - priceDelta);
+
+    const updatedForm = {
+      ...form,
+      trainings: updatedTrainings,
+      subtotal: updatedSubtotal,
+      total_cost: updatedSubtotal,
+    };
+
+    setForm(updatedForm);
+
+    if (onSave) {
+      onSave(updatedForm);
+    }
+  };
+
+  // Auto-save before changing steps
+  const onNavigatePrev = () => {
+    if (onSave) onSave(form);
+    handlePrev();
+  };
+
+  const onNavigateNext = () => {
+    if (onSave) onSave(form);
+    handleNext();
+  };
 
   return (
     <>
-      <form onSubmit={handleSubmit}>
-        <div className='d-flex flex-row justify-content-between'>
-          <div className='mb-3 flex-fill pe-3'>
-            <label htmlFor='first_name' className='form-label'>
+      <div>
+        <div className="d-flex flex-row justify-content-between">
+          <div className="mb-3 flex-fill pe-3">
+            <label htmlFor="first_name" className="form-label">
               First Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type='text'
-              className='form-control'
-              id='first_name'
-              name='first_name'
-              placeholder='Enter First Name'
-              aria-describedby='first_name'
+              type="text"
+              className="form-control"
+              id="first_name"
+              name="first_name"
+              placeholder="Enter First Name"
               onChange={handleChange}
               value={form.first_name || ""}
               required
@@ -80,12 +127,11 @@ const AddAttendees = ({
               Last Name <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type='text'
-              className='form-control'
-              id='last_name'
-              name='last_name'
-              placeholder='Enter Last Name'
-              aria-describedby='last_name'
+              type="text"
+              className="form-control"
+              id="last_name"
+              name="last_name"
+              placeholder="Enter Last Name"
               onChange={handleChange}
               value={form.last_name || ""}
               required
@@ -99,12 +145,11 @@ const AddAttendees = ({
               Email <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type='email'
-              className='form-control'
-              id='email'
-              name='email'
-              placeholder='Enter Email'
-              aria-describedby='email'
+              type="email"
+              className="form-control"
+              id="email"
+              name="email"
+              placeholder="Enter Email"
               onChange={handleChange}
               value={form.email || ""}
               required
@@ -116,12 +161,11 @@ const AddAttendees = ({
               Position <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type='text'
-              className='form-control'
-              id='position'
-              name='position'
-              placeholder='Enter Position'
-              aria-describedby='position'
+              type="text"
+              className="form-control"
+              id="position"
+              name="position"
+              placeholder="Enter Position"
               onChange={handleChange}
               value={form.position || ""}
               required
@@ -135,12 +179,11 @@ const AddAttendees = ({
               Designation <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type='text'
-              className='form-control'
-              id='designation'
-              name='designation'
-              placeholder='Enter Designation'
-              aria-describedby='designation'
+              type="text"
+              className="form-control"
+              id="designation"
+              name="designation"
+              placeholder="Enter Designation"
               onChange={handleChange}
               value={form.designation || ""}
               required
@@ -152,12 +195,11 @@ const AddAttendees = ({
               Country <span style={{ color: "red" }}> * </span>
             </label>
             <input
-              type='text'
-              className='form-control'
-              id='country'
-              name='country'
-              placeholder='Enter Country'
-              aria-describedby='country'
+              type="text"
+              className="form-control"
+              id="country"
+              name="country"
+              placeholder="Enter Country"
               onChange={handleChange}
               value={form.country || ""}
               required
@@ -165,24 +207,21 @@ const AddAttendees = ({
           </div>
         </div>
 
-        <div className='mb-3'>
-          <label htmlFor='trainings' className='form-label'>
+        <div className="mb-3">
+          <label htmlFor="trainings" className="form-label fw-bold">
             Trainings <span style={{ color: "red" }}> * </span>
           </label>
           <br />
-          <div className='border rounded p-2'>
-            <span className='text-muted ps-2'>Early Bird Price</span> <br />
+          <div className="border rounded p-2 bg-light">
+            <span className="text-muted ps-2 small">Select options for this attendee</span> <br />
             {trainings.map((training, i) => {
-              const trainingString = `${training.date}: ${training.name} ($${training.price})`;
-              const isChecked = form.trainings?.includes(trainingString);
-              const checkboxId = `training-${training.id || i}`;
+              const trainingString = getTrainingString(training);
+              const isChecked = isTrainingSelected(training);
+              const checkboxId = `add-step${step}-training-${training.id || i}`;
 
               return (
-                <>
-                  <div
-                    key={training.id || i}
-                    className='form-check form-check-inline'
-                  >
+                <React.Fragment key={training.id || i}>
+                  <div className="form-check form-check-inline">
                     <input
                       type='checkbox'
                       className='btn-check'
@@ -190,57 +229,61 @@ const AddAttendees = ({
                       name='trainings'
                       value={trainingString}
                       checked={isChecked}
-                      onChange={(e) => {
-                        handleTrainingChange(trainingString, e.target.checked);
-                      }}
+                      onChange={(e) => handleTrainingToggle(training, e.target.checked)}
                     />
                     <label
-                      className='form-check-label btn btn-outline-success m-1'
+                      className={`form-check-label btn btn-sm m-1 ${
+                        isChecked ? "btn-success" : "btn-outline-secondary"
+                      }`}
                       htmlFor={checkboxId}
                     >
+                      {isChecked && <i className="bi bi-check-lg me-1"></i>}
                       {training.name} - ${training.price}
                     </label>
                   </div>
-                  {i == 4 && <hr className='w-100' />}
-                </>
+                </React.Fragment>
               );
             })}
           </div>
         </div>
-        <div className='text-center mt-4 mb-4'>
+
+        {/* Navigation Controls */}
+        <div className="d-flex justify-content-between align-items-center mt-4 mb-3">
           <button
-            type='button'
-            className='btn btn-outline-primary btn-sm'
-            onClick={() => handlePrev(form)}
+            type="button"
+            className="btn btn-outline-primary btn-sm"
+            onClick={onNavigatePrev}
             disabled={step === 0}
           >
-            <i className='bi bi-caret-left'></i>
+            <i className="bi bi-caret-left me-1"></i> Previous Attendee
           </button>
-          <small className='mx-3 text-muted'>
-            {/* Attendee {attendees.length || 1} of {step + 1} */}
+          
+          <small className="text-muted fw-bold">
             Attendee {step + 1} of {attendees.length || 1}
           </small>
+
           <button
-            type='button'
-            className='btn btn-outline-primary btn-sm'
-            onClick={() => handleNext(form)}
+            type="button"
+            className="btn btn-outline-primary btn-sm"
+            onClick={onNavigateNext}
           >
-            <i className='bi bi-caret-right'></i>
+            + Add / Next Attendee <i className="bi bi-caret-right ms-1"></i>
           </button>
         </div>
 
         <hr />
 
-        <div className='vstack gap-2'>
-          <div className='d-flex'></div>
-          <button type='submit' className='btn btn-success w-100'>
-            <i className='bi bi-people-fill'></i> Save Attendee
-          </button>
-          <button className='btn btn-primary w-100' onClick={handleSaveGroup}>
-            <i className='bi bi-people-fill'></i> Save Group Registration
+        {/* Single Primary Action */}
+        <div className="vstack gap-2">
+          <button
+            type="button"
+            className="btn btn-primary btn-lg w-100"
+            onClick={handleSaveGroup}
+          >
+            <i className="bi bi-people-fill me-2"></i> Save Group Registration
           </button>
         </div>
-      </form>
+      </div>
     </>
   );
 };

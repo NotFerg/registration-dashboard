@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import supabase from "../utils/supabase";
 import Swal from "sweetalert2";
+
 const EditForm = ({ reg: initialReg }) => {
-  console.log(initialReg);
   const [trainings, setTrainings] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [reg, setReg] = useState({
     company: "",
     submission_date: "",
@@ -13,110 +14,123 @@ const EditForm = ({ reg: initialReg }) => {
     position: "",
     designation: "",
     country: "",
-    trainings: [],
-    total_cost: "",
+    total_cost: 0,
     payment_options: "",
     payment_status: "",
+    registration_type: "Myself",
   });
 
   useEffect(() => {
-    fetchTrainings();
-    if (initialReg) {
-      setReg(initialReg);
-    }
+    // 1. Fetch available training items
+    fetchTrainings().then((data) => {
+      const fetchedTrainings = data || [];
+      setTrainings(fetchedTrainings);
+
+      // 2. If initial registration exists, set form state and fetch initial selected IDs
+      if (initialReg) {
+        setReg({
+          company: initialReg.company || "",
+          submission_date: initialReg.submission_date || "",
+          first_name: initialReg.first_name || "",
+          last_name: initialReg.last_name || "",
+          email: initialReg.email || "",
+          position: initialReg.position || "",
+          designation: initialReg.designation || "",
+          country: initialReg.country || "",
+          total_cost: initialReg.total_cost || 0,
+          payment_options: initialReg.payment_options || "",
+          payment_status: initialReg.payment_status || "",
+          registration_type: initialReg.registration_type || "Myself",
+        });
+
+        // Fetch selected IDs from the foreign key join table
+        fetchSelectedTrainingIds(initialReg.id, fetchedTrainings);
+      }
+    });
   }, [initialReg]);
 
-  const handleChange = (e) => {
-    const { id, value, type, checked } = e.target;
-
-    if (type === "checkbox") {
-      const trainingName = value;
-
-      setReg((prev) => {
-        const prevTrainings = Array.isArray(prev.trainings)
-          ? prev.trainings
-          : [];
-        const updatedTrainings = checked
-          ? [...prevTrainings, trainingName]
-          : prevTrainings.filter((t) => t !== trainingName);
-
-        const totalCost = updatedTrainings.reduce((acc, training) => {
-          const match = training.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
-          const price = match ? parseFloat(match[1]) : 0;
-          return acc + price;
-        }, 0);
-
-        return {
-          ...prev,
-          trainings: updatedTrainings,
-          total_cost: totalCost,
-        };
-      });
-    } else {
-      setReg((prevFormData) => ({
-        ...prevFormData,
-        [id]: value,
-      }));
-      
-    }
-    
-  };
-
   async function fetchTrainings() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("trainings")
       .select("*")
       .order("id", { ascending: true });
-    setTrainings(data);
+
+    if (error) {
+      console.error("Error fetching trainings:", error);
+      return [];
+    }
+    return data;
   }
 
-  function parseTrainingLine(line) {
-    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
-    if (!match) return null;
-    return {
-      date: match[1].trim(),
-      name: match[2].trim(),
-      price: parseFloat(match[3]),
-    };
+  async function fetchSelectedTrainingIds(registrationId, availableTrainings) {
+    const { data, error } = await supabase
+      .from("training_references")
+      .select("training_id")
+      .eq("registration_id", registrationId);
+
+    if (error) {
+      console.error("Error fetching training references:", error);
+      return;
+    }
+
+    const ids = data.map((ref) => ref.training_id);
+    setSelectedIds(ids);
+
+    // Sync initial total cost calculation if needed
+    const totalCost = availableTrainings
+      .filter((item) => ids.includes(item.id))
+      .reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+
+    setReg((prev) => ({ ...prev, total_cost: totalCost }));
   }
 
-  async function upsertTrainingByNameDatePrice(name, date, price) {
-    const { data: existing, error: fetchError } = await supabase
-      .from("trainings")
-      .select("id")
-      .eq("name", name)
-      .eq("date", date)
-      .eq("price", price)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error("Fetch error:", fetchError);
-      return null;
+  // Handle Checkbox Toggles & Dynamic Cost Calculation
+  const handleCheckboxChange = (id) => {
+    let nextSelected;
+    if (selectedIds.includes(id)) {
+      nextSelected = selectedIds.filter((item) => item !== id);
+    } else {
+      nextSelected = [...selectedIds, id];
     }
 
-    if (existing) {
-      return existing.id;
-    }
+    setSelectedIds(nextSelected);
 
-    const { data: inserted, error: insertError } = await supabase
-      .from("trainings")
-      .insert([{ name, date, price }])
-      .select()
-      .single();
+    const totalCost = trainings
+      .filter((item) => nextSelected.includes(item.id))
+      .reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
 
-    if (insertError) {
-      console.error("Insert error:", insertError);
-      return null;
-    }
+    setReg((prev) => ({
+      ...prev,
+      total_cost: totalCost,
+    }));
+  };
 
-    return inserted.id;
-  }
+  const handleChange = (e) => {
+    const { id, value } = e.target;
+    setReg((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
 
+    if (selectedIds.length === 0) {
+      Swal.fire("Warning", "Please select at least one training.", "warning");
+      return;
+    }
+
+    // Prepare human-readable summary string for the 'trainings' column
+    const selectedTrainingObjects = trainings.filter((t) =>
+      selectedIds.includes(t.id)
+    );
+    const trainingSummary = selectedTrainingObjects
+      .map((t) => `${t.name} (${t.date}) - $${t.price}`)
+      .join(", ");
+
     if (initialReg) {
-      // 1. Update the registration fields (excluding `trainings` if you're handling it relationally)
+      // --- UPDATE EXISTING REGISTRATION ---
       const { error: updateError } = await supabase
         .from("registrations")
         .update({
@@ -130,48 +144,36 @@ const EditForm = ({ reg: initialReg }) => {
           total_cost: reg.total_cost,
           payment_options: reg.payment_options,
           payment_status: reg.payment_status,
-          trainings: typeof reg.trainings === "string"
-            ? [reg.trainings].join(", ")
-            : reg.trainings.join(", "),
+          trainings: trainingSummary,
           company: reg.company,
+          registration_type: reg.registration_type,
         })
         .eq("id", initialReg.id);
 
       if (updateError) {
         console.error("Update error:", updateError);
-        Swal.fire({
-          text: "Update failed. Please try again.",
-          icon: "error",
-          confirmButtonText: "OK",
-        });
+        Swal.fire("Error", "Update failed. Please try again.", "error");
         return;
       }
 
-      // 2. Delete old training references
+      // 1. Delete old relational references
       await supabase
         .from("training_references")
         .delete()
         .eq("registration_id", initialReg.id);
 
-      // 3. Re-insert new ones
-      for (const line of reg.trainings) {
-        const parsed = parseTrainingLine(line);
-        if (!parsed) continue;
+      // 2. Insert updated relational references
+      const joinRows = selectedIds.map((trainingId) => ({
+        training_id: trainingId,
+        registration_id: initialReg.id,
+      }));
 
-        const trainingId = await upsertTrainingByNameDatePrice(
-          parsed.name,
-          parsed.date,
-          parsed.price
-        );
+      const { error: refError } = await supabase
+        .from("training_references")
+        .insert(joinRows);
 
-        if (trainingId) {
-          await supabase.from("training_references").insert([
-            {
-              training_id: trainingId,
-              registration_id: initialReg.id,
-            },
-          ]);
-        }
+      if (refError) {
+        console.error("Training references update error:", refError);
       }
 
       Swal.fire({
@@ -185,59 +187,41 @@ const EditForm = ({ reg: initialReg }) => {
         }
       });
     } else {
-      // INSERT CASE
-      const { data: insertedRegistration, error: insertError } = await supabase
+      // --- CREATE NEW REGISTRATION (FALLBACK) ---
+      const { data: newReg, error: insertError } = await supabase
         .from("registrations")
-        .insert({
-          submission_date: reg.submission_date,
-          first_name: reg.first_name,
-          last_name: reg.last_name,
-          email: reg.email,
-          position: reg.position,
-          designation: reg.designation,
-          country: reg.country,
-          total_cost: reg.total_cost,
-          payment_options: reg.payment_options,
-          payment_status: reg.payment_status,
-          trainings: reg.trainings.join(", "),
-          company: reg.company,
-        })
-
+        .insert([
+          {
+            submission_date: reg.submission_date,
+            first_name: reg.first_name,
+            last_name: reg.last_name,
+            email: reg.email,
+            position: reg.position,
+            designation: reg.designation,
+            country: reg.country,
+            total_cost: reg.total_cost,
+            payment_options: reg.payment_options,
+            payment_status: reg.payment_status,
+            trainings: trainingSummary,
+            company: reg.company,
+            registration_type: reg.registration_type,
+          },
+        ])
         .select()
-        .single(); // get the inserted row including its ID
+        .single();
 
       if (insertError) {
         console.error("Insert error:", insertError);
-        Swal.fire({
-          text: "Insert failed. Please try again.",
-          icon: "error",
-          confirmButtonText: "OK",
-        });
+        Swal.fire("Error", "Insert failed. Please try again.", "error");
         return;
       }
 
-      const newRegistrationId = insertedRegistration.id;
+      const joinRows = selectedIds.map((trainingId) => ({
+        training_id: trainingId,
+        registration_id: newReg.id,
+      }));
 
-      // Add training references
-      for (const line of reg.trainings) {
-        const parsed = parseTrainingLine(line);
-        if (!parsed) continue;
-
-        const trainingId = await upsertTrainingByNameDatePrice(
-          parsed.name,
-          parsed.date,
-          parsed.price
-        );
-
-        if (trainingId) {
-          await supabase.from("training_references").insert([
-            {
-              training_id: trainingId,
-              registration_id: newRegistrationId,
-            },
-          ]);
-        }
-      }
+      await supabase.from("training_references").insert(joinRows);
 
       Swal.fire({
         text: "Registration created successfully.",
@@ -252,224 +236,198 @@ const EditForm = ({ reg: initialReg }) => {
   }
 
   return (
-    <>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label htmlFor="company" className="form-label">
-            Company <span style={{ color: "red" }}> * </span>
+    <form onSubmit={handleSubmit}>
+      <div className="mb-3">
+        <label htmlFor="company" className="form-label">
+          Company <span style={{ color: "red" }}> * </span>
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          id="company"
+          placeholder="Enter Company Name"
+          onChange={handleChange}
+          value={reg.company}
+          required
+        />
+      </div>
+
+      <div className="d-flex flex-row justify-content-between gap-2">
+        <div className="mb-3 w-100">
+          <label htmlFor="first_name" className="form-label">
+            First Name <span style={{ color: "red" }}> * </span>
           </label>
           <input
             type="text"
             className="form-control"
-            id="company"
-            name="company"
-            placeholder="Enter Full Company"
-            aria-describedby="company"
+            id="first_name"
+            placeholder="Enter First Name"
             onChange={handleChange}
-            value={reg.company}
-            required
-          />
-        </div>
-        <div className="d-flex flex-row justify-content-between">
-          <div className="mb-3">
-            <label htmlFor="first_name" className="form-label">
-              First Name <span style={{ color: "red" }}> * </span>
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="first_name"
-              name="first_name"
-              placeholder="Enter First Name"
-              aria-describedby="first_name"
-              onChange={handleChange}
-              value={reg.first_name}
-              required
-            />
-          </div>
-
-          <div className="mb-3">
-            <label htmlFor="last_name" className="form-label">
-              Last Name <span style={{ color: "red" }}> * </span>
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="last_name"
-              name="last_name"
-              placeholder="Enter Last Name"
-              aria-describedby="last_name"
-              onChange={handleChange}
-              value={reg.last_name}
-              required
-            />
-          </div>
-        </div>
-
-        <div className="mb-3">
-          <label htmlFor="email" className="form-label">
-            Email <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="email"
-            className="form-control"
-            id="email"
-            name="email"
-            placeholder="Enter Email"
-            aria-describedby="email"
-            onChange={handleChange}
-            value={reg.email}
+            value={reg.first_name}
             required
           />
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="position" className="form-label">
-            Position <span style={{ color: "red" }}> * </span>
+        <div className="mb-3 w-100">
+          <label htmlFor="last_name" className="form-label">
+            Last Name <span style={{ color: "red" }}> * </span>
           </label>
           <input
             type="text"
             className="form-control"
-            id="position"
-            name="position"
-            placeholder="Enter Position"
-            aria-describedby="position"
+            id="last_name"
+            placeholder="Enter Last Name"
             onChange={handleChange}
-            value={reg.position}
+            value={reg.last_name}
             required
           />
         </div>
+      </div>
 
-        <div className="mb-3">
-          <label htmlFor="designation" className="form-label">
-            Designation <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="designation"
-            name="designation"
-            placeholder="Enter Designation"
-            aria-describedby="designation"
-            onChange={handleChange}
-            value={reg.designation}
-            required
-          />
+      <div className="mb-3">
+        <label htmlFor="email" className="form-label">
+          Email <span style={{ color: "red" }}> * </span>
+        </label>
+        <input
+          type="email"
+          className="form-control"
+          id="email"
+          placeholder="Enter Email"
+          onChange={handleChange}
+          value={reg.email}
+          required
+        />
+      </div>
+
+      <div className="mb-3">
+        <label htmlFor="position" className="form-label">
+          Position <span style={{ color: "red" }}> * </span>
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          id="position"
+          placeholder="Enter Position"
+          onChange={handleChange}
+          value={reg.position}
+          required
+        />
+      </div>
+
+      <div className="mb-3">
+        <label htmlFor="designation" className="form-label">
+          Designation <span style={{ color: "red" }}> * </span>
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          id="designation"
+          placeholder="Enter Designation"
+          onChange={handleChange}
+          value={reg.designation}
+          required
+        />
+      </div>
+
+      <div className="mb-3">
+        <label htmlFor="country" className="form-label">
+          Country <span style={{ color: "red" }}> * </span>
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          id="country"
+          placeholder="Enter Country"
+          onChange={handleChange}
+          value={reg.country}
+          required
+        />
+      </div>
+
+      {/* MULTI-SELECT CHECKBOXES */}
+      <div className="mb-3">
+        <label className="form-label">
+          Trainings <span style={{ color: "red" }}> * </span>
+        </label>
+        <div className="border rounded p-2 d-flex flex-wrap gap-1">
+          {trainings.map((training, index) => {
+            const isChecked = selectedIds.includes(training.id);
+            const uniqueInputId = `edit-training-checkbox-${training.id ?? index}`;
+
+            return (
+              <div key={training.id ?? index}>
+                <input
+                  type="checkbox"
+                  className="btn-check"
+                  id={uniqueInputId}
+                  autoComplete="off"
+                  checked={isChecked}
+                  onChange={() => handleCheckboxChange(training.id)}
+                />
+                <label
+                  className="btn btn-outline-success"
+                  htmlFor={uniqueInputId}
+                >
+                  {training.name} - ${training.price}
+                </label>
+              </div>
+            );
+          })}
         </div>
+      </div>
 
-        <div className="mb-3">
-          <label htmlFor="country" className="form-label">
-            Country <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="country"
-            name="country"
-            placeholder="Enter Country"
-            aria-describedby="country"
-            onChange={handleChange}
-            value={reg.country}
-            required
-          />
-        </div>
+      <div className="mb-3">
+        <label htmlFor="total_cost" className="form-label">
+          Total Cost ($)
+        </label>
+        <input
+          type="number"
+          className="form-control"
+          id="total_cost"
+          value={reg.total_cost}
+          readOnly
+        />
+      </div>
 
-        <div className="mb-3">
-          <label htmlFor="trainings" className="form-label">
-            Trainings <span style={{ color: "red" }}> * </span>
-          </label>
-          <br />
-          <div className="border rounded p-2">
-            <span className="text-muted ps-2">Early Bird Price</span>
-            {trainings.map((training, i) => {
-              const trainingString = `${training.date}: ${training.name} ($${training.price})`;
+      <div className="mb-3">
+        <label htmlFor="payment_options" className="form-label">
+          Payment Options <span style={{ color: "red" }}> * </span>
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          id="payment_options"
+          placeholder="Enter Full Payment Options"
+          onChange={handleChange}
+          value={reg.payment_options}
+          required
+        />
+      </div>
 
-              return (
-                <React.Fragment key={training.id}>
-                  <input
-                    type="checkbox"
-                    className="btn-check"
-                    id={`btn-check-${i}`}
-                    autoComplete="off"
-                    checked={reg.trainings?.includes(trainingString)}
-                    value={trainingString}
-                    onChange={handleChange}
-                  />
-                  <label
-                    className="btn btn-outline-success m-1"
-                    htmlFor={`btn-check-${i}`}
-                  >
-                    {training.name} - ${training.price}
-                  </label>
-                  {i == 4 && <hr />}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
+      <div className="mb-3">
+        <label htmlFor="payment_status" className="form-label">
+          Payment Status <span style={{ color: "red" }}> * </span>
+        </label>
+        <select
+          className="form-select"
+          id="payment_status"
+          onChange={handleChange}
+          value={reg.payment_status}
+          required
+        >
+          <option value="">Select Payment Status</option>
+          <option value="Paid">Paid</option>
+          <option value="Unpaid">Unpaid</option>
+          <option value="Partial Payment">Partial Payment</option>
+        </select>
+      </div>
 
-        <div className="mb-3">
-          <label htmlFor="total_cost" className="form-label">
-            Total Cost <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="number"
-            className="form-control"
-            id="total_cost"
-            name="total_cost"
-            placeholder="Enter Full total_cost"
-            aria-describedby="total_cost"
-            readOnly
-            onChange={handleChange}
-            value={reg.total_cost}
-            required
-          />
-        </div>
-
-        <div className="mb-3">
-          <label htmlFor="payment_options" className="form-label">
-            Payment Options <span style={{ color: "red" }}> * </span>
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="payment_options"
-            name="payment_options"
-            placeholder="Enter Payment Option"
-            aria-describedby="payment_options"
-            onChange={handleChange}
-            value={reg.payment_options}
-            required
-          />
-        </div>
-
-        <div className="mb-3">
-          <label htmlFor="payment_status" className="form-label">
-            Payment Status <span style={{ color: "red" }}> * </span>
-          </label>
-          <select
-            className="form-select"
-            id="payment_status"
-            name="payment_status"
-            aria-describedby="payment_status"
-            onChange={handleChange}
-            value={reg.payment_status}
-            required
-          >
-            <option value="">Select Payment Status</option>
-            <option value="Paid">Paid</option>
-            <option value="Unpaid">Unpaid</option>
-            <option value="Partial Payment">Partial Payment</option>
-          </select>
-        </div>
-
-        <div className="mt-3">
-          <button type="submit" className="btn btn-primary w-100">
-            Submit
-          </button>
-        </div>
-      </form>
-    </>
+      <div className="mt-3">
+        <button type="submit" className="btn btn-primary w-100">
+          Save Changes
+        </button>
+      </div>
+    </form>
   );
 };
 
