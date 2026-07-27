@@ -9,7 +9,7 @@ const EditFormGroup = ({
   isLast,
   next,
   prev,
-  attendees,
+  attendees = [],
   step,
 }) => {
   const [trainings, setTrainings] = useState([]);
@@ -67,7 +67,7 @@ const EditFormGroup = ({
       const updatedReg = {
         ...initialReg,
         trainings: parsedTrainings,
-        total_cost: calculatedTotal, // Use calculated total instead of initialReg.total_cost
+        total_cost: calculatedTotal,
       };
 
       console.log("Setting reg to:", updatedReg);
@@ -85,7 +85,6 @@ const EditFormGroup = ({
           ? [...prev.trainings, trainingName]
           : prev.trainings.filter((t) => t !== trainingName);
 
-        // console.log(reg);
         return {
           ...prev,
           trainings: updatedTrainings,
@@ -97,7 +96,6 @@ const EditFormGroup = ({
         ...prevFormData,
         [id]: value,
       }));
-      // console.log(reg);
     }
   };
 
@@ -112,19 +110,56 @@ const EditFormGroup = ({
     }, 0);
   }
 
+  function parseTrainingLine(line) {
+    if (!line || typeof line !== "string") return null;
+    const regex = /^(.+?)\s*:\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/;
+    const match = line.trim().match(regex);
+    if (!match) return null;
+    return {
+      date: match[1].trim(),
+      name: match[2].trim(),
+      price: parseFloat(match[3]),
+    };
+  }
+
+  async function upsertTrainingByNameDatePrice(name, date, price) {
+    const { data: existing } = await supabase
+      .from("trainings")
+      .select("id")
+      .eq("name", name)
+      .eq("date", date)
+      .eq("price", price)
+      .maybeSingle();
+
+    if (existing) return existing.id;
+
+    const { data: inserted, error } = await supabase
+      .from("trainings")
+      .insert([{ name, date, price }])
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("Error upserting training:", error);
+      return null;
+    }
+    return inserted.id;
+  }
+
   async function fetchTrainings() {
     const { data } = await supabase
       .from("trainings")
       .select("*")
       .order("id", { ascending: true });
-    setTrainings(data);
+    setTrainings(data || []);
   }
 
-  const handleSubmitGroup = (e) => {
+  // FIXED: Added async keyword to handleSubmitGroup
+  const handleSubmitGroup = async (e) => {
     e.preventDefault();
 
     if (initialReg) {
-      // 1. Update REGISTRATION-level fields (if needed)
+      // 1. Update REGISTRATION-level fields
       await supabase
         .from("registrations")
         .update({
@@ -141,7 +176,7 @@ const EditFormGroup = ({
         })
         .eq("id", initialReg.id);
 
-      // 2. Update the ATTENDEE (by reg.id)
+      // 2. Update or Insert the ATTENDEE (by reg.id)
       if (reg.id) {
         const { error: attendeeUpdateError } = await supabase
           .from("attendees")
@@ -152,7 +187,7 @@ const EditFormGroup = ({
             position: reg.position,
             designation: reg.designation,
             country: reg.country,
-            trainings: reg.trainings.join(", "),
+            trainings: reg.trainings.join("\r\n"),
             subtotal: reg.total_cost,
           })
           .eq("id", reg.id);
@@ -162,7 +197,7 @@ const EditFormGroup = ({
           return;
         }
       } else {
-        const { data: inserted, error: insertError } = await supabase
+        const { error: insertError } = await supabase
           .from("attendees")
           .insert([
             {
@@ -172,7 +207,7 @@ const EditFormGroup = ({
               position: reg.position,
               designation: reg.designation,
               country: reg.country,
-              trainings: reg.trainings.join(", "),
+              trainings: reg.trainings.join("\r\n"),
               subtotal: reg.total_cost,
               registration_id: initialReg.id,
             },
@@ -186,14 +221,7 @@ const EditFormGroup = ({
         }
       }
 
-      // // 3. Delete old training_references for this attendee
-      // await supabase
-      //   .from("training_references")
-      //   .delete()
-      //   .eq("registration_id", initialReg.id)
-      //   .eq("attendee_id", reg.id); // optional if you're storing this
-
-      // 4. Insert new training_references
+      // 3. Insert new training_references
       for (const line of reg.trainings) {
         const parsed = parseTrainingLine(line);
         if (!parsed) continue;
@@ -201,7 +229,7 @@ const EditFormGroup = ({
         const trainingId = await upsertTrainingByNameDatePrice(
           parsed.name,
           parsed.date,
-          parsed.price,
+          parsed.price
         );
 
         if (trainingId) {
@@ -209,269 +237,239 @@ const EditFormGroup = ({
             {
               training_id: trainingId,
               registration_id: initialReg.id,
-              attendee_id: reg.id, // optional: if `training_references` includes this
+              attendee_id: reg.id || null,
             },
           ]);
         }
       }
     }
-    setTrainings(data || []);
-  }
+
+    onSubmitGroup();
+  };
 
   return (
-    <>
-      <form onSubmit={handleSubmitGroup}>
-        <div className='mb-3'>
-          <label htmlFor='company' className='form-label'>
-            Company <span style={{ color: "red" }}> * </span>
+    <form onSubmit={handleSubmitGroup}>
+      <div className='mb-3'>
+        <label htmlFor='company' className='form-label'>
+          Company <span style={{ color: "red" }}> * </span>
+        </label>
+        <input
+          type='text'
+          className='form-control'
+          id='company'
+          value={reg.company || ""}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className='d-flex flex-row justify-content-between'>
+        <div className='mb-3 flex-fill pe-3'>
+          <label htmlFor='first_name' className='form-label'>
+            First Name <span style={{ color: "red" }}> * </span>
           </label>
           <input
             type='text'
             className='form-control'
-            id='company'
-            value={reg.company}
+            id='first_name'
+            name='first_name'
+            placeholder='Enter First Name'
             onChange={handleChange}
+            value={reg.first_name || ""}
             required
           />
         </div>
 
-        <div className='d-flex flex-row justify-content-between'>
-          <div className='mb-3 flex-fill pe-3'>
-            <label htmlFor='first_name' className='form-label'>
-              First Name <span style={{ color: "red" }}> * </span>
-            </label>
-            <input
-              type='text'
-              className='form-control'
-              id='first_name'
-              name='first_name'
-              placeholder='Enter First Name'
-              aria-describedby='first_name'
-              onChange={handleChange}
-              value={reg.first_name}
-              required
-            />
-          </div>
-
-          <div className='mb-3 flex-fill'>
-            <label htmlFor='last_name' className='form-label'>
-              Last Name <span style={{ color: "red" }}> * </span>
-            </label>
-            <input
-              type='text'
-              className='form-control'
-              id='last_name'
-              name='last_name'
-              placeholder='Enter Last Name'
-              aria-describedby='last_name'
-              onChange={handleChange}
-              value={reg.last_name}
-              required
-            />
-          </div>
-        </div>
-
-        <div className='d-flex flex-row justify-content-between'>
-          <div className='mb-3 flex-fill pe-3'>
-            <label htmlFor='email' className='form-label'>
-              Email <span style={{ color: "red" }}> * </span>
-            </label>
-            <input
-              type='email'
-              className='form-control'
-              id='email'
-              name='email'
-              placeholder='Enter Email'
-              aria-describedby='email'
-              onChange={handleChange}
-              value={reg.email}
-              required
-            />
-          </div>
-
-          <div className='mb-3 flex-fill'>
-            <label htmlFor='position' className='form-label'>
-              Position <span style={{ color: "red" }}> * </span>
-            </label>
-            <input
-              type='text'
-              className='form-control'
-              id='position'
-              name='position'
-              placeholder='Enter Position'
-              aria-describedby='position'
-              onChange={handleChange}
-              value={reg.position}
-              required
-            />
-          </div>
-        </div>
-
-        <div className='d-flex flex-row justify-content-between'>
-          <div className='mb-3 flex-fill pe-3'>
-            <label htmlFor='designation' className='form-label'>
-              Designation <span style={{ color: "red" }}> * </span>
-            </label>
-            <input
-              type='text'
-              className='form-control'
-              id='designation'
-              name='designation'
-              placeholder='Enter Designation'
-              aria-describedby='designation'
-              onChange={handleChange}
-              value={reg.designation}
-              required
-            />
-          </div>
-
-          <div className='mb-3 flex-fill'>
-            <label htmlFor='country' className='form-label'>
-              Country <span style={{ color: "red" }}> * </span>
-            </label>
-            <input
-              type='text'
-              className='form-control'
-              id='country'
-              name='country'
-              placeholder='Enter Full country'
-              aria-describedby='country'
-              onChange={handleChange}
-              value={reg.country}
-              required
-            />
-          </div>
-        </div>
-
-        <div className='mb-3'>
-          <label htmlFor='trainings' className='form-label'>
-            Trainings <span style={{ color: "red" }}> * </span>
-          </label>
-          <br />
-          <div className="border rounded p-2">
-            <br />
-            {trainings.map((training, i) => {
-              const trainingString = `${training.date}: ${training.name} ($${training.price})`;
-
-              return (
-                <React.Fragment key={training.id}>
-                  <input
-                    type='checkbox'
-                    className='btn-check'
-                    id={`btn-check-${i}`}
-                    autoComplete='off'
-                    checked={reg.trainings.includes(trainingString)}
-                    value={trainingString}
-                    onChange={handleChange}
-                  />
-                  <label
-                    className='btn btn-outline-success m-1'
-                    htmlFor={`btn-check-${i}`}
-                  >
-                    {reg.trainings.includes(trainingString) && (
-                      <i className='bi bi-check-lg'></i>
-                    )}{" "}
-                    {training.name} ${training.price}
-                  </label>
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* <div className="d-flex flex-row justify-content-between"> */}
-        <div className='mb-3'>
-          <label htmlFor='total_cost' className='form-label'>
-            Total Cost <span style={{ color: "red" }}> * </span>
+        <div className='mb-3 flex-fill'>
+          <label htmlFor='last_name' className='form-label'>
+            Last Name <span style={{ color: "red" }}> * </span>
           </label>
           <input
-            type='number'
+            type='text'
             className='form-control'
-            id='total_cost'
-            name='total_cost'
-            value={reg.total_cost}
-            aria-describedby='total_cost'
+            id='last_name'
+            name='last_name'
+            placeholder='Enter Last Name'
             onChange={handleChange}
+            value={reg.last_name || ""}
+            required
+          />
+        </div>
+      </div>
+
+      <div className='d-flex flex-row justify-content-between'>
+        <div className='mb-3 flex-fill pe-3'>
+          <label htmlFor='email' className='form-label'>
+            Email <span style={{ color: "red" }}> * </span>
+          </label>
+          <input
+            type='email'
+            className='form-control'
+            id='email'
+            name='email'
+            placeholder='Enter Email'
+            onChange={handleChange}
+            value={reg.email || ""}
             required
           />
         </div>
 
-        {/* <div className="mb-3 flex-fill">
-            <label htmlFor="payment_status" className="form-label">
-              Payment Status <span style={{ color: "red" }}> * </span>
-            </label>
-            <select
-              className="form-select"
-              id="payment_status"
-              name="payment_status"
-              aria-describedby="payment_status"
-              onChange={handleChange}
-              value={reg.payment_status}
-              required
-            >
-              <option value="">Select Payment Status</option>
-              <option value="Paid">Paid</option>
-              <option value="Unpaid">Unpaid</option>
-              <option value="Partial Payment">Partial Payment</option>
-            </select>
-          </div> */}
-        {/* </div> */}
-        <div className='text-center mt-4 mb-4'>
-          <button
-            type='button'
-            className='btn btn-outline-primary btn-sm'
-            onClick={() => {
-              handleSave(); // Save current attendee before navigating
-              prev();
-            }}
-            disabled={isFirst}
-          >
-            <i className='bi bi-caret-left'></i>
-          </button>
-          <small className='mx-3 text-muted'>
-            Attendee {attendees.length === 0 ? 0 : step + 1} of{" "}
-            {attendees.length}
-          </small>
-          <button
-            type='button'
-            className='btn btn-outline-primary btn-sm'
-            onClick={() => {
-              handleSave(); // Save current attendee before navigating
-              next();
-            }}
-            disabled={isLast}
-          >
-            <i className='bi bi-caret-right'></i>
-          </button>
+        <div className='mb-3 flex-fill'>
+          <label htmlFor='position' className='form-label'>
+            Position <span style={{ color: "red" }}> * </span>
+          </label>
+          <input
+            type='text'
+            className='form-control'
+            id='position'
+            name='position'
+            placeholder='Enter Position'
+            onChange={handleChange}
+            value={reg.position || ""}
+            required
+          />
+        </div>
+      </div>
+
+      <div className='d-flex flex-row justify-content-between'>
+        <div className='mb-3 flex-fill pe-3'>
+          <label htmlFor='designation' className='form-label'>
+            Designation <span style={{ color: "red" }}> * </span>
+          </label>
+          <input
+            type='text'
+            className='form-control'
+            id='designation'
+            name='designation'
+            placeholder='Enter Designation'
+            onChange={handleChange}
+            value={reg.designation || ""}
+            required
+          />
         </div>
 
-        <hr />
+        <div className='mb-3 flex-fill'>
+          <label htmlFor='country' className='form-label'>
+            Country <span style={{ color: "red" }}> * </span>
+          </label>
+          <input
+            type='text'
+            className='form-control'
+            id='country'
+            name='country'
+            placeholder='Enter Full country'
+            onChange={handleChange}
+            value={reg.country || ""}
+            required
+          />
+        </div>
+      </div>
 
-        <div className='vstack gap-2'>
-          <div className='d-flex'>
-            <div className='px-1 w-100'>
-              <button
-                type='button'
-                className='btn btn-success w-100'
-                onClick={handleSave}
-              >
-                <i className='bi bi-person-fill'></i> Save Attendee
-              </button>
-            </div>
-            <div className='px-1 w-100'>
-              <button type='submit' className='btn btn-primary w-100'>
-                <i className='bi bi-people-fill'></i> Save Group
-              </button>
-            </div>
+      <div className='mb-3'>
+        <label htmlFor='trainings' className='form-label'>
+          Trainings <span style={{ color: "red" }}> * </span>
+        </label>
+        <br />
+        <div className="border rounded p-2">
+          {trainings.map((training, i) => {
+            const trainingString = `${training.date}: ${training.name} ($${training.price})`;
+
+            return (
+              <React.Fragment key={training.id}>
+                <input
+                  type='checkbox'
+                  className='btn-check'
+                  id={`btn-check-${i}`}
+                  autoComplete='off'
+                  checked={reg.trainings.includes(trainingString)}
+                  value={trainingString}
+                  onChange={handleChange}
+                />
+                <label
+                  className='btn btn-outline-success m-1'
+                  htmlFor={`btn-check-${i}`}
+                >
+                  {reg.trainings.includes(trainingString) && (
+                    <i className='bi bi-check-lg me-1'></i>
+                  )}
+                  {training.name} ${training.price}
+                </label>
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className='mb-3'>
+        <label htmlFor='total_cost' className='form-label'>
+          Total Cost <span style={{ color: "red" }}> * </span>
+        </label>
+        <input
+          type='number'
+          className='form-control'
+          id='total_cost'
+          name='total_cost'
+          value={reg.total_cost || ""}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className='text-center mt-4 mb-4'>
+        <button
+          type='button'
+          className='btn btn-outline-primary btn-sm'
+          onClick={() => {
+            handleSave();
+            prev();
+          }}
+          disabled={isFirst}
+        >
+          <i className='bi bi-caret-left'></i>
+        </button>
+        <small className='mx-3 text-muted'>
+          Attendee {attendees.length === 0 ? 0 : step + 1} of{" "}
+          {attendees.length}
+        </small>
+        <button
+          type='button'
+          className='btn btn-outline-primary btn-sm'
+          onClick={() => {
+            handleSave();
+            next();
+          }}
+          disabled={isLast}
+        >
+          <i className='bi bi-caret-right'></i>
+        </button>
+      </div>
+
+      <hr />
+
+      <div className='vstack gap-2'>
+        <div className='d-flex'>
+          <div className='px-1 w-100'>
+            <button
+              type='button'
+              className='btn btn-success w-100'
+              onClick={handleSave}
+            >
+              <i className='bi bi-person-fill'></i> Save Attendee
+            </button>
           </div>
           <div className='px-1 w-100'>
-            <button type='button' className='btn btn-outline-secondary w-100'>
-              Cancel
+            <button type='submit' className='btn btn-primary w-100'>
+              <i className='bi bi-people-fill'></i> Save Group
             </button>
           </div>
         </div>
-      </form>
-    </>
+        <div className='px-1 w-100'>
+          <button type='button' className='btn btn-outline-secondary w-100'>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </form>
   );
 };
 
