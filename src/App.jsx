@@ -132,7 +132,11 @@ function App() {
     const trainingItems = Array.from(uniqueTrainingsMap.values());
 
     for (const item of trainingItems) {
-      const id = await upsertTrainingByNameDatePrice(item.name, item.date, item.price);
+      const id = await upsertTrainingByNameDatePrice(
+        item.name,
+        item.date,
+        item.price,
+      );
       if (id) {
         const key = `${item.name}|${item.date}|${item.price}`;
         trainingMap.set(key, id);
@@ -177,7 +181,8 @@ function App() {
       country: row["Country"],
       trainings: row["Trainings"],
       total_cost:
-        parseFloat((row["Total Cost"] || "").toString().replace(/[$,]/g, "")) || 0,
+        parseFloat((row["Total Cost"] || "").toString().replace(/[$,]/g, "")) ||
+        0,
       payment_options: row["Payment Option"],
     }));
 
@@ -214,7 +219,9 @@ function App() {
             country: att["Country"],
             trainings: att["Trainings"],
             subtotal:
-              parseFloat((att["Subtotal"] || "").toString().replace(/[$,]/g, "")) || 0,
+              parseFloat(
+                (att["Subtotal"] || "").toString().replace(/[$,]/g, ""),
+              ) || 0,
           });
 
           attendeeRefTracker.push({
@@ -307,17 +314,25 @@ function App() {
     return null;
   }
 
-  function normalizeExcelDataFromArray(data) {
+function normalizeExcelDataFromArray(data) {
     const [headers, ...rows] = data;
     if (!headers || !rows.length) return [];
 
     const normalized = [];
 
+    // Clean header string lookup
+    const getHeaderKey = (rowObject, keyName) => {
+      const match = Object.keys(rowObject).find(
+        (k) => String(k).trim().toLowerCase() === String(keyName).trim().toLowerCase()
+      );
+      return match ? rowObject[match] : "";
+    };
+
     rows.forEach((row) => {
       if (!row || row.every((cell) => cell === "" || cell === null || cell === undefined)) return;
 
       const rowObj = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
-      const regType = rowObj["SELECT YOUR REGISTRATION TYPE"]?.trim();
+      const regType = (rowObj["SELECT YOUR REGISTRATION TYPE"] || "").trim();
 
       if (!regType) return;
 
@@ -325,26 +340,37 @@ function App() {
       const attendeeCount =
         parseInt(rowObj["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) || 0;
 
+      // Extract Admin Name / Email vs Individual Name / Email safely via exact headers
+      const adminFirstName = rowObj["First Name"] || row[2] || "";
+      const adminLastName = rowObj["Last Name"] || row[3] || "";
+      const adminEmail = rowObj["Email"] || row[4] || "";
+
+      // For individual, fallback indices directly match our target schema output columns
+      const indivFirstName = row[5] || "";
+      const indivLastName = row[6] || "";
+      const indivEmail = row[7] || "";
+
       const base = {
-        "Submission Date": row[0],
+        "Submission Date": rowObj["Submission Date"] || row[0],
         "Registration Type": regType,
-        "First Name": isGroup ? row[2] : row[5],
-        "Last Name": isGroup ? row[3] : row[6],
-        Email: isGroup ? row[4] : row[7],
-        "Company / Institution": row[8],
+        "First Name": isGroup ? adminFirstName : indivFirstName,
+        "Last Name": isGroup ? adminLastName : indivLastName,
+        Email: isGroup ? adminEmail : indivEmail,
+        "Company / Institution": rowObj["Company / Institution"] || row[8] || "",
         "Total Cost":
           rowObj["TOTAL COST (GROUP)"] ||
           rowObj["TOTAL (Individual Attendee)"] ||
           "",
         "Payment Option": rowObj["Please select one payment option."] || "",
-        "Job Position": isGroup ? "" : row[9],
-        Designation: isGroup ? "" : row[10],
-        Country: isGroup ? "" : row[11],
+        "Job Position": isGroup ? "" : (row[9] || ""),
+        Designation: isGroup ? "" : (row[10] || ""),
+        Country: isGroup ? "" : (row[11] || ""),
         Trainings: rowObj["TRAININGS (Individual Attendee)"] || "",
       };
 
       if (isGroup && attendeeCount > 0) {
         const attendees = [];
+        // Find exact start index for Attendees in the array headers
         let startIndex = headers.indexOf("TOTAL COST (GROUP)");
 
         if (startIndex !== -1) {
@@ -357,13 +383,13 @@ function App() {
 
             attendees.push({
               "First Name": attendeeFirstName,
-              "Last Name": row[startIndex + offset + 1],
-              Email: row[startIndex + offset + 2],
-              "Job Position": row[startIndex + offset + 3],
-              Designation: row[startIndex + offset + 4],
-              Country: row[startIndex + offset + 5],
-              Trainings: row[startIndex + offset + 6],
-              Subtotal: row[startIndex + offset + 7],
+              "Last Name": row[startIndex + offset + 1] || "",
+              Email: row[startIndex + offset + 2] || "",
+              "Job Position": row[startIndex + offset + 3] || "",
+              Designation: row[startIndex + offset + 4] || "",
+              Country: row[startIndex + offset + 5] || "",
+              Trainings: row[startIndex + offset + 6] || "",
+              Subtotal: row[startIndex + offset + 7] || "",
             });
           }
         }
@@ -375,7 +401,6 @@ function App() {
 
     return normalized;
   }
-
   const handleInputChange = (event) => {
     setSearchTerm(event.target.value);
   };
@@ -391,33 +416,38 @@ function App() {
           (first_name || "").toLowerCase(),
           (last_name || "").toLowerCase(),
           (company || "").toLowerCase(),
-        ].some((field) => field.includes(searchTerm.toLowerCase())))
+        ].some((field) => field.includes(searchTerm.toLowerCase()))),
   );
 
-  function splitTrainingLines(cell) {
-    return (cell || "")
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
+function splitTrainingLines(cell) {
+  if (!cell || typeof cell !== "string") return [];
+
+  // Matches items ending with " - $Price" (e.g., " - $2050" or " - $2,050.00")
+  const chunks = cell.match(/.*?\s*-\s*\$\d+(?:,\d{3})*(?:\.\d{1,2})?/g);
+
+  if (!chunks) return [];
+
+  return chunks.map((chunk) => chunk.replace(/^,\s*/, "").trim());
+}
+
+function parseTrainingLine(line) {
+  if (!line || typeof line !== "string") return null;
+
+  // Expects format: "Name (Date) - $Price"
+  const regex = /^(.+?)\s*\(([^)]+)\)\s*-\s*\$(\d+(?:,\d{3})*(?:\.\d{1,2})?)$/;
+  const match = line.trim().match(regex);
+
+  if (!match) {
+    console.warn("Failed to parse training line:", line);
+    return null;
   }
 
-  function parseTrainingLine(line) {
-    if (!line || typeof line !== "string") return null;
-
-    const regex = /^(.+?)\s*-\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/;
-    const match = line.trim().match(regex);
-
-    if (!match) {
-      console.warn("Failed to parse training line:", line);
-      return null;
-    }
-
-    return {
-      name: match[1].trim(),
-      date: match[2].trim(),
-      price: parseFloat(match[3]),
-    };
-  }
+  return {
+    name: match[1].trim(),
+    date: match[2].trim(),
+    price: parseFloat(match[3].replace(/,/g, "")),
+  };
+}
 
   async function upsertTrainingByNameDatePrice(name, date, price) {
     const { data: existing, error: fetchError } = await supabase
@@ -566,11 +596,20 @@ function App() {
                   style={{ marginTop: 12, marginBottom: 1 }}
                 />
                 {activeTab === "group" ? (
-                  <Group filteredUsers={filteredUsers} onRefresh={fetchDataFromSupabase} />
+                  <Group
+                    filteredUsers={filteredUsers}
+                    onRefresh={fetchDataFromSupabase}
+                  />
                 ) : activeTab === "individual" ? (
-                  <Individual filteredUsers={filteredUsers} onRefresh={fetchDataFromSupabase} />
+                  <Individual
+                    filteredUsers={filteredUsers}
+                    onRefresh={fetchDataFromSupabase}
+                  />
                 ) : (
-                  <All filteredUsers={filteredUsers} onRefresh={fetchDataFromSupabase} />
+                  <All
+                    filteredUsers={filteredUsers}
+                    onRefresh={fetchDataFromSupabase}
+                  />
                 )}
               </div>
             </div>
@@ -590,10 +629,19 @@ function App() {
         <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
           <div className="modal-content">
             <div className="modal-header">
-              <h1 className="modal-title fs-5" id="editModalLabel" style={{ fontWeight: 700 }}>
+              <h1
+                className="modal-title fs-5"
+                id="editModalLabel"
+                style={{ fontWeight: 700 }}
+              >
                 Add Registration
               </h1>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" />
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              />
             </div>
             <div className="modal-body">
               <Form onSuccess={fetchDataFromSupabase} />
