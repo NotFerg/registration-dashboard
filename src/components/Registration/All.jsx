@@ -138,7 +138,7 @@ const All = ({ filteredUsers = [] }) => {
 
     return paymentStatusMatches && trainingMatches && countryMatches;
   });
-console.log("usersToDisplay", filteredRegistrations);
+
   const usersToDisplay = filteredRegistrations.flatMap((user) =>
     (user.attendees || []).length > 0
       ? user.attendees.map((attendee) => ({
@@ -255,20 +255,28 @@ console.log("usersToDisplay", filteredRegistrations);
     if (!sortBy) return arr;
 
     arr.sort((a, b) => {
-      const aVal =
-        sortBy === "company"
-          ? normalize(a.company)
-          : sortBy === "first_name"
-            ? normalize(a.first_name)
-            : normalize(a.last_name);
-      const bVal =
-        sortBy === "company"
-          ? normalize(b.company)
-          : sortBy === "first_name"
-            ? normalize(b.first_name)
-            : normalize(b.last_name);
+      let cmp = 0;
 
-      const cmp = aVal.localeCompare(bVal || "");
+      if (sortBy === "submission_date") {
+        const aDate = a.submission_date
+          ? new Date(a.submission_date).getTime()
+          : 0;
+        const bDate = b.submission_date
+          ? new Date(b.submission_date).getTime()
+          : 0;
+        cmp = aDate - bDate;
+      } else {
+        const getValue = (user) => {
+          if (sortBy === "company") return normalize(user.company);
+          if (sortBy === "first_name") return normalize(user.first_name);
+          return normalize(user.last_name);
+        };
+
+        const aVal = getValue(a);
+        const bVal = getValue(b);
+        cmp = aVal.localeCompare(bVal || "");
+      }
+
       return sortDirection === "asc" ? cmp : -cmp;
     });
 
@@ -295,7 +303,11 @@ console.log("usersToDisplay", filteredRegistrations);
                     ? "Company"
                     : sortBy === "first_name"
                       ? "First Name"
-                      : "Last Name"
+                      : sortBy === "last_name"
+                        ? "Last Name"
+                        : sortBy === "submission_date"
+                          ? "Submission Date"
+                          : sortBy
                   : "None"}
               </span>
               {sortBy && (
@@ -312,6 +324,12 @@ console.log("usersToDisplay", filteredRegistrations);
             </button>
             <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
               <li className="dropdown-header">Property</li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("submission_date")}
+              >
+                Submission Date
+              </li>
               <li
                 className="dropdown-item"
                 onClick={() => handleSort("company")}
