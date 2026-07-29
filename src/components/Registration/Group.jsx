@@ -278,22 +278,29 @@ const Group = ({ filteredUsers = [] }) => {
     if (!sortBy) return arr;
 
     arr.sort((a, b) => {
-      const aVal =
-        sortBy === "company"
-          ? normalize(a.company)
-          : sortBy === "first_name"
-            ? normalize(a.first_name)
-            : normalize(a.last_name);
-      const bVal =
-        sortBy === "company"
-          ? normalize(b.company)
-          : sortBy === "first_name"
-            ? normalize(b.first_name)
-            : normalize(b.last_name);
+      let cmp = 0;
 
-      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-      return 0;
+      if (sortBy === "submission_date") {
+        const aDate = a.submission_date
+          ? new Date(a.submission_date).getTime()
+          : 0;
+        const bDate = b.submission_date
+          ? new Date(b.submission_date).getTime()
+          : 0;
+        cmp = aDate - bDate;
+      } else {
+        const getValue = (user) => {
+          if (sortBy === "company") return normalize(user.company);
+          if (sortBy === "first_name") return normalize(user.first_name);
+          return normalize(user.last_name);
+        };
+
+        const aVal = getValue(a);
+        const bVal = getValue(b);
+        cmp = aVal.localeCompare(bVal || "");
+      }
+
+      return sortDirection === "asc" ? cmp : -cmp;
     });
 
     return arr;
@@ -322,8 +329,12 @@ const Group = ({ filteredUsers = [] }) => {
                   ? sortBy === "company"
                     ? "Company"
                     : sortBy === "first_name"
-                      ? "Admin First Name"
-                      : "Admin Last Name"
+                      ? "First Name"
+                      : sortBy === "last_name"
+                        ? "Last Name"
+                        : sortBy === "submission_date"
+                          ? "Submission Date"
+                          : sortBy
                   : "None"}
               </span>
               {sortBy && (
@@ -340,6 +351,12 @@ const Group = ({ filteredUsers = [] }) => {
             </button>
             <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
               <li className="dropdown-header">Property</li>
+                            <li
+                className="dropdown-item"
+                onClick={() => setSortBy("submission_date")}
+              >
+                Submission Date
+              </li>
               <li
                 className="dropdown-item"
                 onClick={() => setSortBy("company")}

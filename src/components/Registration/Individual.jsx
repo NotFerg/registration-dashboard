@@ -84,24 +84,29 @@ const Individual = ({ filteredUsers = [] }) => {
     if (!sortBy) return arr;
 
     arr.sort((a, b) => {
-      const aVal = normalize(
-        sortBy === "company"
-          ? a.company
-          : sortBy === "first_name"
-            ? a.first_name
-            : a.last_name,
-      );
-      const bVal = normalize(
-        sortBy === "company"
-          ? b.company
-          : sortBy === "first_name"
-            ? b.first_name
-            : b.last_name,
-      );
+      let cmp = 0;
 
-      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-      return 0;
+      if (sortBy === "submission_date") {
+        const aDate = a.submission_date
+          ? new Date(a.submission_date).getTime()
+          : 0;
+        const bDate = b.submission_date
+          ? new Date(b.submission_date).getTime()
+          : 0;
+        cmp = aDate - bDate;
+      } else {
+        const getValue = (user) => {
+          if (sortBy === "company") return normalize(user.company);
+          if (sortBy === "first_name") return normalize(user.first_name);
+          return normalize(user.last_name);
+        };
+
+        const aVal = getValue(a);
+        const bVal = getValue(b);
+        cmp = aVal.localeCompare(bVal || "");
+      }
+
+      return sortDirection === "asc" ? cmp : -cmp;
     });
 
     return arr;
@@ -169,7 +174,11 @@ const Individual = ({ filteredUsers = [] }) => {
                     ? "Company"
                     : sortBy === "first_name"
                       ? "First Name"
-                      : "Last Name"
+                      : sortBy === "last_name"
+                        ? "Last Name"
+                        : sortBy === "submission_date"
+                          ? "Submission Date"
+                          : sortBy
                   : "None"}
               </span>
               {sortBy && (
@@ -186,6 +195,12 @@ const Individual = ({ filteredUsers = [] }) => {
             </button>
             <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
               <li className="dropdown-header">Property</li>
+              <li
+                className="dropdown-item"
+                onClick={() => handleSort("submission_date")}
+              >
+                Submission Date
+              </li>
               <li
                 className="dropdown-item"
                 onClick={() => handleSort("company")}
