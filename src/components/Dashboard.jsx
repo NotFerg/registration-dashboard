@@ -12,9 +12,7 @@ import {
 import { faMoneyBill } from "@fortawesome/free-solid-svg-icons/faMoneyBill";
 
 function Dashboard({ excelData: data }) {
-  const unpaidCount = data.filter(
-    (registration) => registration.payment_status === "Unpaid"
-  ).length;
+
 
   const participantCount = data.reduce((count, registration) => {
     if (registration.registration_type === "Myself") {
@@ -97,11 +95,11 @@ function Dashboard({ excelData: data }) {
                     className="text-warning text-uppercase mb-1"
                     style={{ fontWeight: 600 }}
                   >
-                    Unpaid Registrations
+                    Total Registration Entries
                   </h4>
                   <div className="h5 mb-0 font-weight-bold text-gray-800">
                     <div className="h5 mb-0 font-weight-bold text-gray-800">
-                      {unpaidCount}
+                      {data.length}
                     </div>
                   </div>
                 </Col>
