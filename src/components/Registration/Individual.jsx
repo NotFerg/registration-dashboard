@@ -88,15 +88,15 @@ const Individual = ({ filteredUsers = [] }) => {
         sortBy === "company"
           ? a.company
           : sortBy === "first_name"
-          ? a.first_name
-          : a.last_name
+            ? a.first_name
+            : a.last_name,
       );
       const bVal = normalize(
         sortBy === "company"
           ? b.company
           : sortBy === "first_name"
-          ? b.first_name
-          : b.last_name
+            ? b.first_name
+            : b.last_name,
       );
 
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
@@ -135,7 +135,7 @@ const Individual = ({ filteredUsers = [] }) => {
         Swal.fire(
           "Error!",
           "There was a problem deleting the registration.",
-          "error"
+          "error",
         );
       } else {
         Swal.fire({
@@ -168,8 +168,8 @@ const Individual = ({ filteredUsers = [] }) => {
                   ? sortBy === "company"
                     ? "Company"
                     : sortBy === "first_name"
-                    ? "First Name"
-                    : "Last Name"
+                      ? "First Name"
+                      : "Last Name"
                   : "None"}
               </span>
               {sortBy && (
@@ -252,7 +252,26 @@ const Individual = ({ filteredUsers = [] }) => {
               data-bs-auto-close="outside"
             >
               <i className="bi bi-globe-americas-fill" /> Country:{" "}
-              <span className="fw-bold">{activeCountry}</span>
+              <span className="fw-bold">
+                {(() => {
+                  // Shortens the button label when a country is selected
+                  if (!activeCountry) return "";
+                  const cleanActive = activeCountry
+                    .toString()
+                    .trim()
+                    .toLowerCase();
+                  const btnAbbreviations = {
+                    "commonwealth of the northern mariana islands": "CNMI",
+                    "federated states of micronesia": "FSM",
+                    guam: "Guam",
+                    "republic of palau": "ROP",
+                    "republic of the marshall islands": "RMI",
+                    "united states of america": "USA",
+                    other: "Other",
+                  };
+                  return btnAbbreviations[cleanActive] || activeCountry;
+                })()}
+              </span>
             </button>
             <ul
               className="dropdown-menu"
@@ -261,19 +280,36 @@ const Individual = ({ filteredUsers = [] }) => {
               {filteredUsers
                 .map((user) => user.country)
                 .filter(
-                  (country, index, self) => self.indexOf(country) === index
+                  (country, index, self) => self.indexOf(country) === index,
                 )
-                .map((country, index) => (
-                  <li key={index}>
-                    <div
-                      className="dropdown-item"
-                      onClick={() => setActiveCountry(country)}
-                    >
-                      {country}
-                    </div>
-                    <hr className="dropdown-divider" />
-                  </li>
-                ))}
+                .map((country, index) => {
+                  // Safeguard against null/undefined before checking dictionary
+                  if (!country) return null;
+
+                  const cleanCountry = country.toString().trim().toLowerCase();
+                  const abbreviations = {
+                    "commonwealth of the northern mariana islands": "CNMI",
+                    "federated states of micronesia": "FSM",
+                    guam: "Guam",
+                    "republic of palau": "ROP",
+                    "republic of the marshall islands": "RMI",
+                    "united states of america": "USA",
+                    other: "Other",
+                  };
+                  const displayName = abbreviations[cleanCountry] || country;
+
+                  return (
+                    <li key={index}>
+                      <div
+                        className="dropdown-item"
+                        onClick={() => setActiveCountry(country)}
+                      >
+                        {displayName}
+                      </div>
+                      <hr className="dropdown-divider" />
+                    </li>
+                  );
+                })}
               <li
                 className="dropdown-item text-center fw-bold"
                 onClick={() => setActiveCountry("")}
@@ -282,7 +318,8 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-         <div
+
+          <div
             className="dropdown ps-2"
             id="trainingDropdown"
             style={{ zIndex: "100" }}
@@ -311,9 +348,7 @@ const Individual = ({ filteredUsers = [] }) => {
               {(trainingData || [])
                 .slice()
                 .map((training) => training.name)
-                .filter(
-                  (name, index, self) => self.indexOf(name) === index
-                )
+                .filter((name, index, self) => self.indexOf(name) === index)
                 .sort((a, b) => a.localeCompare(b))
                 .map((name, index) => (
                   <li key={index}>
@@ -330,7 +365,7 @@ const Individual = ({ filteredUsers = [] }) => {
                             setActiveTraining((prev) => [...prev, newValue]);
                           } else {
                             setActiveTraining((prev) =>
-                              prev.filter((item) => item !== newValue)
+                              prev.filter((item) => item !== newValue),
                             );
                           }
                         }}
@@ -353,7 +388,11 @@ const Individual = ({ filteredUsers = [] }) => {
               </li>
             </ul>
           </div>
-          <div className="dropdown ps-2" id="paymentStatusDropdown" style={{ zIndex: "100" }}>
+          <div
+            className="dropdown ps-2"
+            id="paymentStatusDropdown"
+            style={{ zIndex: "100" }}
+          >
             <button
               className="btn btn-outline-dark dropdown-toggle border 
             "
@@ -441,7 +480,7 @@ const Individual = ({ filteredUsers = [] }) => {
 
                   const formattedDate = dateObj.toLocaleDateString(
                     "en-US",
-                    options
+                    options,
                   );
                   return (
                     <tr key={reg.id ?? i}>
@@ -474,7 +513,7 @@ const Individual = ({ filteredUsers = [] }) => {
                                 <li className="mb-2" key={tr.trainings.id}>
                                   {tr.trainings.name}
                                 </li>
-                              ) : null
+                              ) : null,
                             )
                             .filter(Boolean)}
                         </ul>
@@ -488,8 +527,8 @@ const Individual = ({ filteredUsers = [] }) => {
                             reg.payment_status === "Paid"
                               ? "text-bg-success"
                               : reg.payment_status === "Unpaid"
-                              ? "text-bg-warning"
-                              : "text-bg-secondary"
+                                ? "text-bg-warning"
+                                : "text-bg-secondary"
                           }`}
                         >
                           {reg.payment_status}
