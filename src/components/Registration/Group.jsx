@@ -93,7 +93,7 @@ const Group = ({ filteredUsers = [] }) => {
 
     const regTrainingNames = extractTrainingNamesFromRegistration(reg);
     const trainingMatches = activeNormalized.some((sel) =>
-      regTrainingNames.includes(sel)
+      regTrainingNames.includes(sel),
     );
 
     return paymentStatusMatches && countryMatches && trainingMatches;
@@ -141,7 +141,7 @@ const Group = ({ filteredUsers = [] }) => {
             registration_id: user.id,
             fullRegistration: user,
           },
-        ]
+        ],
   );
 
   const clearFilters = () => {
@@ -235,7 +235,7 @@ const Group = ({ filteredUsers = [] }) => {
             .delete()
             .in(
               "id",
-              attendees.map((a) => a.id)
+              attendees.map((a) => a.id),
             );
         }
         supabase
@@ -282,14 +282,14 @@ const Group = ({ filteredUsers = [] }) => {
         sortBy === "company"
           ? normalize(a.company)
           : sortBy === "first_name"
-          ? normalize(a.first_name)
-          : normalize(a.last_name);
+            ? normalize(a.first_name)
+            : normalize(a.last_name);
       const bVal =
         sortBy === "company"
           ? normalize(b.company)
           : sortBy === "first_name"
-          ? normalize(b.first_name)
-          : normalize(b.last_name);
+            ? normalize(b.first_name)
+            : normalize(b.last_name);
 
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
       if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
@@ -322,8 +322,8 @@ const Group = ({ filteredUsers = [] }) => {
                   ? sortBy === "company"
                     ? "Company"
                     : sortBy === "first_name"
-                    ? "Admin First Name"
-                    : "Admin Last Name"
+                      ? "Admin First Name"
+                      : "Admin Last Name"
                   : "None"}
               </span>
               {sortBy && (
@@ -406,7 +406,25 @@ const Group = ({ filteredUsers = [] }) => {
               data-bs-auto-close="outside"
             >
               <i className="bi bi-globe-americas-fill" /> Country:{" "}
-              <span className="fw-bold">{activeCountry}</span>
+              <span className="fw-bold">
+                {(() => {
+                  if (!activeCountry) return "";
+                  const cleanActive = activeCountry
+                    .toString()
+                    .trim()
+                    .toLowerCase();
+                  const btnAbbreviations = {
+                    "commonwealth of the northern mariana islands": "CNMI",
+                    "federated states of micronesia": "FSM",
+                    guam: "Guam",
+                    "republic of palau": "ROP",
+                    "republic of the marshall islands": "RMI",
+                    "united states of america": "USA",
+                    other: "Other",
+                  };
+                  return btnAbbreviations[cleanActive] || activeCountry;
+                })()}
+              </span>
             </button>
             <ul
               className="dropdown-menu"
@@ -422,20 +440,34 @@ const Group = ({ filteredUsers = [] }) => {
                   (country) =>
                     country !== null &&
                     country !== undefined &&
-                    country.toString().trim() !== ""
+                    country.toString().trim() !== "",
                 )
                 .filter((c, i, self) => self.indexOf(c) === i)
-                .map((country, idx) => (
-                  <li key={idx}>
-                    <div
-                      className="dropdown-item"
-                      onClick={() => setActiveCountry(country)}
-                    >
-                      {country}
-                    </div>
-                    <hr className="dropdown-divider" />
-                  </li>
-                ))}
+                .map((country, idx) => {
+                  const cleanCountry = country.toString().trim().toLowerCase();
+                  const abbreviations = {
+                    "commonwealth of the northern mariana islands": "CNMI",
+                    "federated states of micronesia": "FSM",
+                    guam: "Guam",
+                    "republic of palau": "ROP",
+                    "republic of the marshall islands": "RMI",
+                    "united states of america": "USA",
+                    other: "Other",
+                  };
+                  const displayName = abbreviations[cleanCountry] || country;
+
+                  return (
+                    <li key={idx}>
+                      <div
+                        className="dropdown-item"
+                        onClick={() => setActiveCountry(country)}
+                      >
+                        {displayName}
+                      </div>
+                      <hr className="dropdown-divider" />
+                    </li>
+                  );
+                })}
               <li
                 className="dropdown-item text-center fw-bold"
                 onClick={() => setActiveCountry("")}
@@ -491,7 +523,7 @@ const Group = ({ filteredUsers = [] }) => {
                             setActiveTraining((prev) => [...prev, newValue]);
                           } else {
                             setActiveTraining((prev) =>
-                              prev.filter((item) => item !== newValue)
+                              prev.filter((item) => item !== newValue),
                             );
                           }
                         }}
@@ -604,7 +636,7 @@ const Group = ({ filteredUsers = [] }) => {
                 };
                 const formattedDate = dateObj.toLocaleDateString(
                   "en-US",
-                  options
+                  options,
                 );
 
                 return (
@@ -638,8 +670,8 @@ const Group = ({ filteredUsers = [] }) => {
                             reg.payment_status === "Paid"
                               ? "text-bg-success"
                               : reg.payment_status === "Unpaid"
-                              ? "text-bg-warning"
-                              : "text-bg-secondary"
+                                ? "text-bg-warning"
+                                : "text-bg-secondary"
                           }`}
                         >
                           {reg.payment_status}
@@ -740,7 +772,7 @@ const Group = ({ filteredUsers = [] }) => {
                                           .map((tr) =>
                                             tr.trainings
                                               ? `${tr.trainings.name} (${tr.trainings.date})`
-                                              : null
+                                              : null,
                                           )
                                           .filter(Boolean)
                                           .join(", ")}
@@ -755,7 +787,7 @@ const Group = ({ filteredUsers = [] }) => {
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               setActiveStep(
-                                                reg.attendees.indexOf(att)
+                                                reg.attendees.indexOf(att),
                                               );
                                               setEditRegistration(reg);
                                               setShowModal(true);
@@ -769,7 +801,7 @@ const Group = ({ filteredUsers = [] }) => {
                                               e.stopPropagation();
                                               handleDeleteAttendee(
                                                 att.id,
-                                                reg.id
+                                                reg.id,
                                               );
                                             }}
                                           >
