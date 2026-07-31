@@ -3,6 +3,8 @@ import EditForm from "../EditForm";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
 import InvoiceModal from "../InvoiceModal";
+import NotesModal from "../NotesModal";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 const Individual = ({ filteredUsers = [] }) => {
   const [editRegistration, setEditRegistration] = useState(null);
@@ -14,6 +16,9 @@ const Individual = ({ filteredUsers = [] }) => {
 
   const [sortBy, setSortBy] = useState("");
   const [sortDirection, setSortDirection] = useState("asc");
+
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [notesModalContent, setNotesModalContent] = useState(null);
 
   function formatCurrency(amount) {
     const num = parseFloat(amount);
@@ -470,6 +475,7 @@ const Individual = ({ filteredUsers = [] }) => {
                 <th className="text-nowrap">Trainings</th>
                 <th className="text-nowrap">Total Cost</th>
                 <th className="text-nowrap">Payment Status</th>
+                <th className="text-nowrap">Notes</th>
                 <th className="text-center" colSpan={2}>
                   Actions
                 </th>
@@ -549,6 +555,32 @@ const Individual = ({ filteredUsers = [] }) => {
                           {reg.payment_status}
                         </span>
                       </td>
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={
+                          <Tooltip>Edit Notes for this Registration</Tooltip>
+                        }
+                      >
+                        <td
+                          style={{
+                            cursor: "pointer",
+                          }}
+                          onClick={() => {
+                            setNotesModalContent({
+                              id: reg.id,
+                              notes: reg.notes,
+                            });
+                            setShowNotesModal(true);
+                          }}
+                          className="small text-wrap"
+                        >
+                          <span style={{ opacity: reg.notes ? 1 : 0.5 }}>
+                            {reg.notes ? reg.notes : "N/A"}
+                          </span>
+                          {"   "}
+                          <i className="bi bi-sticky-fill text-warning text-opacity-75"></i>
+                        </td>
+                      </OverlayTrigger>
                       <td colSpan={2} className="sticky-col">
                         <div className="btn-group">
                           <button
@@ -612,6 +644,14 @@ const Individual = ({ filteredUsers = [] }) => {
           </div>
         </div>
       </div>
+
+      {showNotesModal && (
+        <NotesModal
+          registration={notesModalContent}
+          show={showNotesModal}
+          onHide={() => setShowNotesModal(false)}
+        />
+      )}
     </>
   );
 };
