@@ -412,31 +412,35 @@ function App() {
   const handleInputChange = (event) => {
     setSearchTerm(event.target.value);
   };
+  const nameSearchFields = (first_name, last_name) => {
+    const first = (first_name || "").trim().toLowerCase();
+    const last = (last_name || "").trim().toLowerCase();
+    return [first, last, `${first} ${last}`.trim()];
+  };
 
   const filteredUsers = excelData.filter(
     ({ registration_type, first_name, last_name, company, attendees }) => {
       const searchFields = [
-        (first_name || "").toLowerCase(),
-        (last_name || "").toLowerCase(),
+        ...nameSearchFields(first_name, last_name),
         (company || "").toLowerCase(),
       ];
 
       if (activeTab === "all") {
         (attendees || []).forEach((attendee) => {
-          searchFields.push((attendee.first_name || "").toLowerCase());
-          searchFields.push((attendee.last_name || "").toLowerCase());
+          searchFields.push(
+            ...nameSearchFields(attendee.first_name, attendee.last_name),
+          );
         });
       }
+
+      const term = searchTerm.trim().toLowerCase();
 
       return (
         (activeTab === "individual" ? registration_type === "Myself" : true) &&
         (activeTab === "group"
           ? registration_type === "Someone Else / Group"
           : true) &&
-        (searchTerm === "" ||
-          searchFields.some((field) =>
-            field.includes(searchTerm.toLowerCase()),
-          ))
+        (term === "" || searchFields.some((field) => field.includes(term)))
       );
     },
   );

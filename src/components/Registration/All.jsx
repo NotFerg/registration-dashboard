@@ -188,11 +188,16 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
     const term = normalize(searchTerm);
     if (!term) return usersToDisplay;
 
-    return usersToDisplay.filter((user) =>
-      [user.first_name, user.last_name, user.company].some((field) =>
-        normalize(field).includes(term),
-      ),
-    );
+    return usersToDisplay.filter((user) => {
+      const first = normalize(user.first_name);
+      const last = normalize(user.last_name);
+      return [
+        first,
+        last,
+        `${first} ${last}`.trim(),
+        normalize(user.company),
+      ].some((field) => field.includes(term));
+    });
   }, [usersToDisplay, searchTerm]);
 
   const clearFilters = () => {
