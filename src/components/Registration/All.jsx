@@ -159,7 +159,6 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
             attendee.total_cost ?? attendee.subtotal ?? user.total_cost,
           submission_date: user.submission_date,
           trainings: attendee.trainings,
-          trainings: user.trainings,
           payment_options: user.payment_options,
         }))
       : [
