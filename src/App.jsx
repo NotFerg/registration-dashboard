@@ -314,7 +314,7 @@ function App() {
     return null;
   }
 
-function normalizeExcelDataFromArray(data) {
+  function normalizeExcelDataFromArray(data) {
     const [headers, ...rows] = data;
     if (!headers || !rows.length) return [];
 
@@ -323,13 +323,19 @@ function normalizeExcelDataFromArray(data) {
     // Clean header string lookup
     const getHeaderKey = (rowObject, keyName) => {
       const match = Object.keys(rowObject).find(
-        (k) => String(k).trim().toLowerCase() === String(keyName).trim().toLowerCase()
+        (k) =>
+          String(k).trim().toLowerCase() ===
+          String(keyName).trim().toLowerCase(),
       );
       return match ? rowObject[match] : "";
     };
 
     rows.forEach((row) => {
-      if (!row || row.every((cell) => cell === "" || cell === null || cell === undefined)) return;
+      if (
+        !row ||
+        row.every((cell) => cell === "" || cell === null || cell === undefined)
+      )
+        return;
 
       const rowObj = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
       const regType = (rowObj["SELECT YOUR REGISTRATION TYPE"] || "").trim();
@@ -338,7 +344,8 @@ function normalizeExcelDataFromArray(data) {
 
       const isGroup = regType === "Someone Else / Group";
       const attendeeCount =
-        parseInt(rowObj["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) || 0;
+        parseInt(rowObj["HOW MANY ATTENDEES ARE YOU REGISTERING FOR?"], 10) ||
+        0;
 
       // Extract Admin Name / Email vs Individual Name / Email safely via exact headers
       const adminFirstName = rowObj["First Name"] || row[2] || "";
@@ -356,15 +363,16 @@ function normalizeExcelDataFromArray(data) {
         "First Name": isGroup ? adminFirstName : indivFirstName,
         "Last Name": isGroup ? adminLastName : indivLastName,
         Email: isGroup ? adminEmail : indivEmail,
-        "Company / Institution": rowObj["Company / Institution"] || row[8] || "",
+        "Company / Institution":
+          rowObj["Company / Institution"] || row[8] || "",
         "Total Cost":
           rowObj["TOTAL COST (GROUP)"] ||
           rowObj["TOTAL (Individual Attendee)"] ||
           "",
         "Payment Option": rowObj["Please select one payment option."] || "",
-        "Job Position": isGroup ? "" : (row[9] || ""),
-        Designation: isGroup ? "" : (row[10] || ""),
-        Country: isGroup ? "" : (row[11] || ""),
+        "Job Position": isGroup ? "" : row[9] || "",
+        Designation: isGroup ? "" : row[10] || "",
+        Country: isGroup ? "" : row[11] || "",
         Trainings: rowObj["TRAININGS (Individual Attendee)"] || "",
       };
 
@@ -406,48 +414,63 @@ function normalizeExcelDataFromArray(data) {
   };
 
   const filteredUsers = excelData.filter(
-    ({ registration_type, first_name, last_name, company }) =>
-      (activeTab === "individual" ? registration_type === "Myself" : true) &&
-      (activeTab === "group"
-        ? registration_type === "Someone Else / Group"
-        : true) &&
-      (searchTerm === "" ||
-        [
-          (first_name || "").toLowerCase(),
-          (last_name || "").toLowerCase(),
-          (company || "").toLowerCase(),
-        ].some((field) => field.includes(searchTerm.toLowerCase()))),
+    ({ registration_type, first_name, last_name, company, attendees }) => {
+      const searchFields = [
+        (first_name || "").toLowerCase(),
+        (last_name || "").toLowerCase(),
+        (company || "").toLowerCase(),
+      ];
+
+      if (activeTab === "all") {
+        (attendees || []).forEach((attendee) => {
+          searchFields.push((attendee.first_name || "").toLowerCase());
+          searchFields.push((attendee.last_name || "").toLowerCase());
+        });
+      }
+
+      return (
+        (activeTab === "individual" ? registration_type === "Myself" : true) &&
+        (activeTab === "group"
+          ? registration_type === "Someone Else / Group"
+          : true) &&
+        (searchTerm === "" ||
+          searchFields.some((field) =>
+            field.includes(searchTerm.toLowerCase()),
+          ))
+      );
+    },
   );
 
-function splitTrainingLines(cell) {
-  if (!cell || typeof cell !== "string") return [];
+  function splitTrainingLines(cell) {
+    if (!cell || typeof cell !== "string") return [];
 
-  // Matches items ending with " - $Price" (e.g., " - $2050" or " - $2,050.00")
-  const chunks = cell.match(/.*?\s*-\s*\$\d+(?:,\d{3})*(?:\.\d{1,2})?/g);
+    // Matches items ending with " - $Price" (e.g., " - $2050" or " - $2,050.00")
+    const chunks = cell.match(/.*?\s*-\s*\$\d+(?:,\d{3})*(?:\.\d{1,2})?/g);
 
-  if (!chunks) return [];
+    if (!chunks) return [];
 
-  return chunks.map((chunk) => chunk.replace(/^,\s*/, "").trim());
-}
-
-function parseTrainingLine(line) {
-  if (!line || typeof line !== "string") return null;
-
-  // Expects format: "Name (Date) - $Price"
-  const regex = /^(.+?)\s*\(([^)]+)\)\s*-\s*\$(\d+(?:,\d{3})*(?:\.\d{1,2})?)$/;
-  const match = line.trim().match(regex);
-
-  if (!match) {
-    console.warn("Failed to parse training line:", line);
-    return null;
+    return chunks.map((chunk) => chunk.replace(/^,\s*/, "").trim());
   }
 
-  return {
-    name: match[1].trim(),
-    date: match[2].trim(),
-    price: parseFloat(match[3].replace(/,/g, "")),
-  };
-}
+  function parseTrainingLine(line) {
+    if (!line || typeof line !== "string") return null;
+
+    // Expects format: "Name (Date) - $Price"
+    const regex =
+      /^(.+?)\s*\(([^)]+)\)\s*-\s*\$(\d+(?:,\d{3})*(?:\.\d{1,2})?)$/;
+    const match = line.trim().match(regex);
+
+    if (!match) {
+      console.warn("Failed to parse training line:", line);
+      return null;
+    }
+
+    return {
+      name: match[1].trim(),
+      date: match[2].trim(),
+      price: parseFloat(match[3].replace(/,/g, "")),
+    };
+  }
 
   async function upsertTrainingByNameDatePrice(name, date, price) {
     const { data: existing, error: fetchError } = await supabase
@@ -608,6 +631,7 @@ function parseTrainingLine(line) {
                 ) : (
                   <All
                     filteredUsers={filteredUsers}
+                    searchTerm={searchTerm}
                     onRefresh={fetchDataFromSupabase}
                   />
                 )}

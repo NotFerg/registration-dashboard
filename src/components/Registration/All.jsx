@@ -3,7 +3,7 @@ import EditForm from "../EditForm";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
 
-const All = ({ filteredUsers = [] }) => {
+const All = ({ filteredUsers = [], searchTerm = "" }) => {
   const [editRegistration, setEditRegistration] = useState(null);
   const [activePaymentStatus, setActivePaymentStatus] = useState("");
   const [activeTraining, setActiveTraining] = useState([]);
@@ -159,7 +159,6 @@ const All = ({ filteredUsers = [] }) => {
             attendee.total_cost ?? attendee.subtotal ?? user.total_cost,
           submission_date: user.submission_date,
           trainings: attendee.trainings,
-          trainings: user.trainings,
           payment_options: user.payment_options,
         }))
       : [
@@ -184,6 +183,17 @@ const All = ({ filteredUsers = [] }) => {
           },
         ],
   );
+
+  const searchedUsers = useMemo(() => {
+    const term = normalize(searchTerm);
+    if (!term) return usersToDisplay;
+
+    return usersToDisplay.filter((user) =>
+      [user.first_name, user.last_name, user.company].some((field) =>
+        normalize(field).includes(term),
+      ),
+    );
+  }, [usersToDisplay, searchTerm]);
 
   const clearFilters = () => {
     setActivePaymentStatus("");
@@ -251,7 +261,7 @@ const All = ({ filteredUsers = [] }) => {
   };
 
   const displayedUsers = useMemo(() => {
-    const arr = (usersToDisplay || []).slice();
+    const arr = (searchedUsers || []).slice();
     if (!sortBy) return arr;
 
     arr.sort((a, b) => {
@@ -281,7 +291,7 @@ const All = ({ filteredUsers = [] }) => {
     });
 
     return arr;
-  }, [usersToDisplay, sortBy, sortDirection]);
+  }, [searchedUsers, sortBy, sortDirection]);
 
   const totalRecords = displayedUsers.length;
 
