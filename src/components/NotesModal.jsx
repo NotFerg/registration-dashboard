@@ -3,7 +3,12 @@ import { Modal, Button } from "react-bootstrap";
 import supabase from "../utils/supabase";
 import Swal from "sweetalert2";
 
-const NotesModal = ({ registration, show = false, onHide = () => {} }) => {
+const NotesModal = ({
+  registration,
+  show = false,
+  onHide = () => {},
+  onSuccess = () => {},
+}) => {
   const [note, setNote] = useState(registration?.notes ?? "");
 
   const handleChange = (e) => {
@@ -24,7 +29,8 @@ const NotesModal = ({ registration, show = false, onHide = () => {} }) => {
         confirmButtonText: "Close",
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.reload();
+          onHide();
+          onSuccess();
         }
       });
     } catch (error) {
@@ -72,4 +78,3 @@ const NotesModal = ({ registration, show = false, onHide = () => {} }) => {
 };
 
 export default NotesModal;
-

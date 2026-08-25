@@ -3,28 +3,32 @@ import { Modal, Button } from "react-bootstrap";
 import AddAttendees from "./addAttendees";
 import supabase from "../utils/supabase";
 import Swal from "sweetalert2";
-const AddMultiPageModal = ({ show, onHide }) => {
-  const attendeeTemplate = {
-    first_name: "",
-    last_name: "",
-    email: "",
-    position: "",
-    designation: "",
-    country: "",
-    trainings: [],
-  };
+
+const attendeeTemplate = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  position: "",
+  designation: "",
+  country: "",
+  trainings: [],
+};
+
+const regTemplate = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  company: "",
+  total_cost: 0,
+  payment_options: "",
+  registration_type: "Someone Else / Group",
+  payment_status: "",
+};
+
+const AddMultiPageModal = ({ show, onHide, onSuccess = () => {} }) => {
   const [step, setStep] = useState(0);
   const [attendees, setAttendees] = useState([{ ...attendeeTemplate }]);
-  const [reg, setReg] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    company: "",
-    total_cost: 0,
-    payment_options: "",
-    registration_type: "Someone Else / Group",
-    payment_status: "",
-  });
+  const [reg, setReg] = useState({ ...regTemplate });
 
   function handleChange(e) {
     const { id, value } = e.target;
@@ -81,6 +85,12 @@ const AddMultiPageModal = ({ show, onHide }) => {
     }
 
     setStep(Math.max(step - 1, 0));
+  }
+
+  function resetForm() {
+    setStep(0);
+    setAttendees([{ ...attendeeTemplate }]);
+    setReg({ ...regTemplate });
   }
 
   async function handleSaveGroup(e) {
@@ -177,7 +187,9 @@ const AddMultiPageModal = ({ show, onHide }) => {
         allowOutsideClick: false,
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.reload();
+          resetForm();
+          onSuccess();
+          onHide();
         }
       });
     } catch (error) {

@@ -6,6 +6,7 @@ import supabase from "../utils/supabase";
 const InvoiceModal = (attendee = {}) => {
   const [showModal, setShowModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const onSuccess = attendee.onSuccess || (() => {});
 
   const openModal = () => setShowModal(true);
   const closeModal = () => setShowModal(false);
@@ -45,7 +46,8 @@ const InvoiceModal = (attendee = {}) => {
         confirmButtonText: "Close",
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.reload();
+          closeModal();
+          onSuccess();
         }
       });
     } catch (error) {

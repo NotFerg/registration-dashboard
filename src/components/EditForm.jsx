@@ -3,7 +3,7 @@ import supabase from "../utils/supabase";
 import Swal from "sweetalert2";
 import TrainingSelector from "./TrainingSelector";
 
-const EditForm = ({ reg: initialReg }) => {
+const EditForm = ({ reg: initialReg, onSuccess = () => {} }) => {
   const [trainings, setTrainings] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [reg, setReg] = useState({
@@ -124,7 +124,7 @@ const EditForm = ({ reg: initialReg }) => {
 
     // Prepare human-readable summary string for the 'trainings' column
     const selectedTrainingObjects = trainings.filter((t) =>
-      selectedIds.includes(t.id)
+      selectedIds.includes(t.id),
     );
     const trainingSummary = selectedTrainingObjects
       .map((t) => `${t.name} (${t.date}) - $${t.price}`)
@@ -183,7 +183,7 @@ const EditForm = ({ reg: initialReg }) => {
         confirmButtonText: "OK",
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.reload();
+          onSuccess();
         }
       });
     } else {
@@ -229,7 +229,7 @@ const EditForm = ({ reg: initialReg }) => {
         confirmButtonText: "OK",
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.reload();
+          onSuccess();
         }
       });
     }
