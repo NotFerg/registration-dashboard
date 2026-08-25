@@ -3,23 +3,25 @@ import supabase from "../../utils/supabase";
 import Swal from "sweetalert2";
 import TrainingSelector from "../TrainingSelector";
 
-const Form = () => {
+const initialRegState = {
+  company: "",
+  submission_date: new Date().toISOString().slice(0, 19).replace("T", " "),
+  first_name: "",
+  last_name: "",
+  email: "",
+  position: "",
+  designation: "",
+  country: "",
+  total_cost: 0,
+  payment_options: "",
+  registration_type: "Myself",
+  payment_status: "",
+};
+
+const Form = ({ onSuccess = () => {} }) => {
   const [trainings, setTrainings] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [reg, setReg] = useState({
-    company: "",
-    submission_date: new Date().toISOString().slice(0, 19).replace("T", " "),
-    first_name: "",
-    last_name: "",
-    email: "",
-    position: "",
-    designation: "",
-    country: "",
-    total_cost: 0,
-    payment_options: "",
-    registration_type: "Myself",
-    payment_status: "",
-  });
+  const [reg, setReg] = useState({ ...initialRegState });
 
   useEffect(() => {
     fetchTrainings().then((data) => setTrainings(data || []));
@@ -67,6 +69,14 @@ const Form = () => {
       [id]: value,
     }));
   };
+
+  function resetForm() {
+    setSelectedIds([]);
+    setReg({
+      ...initialRegState,
+      submission_date: new Date().toISOString().slice(0, 19).replace("T", " "),
+    });
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -133,7 +143,8 @@ const Form = () => {
       confirmButtonText: "OK",
     }).then((result) => {
       if (result.isConfirmed) {
-        window.location.reload();
+        resetForm();
+        onSuccess();
       }
     });
   }

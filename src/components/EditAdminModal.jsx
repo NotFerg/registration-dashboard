@@ -3,10 +3,8 @@ import { Modal, Button, Form, OverlayTrigger, Tooltip } from "react-bootstrap";
 import Swal from "sweetalert2";
 import supabase from "../utils/supabase";
 
-const EditAdminModal = (adminProp) => {
-
+const EditAdminModal = ({ admin, onSuccess = () => {} }) => {
   const [showModal, setShowModal] = useState(false);
-  const { admin } = adminProp;
   const [adminData, setAdminData] = useState(admin);
   const openModal = () => setShowModal(true);
   const closeModal = () => setShowModal(false);
@@ -39,7 +37,8 @@ const EditAdminModal = (adminProp) => {
         confirmButtonText: "Close",
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.reload();
+          closeModal();
+          onSuccess();
         }
       });
     } catch (error) {
@@ -56,14 +55,10 @@ const EditAdminModal = (adminProp) => {
   return (
     <React.Fragment>
       <button className="btn">
-        <OverlayTrigger
-          placement="top"
-          overlay={<Tooltip>Edit Admin</Tooltip>}
-        >
+        <OverlayTrigger placement="top" overlay={<Tooltip>Edit Admin</Tooltip>}>
           <i className="bi bi-pencil-square text-success" onClick={openModal} />
         </OverlayTrigger>
       </button>
-
 
       <Modal show={showModal} onHide={closeModal} centered backdrop="static">
         <Modal.Header closeButton>
@@ -85,7 +80,11 @@ const EditAdminModal = (adminProp) => {
                 type="text"
                 placeholder="Company"
                 value={adminData.company}
-                onChange={(e) => handleChange({ target: { id: "company", value: e.target.value } })}
+                onChange={(e) =>
+                  handleChange({
+                    target: { id: "company", value: e.target.value },
+                  })
+                }
               />
             </Form.Group>
 
@@ -95,7 +94,11 @@ const EditAdminModal = (adminProp) => {
                 type="text"
                 placeholder="First Name"
                 value={adminData.first_name}
-                onChange={(e) => handleChange({ target: { id: "first_name", value: e.target.value } })}
+                onChange={(e) =>
+                  handleChange({
+                    target: { id: "first_name", value: e.target.value },
+                  })
+                }
               />
             </Form.Group>
 
@@ -105,7 +108,11 @@ const EditAdminModal = (adminProp) => {
                 type="text"
                 placeholder="Last Name"
                 value={adminData.last_name}
-                onChange={(e) => handleChange({ target: { id: "last_name", value: e.target.value } })}
+                onChange={(e) =>
+                  handleChange({
+                    target: { id: "last_name", value: e.target.value },
+                  })
+                }
               />
             </Form.Group>
 
@@ -113,7 +120,11 @@ const EditAdminModal = (adminProp) => {
               <Form.Label>Payment Status</Form.Label>
               <Form.Select
                 value={adminData.payment_status}
-                onChange={(e) => handleChange({ target: { id: "payment_status", value: e.target.value } })}
+                onChange={(e) =>
+                  handleChange({
+                    target: { id: "payment_status", value: e.target.value },
+                  })
+                }
               >
                 <option value="Unpaid">Unpaid</option>
                 <option value="Paid">Paid</option>
@@ -136,6 +147,3 @@ const EditAdminModal = (adminProp) => {
 };
 
 export default EditAdminModal;
-
-
-

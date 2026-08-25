@@ -1,18 +1,24 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import EditForm from "../EditForm";
+import MultiPageModal from "../MultiPageModal";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
 
-const All = ({ filteredUsers = [], searchTerm = "" }) => {
+const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
   const [editRegistration, setEditRegistration] = useState(null);
+  const [editGroupRegistration, setEditGroupRegistration] = useState(null);
+  const [activeStep, setActiveStep] = useState(0);
+  const [showGroupModal, setShowGroupModal] = useState(false);
   const [activePaymentStatus, setActivePaymentStatus] = useState("");
   const [activeTraining, setActiveTraining] = useState([]);
   const [activeCompany, setActiveCompany] = useState("");
   const [activeCountry, setActiveCountry] = useState("");
   const [trainingData, setTrainingData] = useState([]);
 
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy] = useState("company");
   const [sortDirection, setSortDirection] = useState("asc");
+
+  const editCloseButtonRef = useRef(null);
 
   function formatCurrency(amount) {
     const num = parseFloat(amount);
@@ -51,6 +57,14 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
   useEffect(() => {
     fetchDataFromSupabase();
   }, []);
+
+  // Called after EditForm successfully saves: refetch the parent's data
+  // and close the modal without a full page reload.
+  const handleEditSuccess = () => {
+    onRefresh();
+    setEditRegistration(null);
+    editCloseButtonRef.current?.click();
+  };
 
   const destructureFilteredUsers = (users) =>
     users.flatMap((user) =>
@@ -141,7 +155,7 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
 
   const usersToDisplay = filteredRegistrations.flatMap((user) =>
     (user.attendees || []).length > 0
-      ? user.attendees.map((attendee) => ({
+      ? user.attendees.map((attendee, idx) => ({
           id: attendee.id,
           first_name: attendee.first_name,
           last_name: attendee.last_name,
@@ -160,6 +174,10 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
           submission_date: user.submission_date,
           trainings: attendee.trainings,
           payment_options: user.payment_options,
+          row_type: "attendee",
+          registration_id: user.id,
+          attendee_index: idx,
+          fullRegistration: user,
         }))
       : [
           {
@@ -180,6 +198,9 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
             submission_date: user.submission_date,
             trainings: user.trainings,
             payment_options: user.payment_options,
+            row_type: "registration",
+            registration_id: user.id,
+            fullRegistration: user,
           },
         ],
   );
@@ -209,8 +230,70 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
     setSortDirection("asc");
   };
 
-  async function handleDelete(id) {
-    console.log(id);
+  // Rows in this table are flattened from two different tables: an attendee of
+  // a group registration, or a standalone registration. Route the delete to the
+  // right one instead of assuming.
+  async function handleDelete(row) {
+    if (row.row_type === "attendee") {
+      return handleDeleteAttendee(row.id, row.registration_id);
+    }
+    return handleDeleteRegistration(row.id);
+  }
+
+  async function handleDeleteAttendee(attendeeId, registrationId) {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this attendee?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!result.isConfirmed) return;
+
+    const { error: trainRefError } = await supabase
+      .from("training_references")
+      .delete()
+      .eq("registration_id", registrationId)
+      .eq("attendee_id", attendeeId);
+
+    if (trainRefError) {
+      console.error("Error deleting training references:", trainRefError);
+      return Swal.fire({
+        title: "Error!",
+        text: `Could not delete training references: ${trainRefError.message}`,
+        icon: "error",
+      });
+    }
+
+    const { error: attendeeDeleteError } = await supabase
+      .from("attendees")
+      .delete()
+      .eq("id", attendeeId);
+
+    if (attendeeDeleteError) {
+      console.error("Error deleting attendee:", attendeeDeleteError);
+      return Swal.fire({
+        title: "Error!",
+        text: `Could not delete attendee: ${attendeeDeleteError.message}`,
+        icon: "error",
+      });
+    }
+
+    Swal.fire({
+      text: "Attendee deleted successfully",
+      icon: "success",
+      confirmButtonText: "OK",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        onRefresh();
+      }
+    });
+  }
+
+  async function handleDeleteRegistration(id) {
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "Do you really want to delete this registration?",
@@ -225,10 +308,10 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
       const { error: trainRefError } = await supabase
         .from("training_references")
         .delete()
-        .eq("attendee_id", id);
+        .eq("registration_id", id);
 
       const { error: regError } = await supabase
-        .from("attendees")
+        .from("registrations")
         .delete()
         .eq("id", id);
 
@@ -249,7 +332,7 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
           confirmButtonText: "OK",
         }).then((result) => {
           if (result.isConfirmed) {
-            window.location.reload();
+            onRefresh();
           }
         });
       }
@@ -389,7 +472,7 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
               <li
                 className="dropdown-item text-center fw-bold"
                 onClick={() => {
-                  setSortBy("");
+                  setSortBy("company");
                   setSortDirection("asc");
                 }}
               >
@@ -636,14 +719,14 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
               <tbody>
                 {displayedUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="text-center">
+                    <td colSpan={11} className="text-center">
                       <h1 className="m-5"> No records satisfy the filter</h1>
                     </td>
                   </tr>
                 ) : (
-                  displayedUsers.map((reg, i) => {
+                  displayedUsers.map((reg) => {
                     return (
-                      <tr key={i}>
+                      <tr key={`${reg.row_type}-${reg.id}`}>
                         <td
                           className="small sticky-col text-wrap"
                           style={{
@@ -700,19 +783,37 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
                             {reg.payment_status}
                           </span>
                         </td>
+                        {/* Actions */}
                         {/* <td colSpan={2} className="sticky-col">
                           <div className="btn-group">
+                            {reg.row_type === "attendee" ? (
+                              <button
+                                className="btn"
+                                onClick={() => {
+                                  setActiveStep(reg.attendee_index);
+                                  setEditGroupRegistration(
+                                    reg.fullRegistration,
+                                  );
+                                  setShowGroupModal(true);
+                                }}
+                              >
+                                <i className="bi bi-pencil-square text-success" />
+                              </button>
+                            ) : (
+                              <button
+                                className="btn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editModal"
+                                onClick={() =>
+                                  setEditRegistration(reg.fullRegistration)
+                                }
+                              >
+                                <i className="bi bi-pencil-square text-success" />
+                              </button>
+                            )}
                             <button
                               className="btn"
-                              data-bs-toggle="modal"
-                              data-bs-target="#editModal"
-                              onClick={() => setEditRegistration(reg)}
-                            >
-                              <i className="bi bi-pencil-square text-success" />
-                            </button>
-                            <button
-                              className="btn"
-                              onClick={() => handleDelete(reg.id)}
+                              onClick={() => handleDelete(reg)}
                             >
                               <i className="bi bi-trash-fill text-danger" />
                             </button>
@@ -753,16 +854,29 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
                   className="btn-close"
                   data-bs-dismiss="modal"
                   aria-label="Close"
+                  ref={editCloseButtonRef}
                   onClick={() => setEditRegistration(null)}
                 ></button>
               </div>
               <div className="modal-body">
-                <EditForm reg={editRegistration} />
+                <EditForm
+                  reg={editRegistration}
+                  onSuccess={handleEditSuccess}
+                />
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Edit Modal for attendees of a group registration */}
+      <MultiPageModal
+        stepProp={activeStep}
+        show={showGroupModal}
+        onHide={() => setShowGroupModal(false)}
+        initialReg={editGroupRegistration}
+        onSuccess={onRefresh}
+      />
     </>
   );
 };
