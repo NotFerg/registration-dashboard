@@ -4,7 +4,13 @@ import EditFormGroup from "./EditFormGroup";
 import supabase from "../utils/supabase";
 import Swal from "sweetalert2";
 
-const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
+const MultiPageModal = ({
+  stepProp,
+  show,
+  onHide,
+  initialReg,
+  onSuccess = () => {},
+}) => {
   // Step is attendee index (0-based)
   const [step, setStep] = useState(0);
   const [attendees, setAttendees] = useState([]);
@@ -30,7 +36,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
                 .map((tr) =>
                   tr.trainings
                     ? `${tr.trainings.date}: ${tr.trainings.name} ($${tr.trainings.price})`
-                    : null
+                    : null,
                 )
                 .filter(Boolean)
             : [],
@@ -131,16 +137,16 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         await saveAllAttendeesToDB(attendees, reg.total_cost);
       }
 
-      onHide();
       Swal.fire({
         title: "Saved!",
         text: "Group registration updated successfully.",
         icon: "success",
         confirmButtonText: "OK",
       }).then((result) => {
-        // Only refresh once the user has actually seen the confirmation.
+        // Only proceed once the user has actually seen the confirmation.
         if (result.isConfirmed) {
-          window.location.reload();
+          onHide();
+          onSuccess();
         }
       });
     } catch (err) {
@@ -252,7 +258,7 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
         const trainingId = await upsertTrainingByNameDatePrice(
           parsed.name,
           parsed.date,
-          parsed.price
+          parsed.price,
         );
 
         if (!trainingId) continue;
@@ -313,8 +319,8 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
           trainings: Array.isArray(attendee.trainings)
             ? attendee.trainings
             : typeof attendee.trainings === "string"
-            ? attendee.trainings.split(",").map((t) => t.trim())
-            : [],
+              ? attendee.trainings.split(",").map((t) => t.trim())
+              : [],
           total_cost: attendee.subtotal,
         }}
         {...{ isFirst, isLast, next, prev, attendees, step }}
@@ -327,12 +333,12 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
   if (!initialReg) return null;
 
   return (
-    <Modal show={show} onHide={onHide} size='lg' style={{ zIndex: 11000 }}>
+    <Modal show={show} onHide={onHide} size="lg" style={{ zIndex: 11000 }}>
       <Modal.Header closeButton>
         <Modal.Title>
           <h1
-            className='modal-title fs-5'
-            id='editModalLabel'
+            className="modal-title fs-5"
+            id="editModalLabel"
             style={{ fontWeight: 700 }}
           >
             Edit Group Registration
@@ -341,61 +347,61 @@ const MultiPageModal = ({ stepProp, show, onHide, initialReg }) => {
       </Modal.Header>
       <Modal.Body>
         {/* Admin overview (read-only) */}
-        <section className='mb-4'>
+        <section className="mb-4">
           {/* Admin overview (read-only) */}
-          <h4 style={{ marginBottom: 12 }} className='fs-5'>
+          <h4 style={{ marginBottom: 12 }} className="fs-5">
             Admin Information
           </h4>
-          <div className='card w-100'>
-            <div className='card-body'>
-              <div className='d-flex flex-row'>
-                <div className='flex-fill'>
-                  <h3 className='card-title'>
-                    <i className='bi bi-building'></i>
+          <div className="card w-100">
+            <div className="card-body">
+              <div className="d-flex flex-row">
+                <div className="flex-fill">
+                  <h3 className="card-title">
+                    <i className="bi bi-building"></i>
                   </h3>
-                  <h6 className='card-title'>
+                  <h6 className="card-title">
                     <strong>Company</strong>
                   </h6>
-                  <p className='card-text'>{initialReg.company}</p>
+                  <p className="card-text">{initialReg.company}</p>
                 </div>
-                <div className='vr mx-3'></div>
-                <div className='flex-fill'>
-                  <h3 className='card-title'>
-                    <i className='bi bi-person-circle'></i>
+                <div className="vr mx-3"></div>
+                <div className="flex-fill">
+                  <h3 className="card-title">
+                    <i className="bi bi-person-circle"></i>
                   </h3>
-                  <h6 className='card-title'>
+                  <h6 className="card-title">
                     <strong>Name</strong>
                   </h6>
-                  <p className='card-text'>
+                  <p className="card-text">
                     {initialReg.first_name} {initialReg.last_name}
                   </p>
                 </div>
-                <div className='vr mx-3'></div>
-                <div className='flex-fill'>
-                  <h3 className='card-title'>
-                    <i className='bi bi-envelope-at-fill'></i>
+                <div className="vr mx-3"></div>
+                <div className="flex-fill">
+                  <h3 className="card-title">
+                    <i className="bi bi-envelope-at-fill"></i>
                   </h3>
-                  <h6 className='card-title'>
+                  <h6 className="card-title">
                     <strong>E-Mail</strong>
                   </h6>
-                  <p className='card-text'>{initialReg.email}</p>
+                  <p className="card-text">{initialReg.email}</p>
                 </div>
-                <div className='vr mx-3'></div>
-                <div className='flex-fill'>
-                  <h3 className='card-title'>
-                    <i className='bi bi-cash'></i>
+                <div className="vr mx-3"></div>
+                <div className="flex-fill">
+                  <h3 className="card-title">
+                    <i className="bi bi-cash"></i>
                   </h3>
-                  <h6 className='card-title'>
+                  <h6 className="card-title">
                     <strong>Total Cost</strong>
                   </h6>
-                  <p className='card-text'>${initialReg.total_cost}</p>
+                  <p className="card-text">${initialReg.total_cost}</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
         <hr />
-        <h4 style={{ marginBottom: 12 }} className='fs-5'>
+        <h4 style={{ marginBottom: 12 }} className="fs-5">
           Attendees Information
         </h4>
         {renderAttendeeForm()}

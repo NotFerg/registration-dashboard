@@ -7,7 +7,7 @@ import NotesModal from "../NotesModal";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import EditAdminModal from "../EditAdminModal";
 
-const Group = ({ filteredUsers = [] }) => {
+const Group = ({ filteredUsers = [], onRefresh = () => {} }) => {
   // tracks expanded registration ids (use ids instead of indexes so pagination doesn't break it)
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [editRegistration, setEditRegistration] = useState(null);
@@ -22,7 +22,7 @@ const Group = ({ filteredUsers = [] }) => {
   const [activeCountry, setActiveCountry] = useState("");
   const [trainingData, setTrainingData] = useState([]);
 
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy] = useState("company");
   const [sortDirection, setSortDirection] = useState("asc");
 
   function formatCurrency(amount) {
@@ -351,7 +351,7 @@ const Group = ({ filteredUsers = [] }) => {
             </button>
             <ul className="dropdown-menu p-2" style={{ minWidth: "200px" }}>
               <li className="dropdown-header">Property</li>
-                            <li
+              <li
                 className="dropdown-item"
                 onClick={() => setSortBy("submission_date")}
               >
@@ -401,7 +401,7 @@ const Group = ({ filteredUsers = [] }) => {
               <li
                 className="dropdown-item text-center fw-bold"
                 onClick={() => {
-                  setSortBy("");
+                  setSortBy("company");
                   setSortDirection("asc");
                 }}
               >
@@ -723,8 +723,8 @@ const Group = ({ filteredUsers = [] }) => {
 
                       <td className="text-center small">
                         <div className="btn-group">
-                          <EditAdminModal admin={reg} />
-                          <InvoiceModal attendee={reg} />
+                          <EditAdminModal admin={reg} onSuccess={onRefresh} />
+                          <InvoiceModal attendee={reg} onSuccess={onRefresh} />
                           <button
                             className="btn"
                             onClick={(e) => {
@@ -867,6 +867,7 @@ const Group = ({ filteredUsers = [] }) => {
           registration={notesModalContent}
           show={showNotesModal}
           onHide={() => setShowNotesModal(false)}
+          onSuccess={onRefresh}
         />
       )}
 
@@ -875,6 +876,7 @@ const Group = ({ filteredUsers = [] }) => {
         show={showModal}
         onHide={() => setShowModal(false)}
         initialReg={editRegistration}
+        onSuccess={onRefresh}
       />
     </>
   );

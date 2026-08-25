@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import EditForm from "../EditForm";
 import MultiPageModal from "../MultiPageModal";
 import Swal from "sweetalert2";
 import supabase from "../../utils/supabase";
 
-const All = ({ filteredUsers = [], searchTerm = "" }) => {
+const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
   const [editRegistration, setEditRegistration] = useState(null);
   const [editGroupRegistration, setEditGroupRegistration] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
@@ -15,8 +15,10 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
   const [activeCountry, setActiveCountry] = useState("");
   const [trainingData, setTrainingData] = useState([]);
 
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy] = useState("company");
   const [sortDirection, setSortDirection] = useState("asc");
+
+  const editCloseButtonRef = useRef(null);
 
   function formatCurrency(amount) {
     const num = parseFloat(amount);
@@ -55,6 +57,14 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
   useEffect(() => {
     fetchDataFromSupabase();
   }, []);
+
+  // Called after EditForm successfully saves: refetch the parent's data
+  // and close the modal without a full page reload.
+  const handleEditSuccess = () => {
+    onRefresh();
+    setEditRegistration(null);
+    editCloseButtonRef.current?.click();
+  };
 
   const destructureFilteredUsers = (users) =>
     users.flatMap((user) =>
@@ -278,7 +288,7 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
       confirmButtonText: "OK",
     }).then((result) => {
       if (result.isConfirmed) {
-        window.location.reload();
+        onRefresh();
       }
     });
   }
@@ -322,7 +332,7 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
           confirmButtonText: "OK",
         }).then((result) => {
           if (result.isConfirmed) {
-            window.location.reload();
+            onRefresh();
           }
         });
       }
@@ -462,7 +472,7 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
               <li
                 className="dropdown-item text-center fw-bold"
                 onClick={() => {
-                  setSortBy("");
+                  setSortBy("company");
                   setSortDirection("asc");
                 }}
               >
@@ -701,9 +711,9 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
                   <th className="text-nowrap">Trainings</th>
                   <th className="text-nowrap">Total Cost</th>
                   <th className="text-nowrap">Payment Status</th>
-                  <th className="text-nowrap text-center" colSpan={2}>
+                  {/* <th className="text-nowrap text-center" colSpan={2}>
                     Actions
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody>
@@ -773,7 +783,8 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
                             {reg.payment_status}
                           </span>
                         </td>
-                        <td colSpan={2} className="sticky-col">
+                        {/* Actions */}
+                        {/* <td colSpan={2} className="sticky-col">
                           <div className="btn-group">
                             {reg.row_type === "attendee" ? (
                               <button
@@ -807,7 +818,7 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
                               <i className="bi bi-trash-fill text-danger" />
                             </button>
                           </div>
-                        </td>
+                        </td> */}
                       </tr>
                     );
                   })
@@ -843,11 +854,15 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
                   className="btn-close"
                   data-bs-dismiss="modal"
                   aria-label="Close"
+                  ref={editCloseButtonRef}
                   onClick={() => setEditRegistration(null)}
                 ></button>
               </div>
               <div className="modal-body">
-                <EditForm reg={editRegistration} />
+                <EditForm
+                  reg={editRegistration}
+                  onSuccess={handleEditSuccess}
+                />
               </div>
             </div>
           </div>
@@ -860,6 +875,7 @@ const All = ({ filteredUsers = [], searchTerm = "" }) => {
         show={showGroupModal}
         onHide={() => setShowGroupModal(false)}
         initialReg={editGroupRegistration}
+        onSuccess={onRefresh}
       />
     </>
   );
