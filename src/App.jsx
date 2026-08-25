@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 import supabase from "./utils/supabase";
@@ -17,7 +17,9 @@ import TopNavbar from "./components/Navbar.jsx";
 
 function App() {
   const [excelData, setExcelData] = useState([]);
-  const [activeTab, setActiveTab] = useState("individual");
+  const [activeTab, setActiveTab] = useState(
+    () => localStorage.getItem("registrationsActiveTab") || "individual",
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -25,6 +27,12 @@ function App() {
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const closeAddRegModalRef = useRef(null);
+
+  useEffect(() => {
+    localStorage.setItem("registrationsActiveTab", activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     fetchDataFromSupabase();
@@ -73,6 +81,13 @@ function App() {
 
     setExcelData(registrations || []);
     setIsLoading(false);
+  }
+
+  // Called after Form successfully adds a registration: refetch and close
+  // the Add Registration modal without a full page reload.
+  function handleAddRegistrationSuccess() {
+    fetchDataFromSupabase();
+    closeAddRegModalRef.current?.click();
   }
 
   async function handleFileUpload(e) {
@@ -669,10 +684,11 @@ function App() {
                 className="btn-close"
                 data-bs-dismiss="modal"
                 aria-label="Close"
+                ref={closeAddRegModalRef}
               />
             </div>
             <div className="modal-body">
-              <Form onSuccess={fetchDataFromSupabase} />
+              <Form onSuccess={handleAddRegistrationSuccess} />
             </div>
           </div>
         </div>

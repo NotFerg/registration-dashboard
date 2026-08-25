@@ -6,7 +6,7 @@ import InvoiceModal from "../InvoiceModal";
 import NotesModal from "../NotesModal";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
-const Individual = ({ filteredUsers = [] }) => {
+const Individual = ({ filteredUsers = [], onRefresh = () => {} }) => {
   const [editRegistration, setEditRegistration] = useState(null);
   const [activePaymentStatus, setActivePaymentStatus] = useState("");
   const [activeTraining, setActiveTraining] = useState([]);
@@ -14,11 +14,13 @@ const Individual = ({ filteredUsers = [] }) => {
   const [activeCountry, setActiveCountry] = useState("");
   const [trainingData, setTrainingData] = useState([]);
 
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy] = useState("company");
   const [sortDirection, setSortDirection] = useState("asc");
 
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notesModalContent, setNotesModalContent] = useState(null);
+
+  const editCloseButtonRef = useRef(null);
 
   function formatCurrency(amount) {
     const num = parseFloat(amount);
@@ -46,12 +48,18 @@ const Individual = ({ filteredUsers = [] }) => {
     fetchDataFromSupabase();
   }, []);
 
+  const handleEditSuccess = () => {
+    onRefresh();
+    setEditRegistration(null);
+    editCloseButtonRef.current?.click();
+  };
+
   const clearFilters = () => {
     setActivePaymentStatus("");
     setActiveTraining([]);
     setActiveCompany("");
     setActiveCountry("");
-    setSortBy("");
+    setSortBy("company");
     setSortDirection("asc");
   };
 
@@ -154,7 +162,7 @@ const Individual = ({ filteredUsers = [] }) => {
           confirmButtonText: "OK",
         }).then((result) => {
           if (result.isConfirmed) {
-            window.location.reload();
+            onRefresh();
           }
         });
       }
@@ -250,7 +258,7 @@ const Individual = ({ filteredUsers = [] }) => {
               <li
                 className="dropdown-item text-center fw-bold"
                 onClick={() => {
-                  setSortBy("");
+                  setSortBy("company");
                   setSortDirection("asc");
                 }}
               >
@@ -591,7 +599,7 @@ const Individual = ({ filteredUsers = [] }) => {
                           >
                             <i className="bi bi-pencil-square text-success" />
                           </button>
-                          <InvoiceModal attendee={reg} />
+                          <InvoiceModal attendee={reg} onSuccess={onRefresh} />
                           <button
                             className="btn"
                             onClick={() => handleDelete(reg.id)}
@@ -634,11 +642,15 @@ const Individual = ({ filteredUsers = [] }) => {
                   className="btn-close"
                   data-bs-dismiss="modal"
                   aria-label="Close"
+                  ref={editCloseButtonRef}
                   onClick={() => setEditRegistration(null)}
                 ></button>
               </div>
               <div className="modal-body">
-                <EditForm reg={editRegistration} />
+                <EditForm
+                  reg={editRegistration}
+                  onSuccess={handleEditSuccess}
+                />
               </div>
             </div>
           </div>
@@ -650,6 +662,7 @@ const Individual = ({ filteredUsers = [] }) => {
           registration={notesModalContent}
           show={showNotesModal}
           onHide={() => setShowNotesModal(false)}
+          onSuccess={onRefresh}
         />
       )}
     </>
