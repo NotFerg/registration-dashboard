@@ -92,7 +92,7 @@ const Group = ({ filteredUsers = [], onRefresh = () => {} }) => {
     }
 
     const regTrainingNames = extractTrainingNamesFromRegistration(reg);
-    const trainingMatches = activeNormalized.some((sel) =>
+    const trainingMatches = activeNormalized.every((sel) =>
       regTrainingNames.includes(sel),
     );
 
