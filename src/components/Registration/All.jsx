@@ -58,8 +58,6 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
     fetchDataFromSupabase();
   }, []);
 
-  // Called after EditForm successfully saves: refetch the parent's data
-  // and close the modal without a full page reload.
   const handleEditSuccess = () => {
     onRefresh();
     setEditRegistration(null);
@@ -109,51 +107,8 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
 
   const normalize = (s) => (s || "").toString().trim().toLowerCase();
 
-  const extractTrainingNamesFromUser = (user) => {
-    const names = [];
-
-    if (user.training_references && user.training_references.length > 0) {
-      user.training_references.forEach((tr) => {
-        if (tr && tr.trainings && tr.trainings.name) {
-          names.push(tr.trainings.name);
-        }
-      });
-    }
-
-    if (Array.isArray(user.attendees) && user.attendees.length > 0) {
-      user.attendees.forEach((attendee) => {
-        (attendee.training_references || []).forEach((tr) => {
-          if (tr && tr.trainings && tr.trainings.name) {
-            names.push(tr.trainings.name);
-          }
-        });
-      });
-    }
-
-    return Array.from(new Set(names.map(normalize)));
-  };
-
-  const filteredRegistrations = filteredUsers.filter((user) => {
-    const paymentStatusMatches =
-      !activePaymentStatus || user.payment_status === activePaymentStatus;
-    const countryMatches = !activeCountry || user.country === activeCountry;
-
-    const activeNormalized = (activeTraining || []).map(normalize);
-
-    if (activeNormalized.length === 0) {
-      return paymentStatusMatches && countryMatches;
-    }
-
-    const userTrainingNames = extractTrainingNamesFromUser(user);
-
-    const trainingMatches = activeNormalized.some((sel) =>
-      userTrainingNames.includes(sel),
-    );
-
-    return paymentStatusMatches && trainingMatches && countryMatches;
-  });
-
-  const usersToDisplay = filteredRegistrations.flatMap((user) =>
+  // 1. Flatten all users and attendees into individual rows first
+  const allFlattenedRows = filteredUsers.flatMap((user) =>
     (user.attendees || []).length > 0
       ? user.attendees.map((attendee, idx) => ({
           id: attendee.id,
@@ -202,8 +157,32 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
             registration_id: user.id,
             fullRegistration: user,
           },
-        ],
+        ]
   );
+
+  // 2. Filter the flattened rows individually
+  const usersToDisplay = allFlattenedRows.filter((row) => {
+    const paymentStatusMatches =
+      !activePaymentStatus || row.payment_status === activePaymentStatus;
+    const countryMatches = !activeCountry || row.country === activeCountry;
+
+    const activeNormalized = (activeTraining || []).map(normalize);
+
+    if (activeNormalized.length === 0) {
+      return paymentStatusMatches && countryMatches;
+    }
+
+    const rowTrainingNames = (row.training_references || [])
+      .map((tr) => tr?.trainings?.name)
+      .filter(Boolean)
+      .map(normalize);
+
+    const trainingMatches = activeNormalized.every((sel) =>
+      rowTrainingNames.includes(sel)
+    );
+
+    return paymentStatusMatches && trainingMatches && countryMatches;
+  });
 
   const searchedUsers = useMemo(() => {
     const term = normalize(searchTerm);
@@ -230,9 +209,6 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
     setSortDirection("asc");
   };
 
-  // Rows in this table are flattened from two different tables: an attendee of
-  // a group registration, or a standalone registration. Route the delete to the
-  // right one instead of assuming.
   async function handleDelete(row) {
     if (row.row_type === "attendee") {
       return handleDeleteAttendee(row.id, row.registration_id);
@@ -706,14 +682,10 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
                   <th className="text-nowrap">Full Name</th>
                   <th className="text-nowrap">Email</th>
                   <th className="text-nowrap">Position</th>
-                  {/* <th className="text-nowrap">Designation</th> */}
                   <th className="text-nowrap">Country</th>
                   <th className="text-nowrap">Trainings</th>
                   <th className="text-nowrap">Total Cost</th>
                   <th className="text-nowrap">Payment Status</th>
-                  {/* <th className="text-nowrap text-center" colSpan={2}>
-                    Actions
-                  </th> */}
                 </tr>
               </thead>
               <tbody>
@@ -752,7 +724,6 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
                           {reg.email}
                         </td>
                         <td className="small text-wrap">{reg.position}</td>
-                        {/* <td className="small text-wrap">{reg.designation}</td> */}
                         <td className="small text-wrap">{reg.country}</td>
                         <td className="small text-wrap">
                           <ul className="mb-0">
@@ -783,42 +754,6 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
                             {reg.payment_status}
                           </span>
                         </td>
-                        {/* Actions */}
-                        {/* <td colSpan={2} className="sticky-col">
-                          <div className="btn-group">
-                            {reg.row_type === "attendee" ? (
-                              <button
-                                className="btn"
-                                onClick={() => {
-                                  setActiveStep(reg.attendee_index);
-                                  setEditGroupRegistration(
-                                    reg.fullRegistration,
-                                  );
-                                  setShowGroupModal(true);
-                                }}
-                              >
-                                <i className="bi bi-pencil-square text-success" />
-                              </button>
-                            ) : (
-                              <button
-                                className="btn"
-                                data-bs-toggle="modal"
-                                data-bs-target="#editModal"
-                                onClick={() =>
-                                  setEditRegistration(reg.fullRegistration)
-                                }
-                              >
-                                <i className="bi bi-pencil-square text-success" />
-                              </button>
-                            )}
-                            <button
-                              className="btn"
-                              onClick={() => handleDelete(reg)}
-                            >
-                              <i className="bi bi-trash-fill text-danger" />
-                            </button>
-                          </div>
-                        </td> */}
                       </tr>
                     );
                   })
@@ -829,7 +764,6 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
         </div>
       </div>
 
-      {/* Edit Modal */}
       <div>
         <div
           className="modal fade"
@@ -869,7 +803,6 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
         </div>
       </div>
 
-      {/* Edit Modal for attendees of a group registration */}
       <MultiPageModal
         stepProp={activeStep}
         show={showGroupModal}

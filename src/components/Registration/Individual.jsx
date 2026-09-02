@@ -76,7 +76,7 @@ const Individual = ({ filteredUsers = [], onRefresh = () => {} }) => {
 
     const trainingMatches =
       activeNormalized.length === 0 ||
-      activeNormalized.some((sel) => userTrainings.includes(sel));
+      activeNormalized.every((sel) => userTrainings.includes(sel));
 
     const countryMatches = !activeCountry || user.country === activeCountry;
 
