@@ -1,8 +1,21 @@
-import React, { useState, useEffect } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
+import React, { useEffect, useRef, useState } from "react";
+import { Modal } from "react-bootstrap";
 import EditFormGroup from "./EditFormGroup";
 import supabase from "../utils/supabase";
 import Swal from "sweetalert2";
+
+const createBlankAttendee = () => ({
+  id: null,
+  first_name: "",
+  last_name: "",
+  email: "",
+  position: "",
+  designation: "",
+  country: "",
+  trainings: [],
+  training_ids: [],
+  subtotal: 0,
+});
 
 const MultiPageModal = ({
   stepProp,
@@ -11,9 +24,10 @@ const MultiPageModal = ({
   initialReg,
   onSuccess = () => {},
 }) => {
-  // Step is attendee index (0-based)
   const [step, setStep] = useState(0);
   const [attendees, setAttendees] = useState([]);
+  const [newAttendee, setNewAttendee] = useState(null);
+  const newAttendeeSaveRef = useRef(null);
   const [reg, setReg] = useState({
     first_name: "",
     last_name: "",
@@ -24,46 +38,40 @@ const MultiPageModal = ({
     payment_status: "",
   });
 
-  // Load initial data when modal opens or initialReg changes
   useEffect(() => {
     if (!initialReg) return;
 
     const baseAttendees = Array.isArray(initialReg.attendees)
-      ? initialReg.attendees.map((att) => ({
-          ...att,
-          trainings: Array.isArray(att.training_references)
+      ? initialReg.attendees.map((att) => {
+          const references = Array.isArray(att.training_references)
             ? att.training_references
-                .map((tr) =>
-                  tr.trainings
-                    ? `${tr.trainings.date}: ${tr.trainings.name} ($${tr.trainings.price})`
-                    : null,
-                )
-                .filter(Boolean)
-            : [],
-        }))
+            : [];
+
+          const trainingIds = references
+            .map((tr) => tr?.training_id ?? tr?.trainings?.id)
+            .filter((id) => id !== null && id !== undefined);
+
+          const trainingStrings = references
+            .map((tr) =>
+              tr?.trainings
+                ? `${tr.trainings.date}: ${tr.trainings.name} ($${tr.trainings.price})`
+                : null,
+            )
+            .filter(Boolean);
+
+          return {
+            ...att,
+            trainings: trainingStrings,
+            training_ids: [...new Set(trainingIds.map(Number))],
+          };
+        })
       : [];
 
     const desiredStep = typeof stepProp === "number" ? stepProp : 0;
+    const isAdding = desiredStep >= baseAttendees.length;
 
-    const attendeesWithPlaceholders = [...baseAttendees];
-    if (desiredStep >= attendeesWithPlaceholders.length) {
-      for (let i = attendeesWithPlaceholders.length; i <= desiredStep; i++) {
-        attendeesWithPlaceholders.push({
-          id: null,
-          first_name: "",
-          last_name: "",
-          email: "",
-          position: "",
-          designation: "",
-          country: "",
-          trainings: [],
-          subtotal: 0,
-        });
-      }
-    }
-
-    setAttendees(attendeesWithPlaceholders);
-
+    setAttendees(baseAttendees);
+    setNewAttendee(isAdding ? createBlankAttendee() : null);
     setReg({
       first_name: initialReg.first_name,
       last_name: initialReg.last_name,
@@ -73,98 +81,257 @@ const MultiPageModal = ({
       payment_options: initialReg.payment_options,
       payment_status: initialReg.payment_status,
     });
-
-    setStep(desiredStep);
+    setStep(Math.min(desiredStep, baseAttendees.length));
   }, [initialReg, show, stepProp]);
 
-  // Navigation
+  const isNewAttendee = step >= attendees.length;
+  const activeAttendee = isNewAttendee ? newAttendee : attendees[step];
   const isFirst = step === 0;
-  const isLast = step === attendees.length - 1;
+  const isLast = isNewAttendee;
 
   const next = () => {
+    if (isNewAttendee) return;
+
     if (step < attendees.length - 1) {
-      // The current attendee will be saved by EditFormGroup's onSave call
-      setStep(step + 1);
+      setStep((value) => value + 1);
+      return;
     }
+
+    // Move to a draft without adding a blank attendee to the persisted list.
+    setNewAttendee(createBlankAttendee());
+    setStep(attendees.length);
   };
 
   const prev = () => {
-    if (step > 0) {
-      // The current attendee will be saved by EditFormGroup's onSave call
-      setStep(step - 1);
+    if (isNewAttendee) {
+      if (attendees.length > 0) {
+        setNewAttendee(null);
+        setStep(attendees.length - 1);
+      }
+      return;
     }
+
+    if (step > 0) setStep((value) => value - 1);
   };
 
-  // Save changes for current attendee
-  function handleAttendeeSave(updatedAttendee) {
-    setAttendees((prev) => {
-      const copy = [...prev];
-      copy[step] = updatedAttendee;
-      // Update total cost for reg
-      const totalCost = copy.reduce((acc, att) => {
-        const cost = (att.trainings || []).reduce((sum, t) => {
-          const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
-          return sum + (match ? parseFloat(match[1]) : 0);
-        }, 0);
-        return acc + cost;
-      }, 0);
-      setReg((r) => ({ ...r, total_cost: totalCost }));
-      return copy;
-    });
+  function calculateAttendeeSubtotal(attendee) {
+    return (attendee?.trainings || []).reduce((sum, training) => {
+      if (typeof training !== "string") return sum;
+      const match = training.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
+      return sum + (match ? parseFloat(match[1]) : 0);
+    }, 0);
   }
 
-  // Save all changes to backend
-  async function handleSubmitGroup(currentAttendeeData) {
-    try {
-      // If currentAttendeeData is provided, save it first
-      if (currentAttendeeData) {
-        const copy = [...attendees];
-        copy[step] = currentAttendeeData;
+  function calculateTotalCost(attendeesToCalculate) {
+    return attendeesToCalculate.reduce(
+      (total, attendee) => total + calculateAttendeeSubtotal(attendee),
+      0,
+    );
+  }
 
-        // Update total cost for reg
-        const totalCost = copy.reduce((acc, att) => {
-          const cost = (att.trainings || []).reduce((sum, t) => {
-            const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
-            return sum + (match ? parseFloat(match[1]) : 0);
-          }, 0);
-          return acc + cost;
-        }, 0);
+  async function syncAttendeeTrainingReferences(attendee, attendeeId) {
+    const desiredTrainingIds = [
+      ...new Set(
+        (attendee.training_ids || [])
+          .filter((id) => id !== null && id !== undefined && id !== "")
+          .map(Number)
+          .filter((id) => !Number.isNaN(id)),
+      ),
+    ];
 
-        // Use the updated attendees array for saving
-        await saveAllAttendeesToDB(copy, totalCost);
-      } else {
-        // Use current attendees state
-        await saveAllAttendeesToDB(attendees, reg.total_cost);
-      }
+    const { data: existingReferences, error: referencesError } = await supabase
+      .from("training_references")
+      .select("id, training_id")
+      .eq("registration_id", initialReg.id)
+      .eq("attendee_id", attendeeId);
 
-      Swal.fire({
-        title: "Saved!",
-        text: "Group registration updated successfully.",
-        icon: "success",
-        confirmButtonText: "OK",
-      }).then((result) => {
-        // Only proceed once the user has actually seen the confirmation.
-        if (result.isConfirmed) {
-          onHide();
-          onSuccess();
-        }
-      });
-    } catch (err) {
-      console.error("Error updating group:", err);
-      // No reload here - keep the unsaved edits available for a retry.
-      Swal.fire({
-        title: "Error!",
-        text: "There was an error updating the group. Please try again.",
-        icon: "error",
-        confirmButtonText: "Close",
-      });
+    if (referencesError) throw referencesError;
+
+    const existingIds = new Set(
+      (existingReferences || [])
+        .map((reference) => Number(reference.training_id))
+        .filter((id) => !Number.isNaN(id)),
+    );
+    const desiredIds = new Set(desiredTrainingIds);
+
+    const referencesToDelete = (existingReferences || []).filter(
+      (reference) => !desiredIds.has(Number(reference.training_id)),
+    );
+
+    if (referencesToDelete.length > 0) {
+      const { error } = await supabase
+        .from("training_references")
+        .delete()
+        .in(
+          "id",
+          referencesToDelete.map((reference) => reference.id),
+        );
+
+      if (error) throw error;
+    }
+
+    const trainingIdsToAdd = desiredTrainingIds.filter(
+      (trainingId) => !existingIds.has(trainingId),
+    );
+
+    if (trainingIdsToAdd.length > 0) {
+      const { error } = await supabase.from("training_references").insert(
+        trainingIdsToAdd.map((trainingId) => ({
+          training_id: trainingId,
+          registration_id: initialReg.id,
+          attendee_id: attendeeId,
+        })),
+      );
+
+      if (error) throw error;
     }
   }
 
-  // Helper function to save all attendees to database
+  async function saveAttendeeToDB(attendee, totalCost) {
+    if (!attendee?.first_name?.trim() || !attendee?.last_name?.trim()) {
+      return attendee;
+    }
+
+    const subtotal = calculateAttendeeSubtotal(attendee);
+    const trainingsText = Array.isArray(attendee.trainings)
+      ? attendee.trainings.join("\r\n")
+      : attendee.trainings || "";
+
+    let attendeeId = attendee.id;
+
+    if (attendeeId) {
+      const { error: attendeeError } = await supabase
+        .from("attendees")
+        .update({
+          first_name: attendee.first_name,
+          last_name: attendee.last_name,
+          email: attendee.email,
+          position: attendee.position,
+          designation: attendee.designation,
+          country: attendee.country,
+          trainings: trainingsText,
+          subtotal,
+        })
+        .eq("id", attendeeId);
+
+      if (attendeeError) throw attendeeError;
+    } else {
+      const { data: inserted, error: insertError } = await supabase
+        .from("attendees")
+        .insert([
+          {
+            first_name: attendee.first_name,
+            last_name: attendee.last_name,
+            email: attendee.email,
+            position: attendee.position,
+            designation: attendee.designation,
+            country: attendee.country,
+            trainings: trainingsText,
+            subtotal,
+            registration_id: initialReg.id,
+          },
+        ])
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      attendeeId = inserted.id;
+    }
+
+    // Never create records in `trainings` here. Existing training IDs are
+    // linked/unlinked through training_references only.
+    await syncAttendeeTrainingReferences(attendee, attendeeId);
+
+    const { error: registrationError } = await supabase
+      .from("registrations")
+      .update({ total_cost: totalCost })
+      .eq("id", initialReg.id);
+
+    if (registrationError) throw registrationError;
+
+    return {
+      ...attendee,
+      id: attendeeId,
+      subtotal,
+      total_cost: subtotal,
+      training_ids: [...(attendee.training_ids || [])],
+    };
+  }
+
+  async function handleAttendeeSave(updatedAttendee) {
+    const totalCostWithDraft = calculateTotalCost(
+      isNewAttendee ? [...attendees, updatedAttendee] : attendees,
+    );
+
+    if (isNewAttendee) {
+      // Prevent two debounced autosaves of the new draft from inserting
+      // two attendee rows before the first insert has returned its ID.
+      if (newAttendeeSaveRef.current) {
+        const existingSaved = await newAttendeeSaveRef.current;
+
+        if (existingSaved?.id) {
+          const updatedExisting = await saveAttendeeToDB(
+            { ...updatedAttendee, id: existingSaved.id },
+            totalCostWithDraft,
+          );
+          setAttendees((current) => {
+            const withoutDuplicate = current.filter(
+              (attendee) => attendee.id !== updatedExisting.id,
+            );
+            return [...withoutDuplicate, updatedExisting];
+          });
+          setNewAttendee(null);
+          setStep(attendees.length);
+          setReg((current) => ({ ...current, total_cost: totalCostWithDraft }));
+          return updatedExisting;
+        }
+      }
+
+      const savePromise = saveAttendeeToDB(
+        { ...updatedAttendee },
+        totalCostWithDraft,
+      );
+      newAttendeeSaveRef.current = savePromise;
+
+      try {
+        const savedAttendee = await savePromise;
+
+        if (!savedAttendee?.id) {
+          setNewAttendee(updatedAttendee);
+          return savedAttendee;
+        }
+
+        setAttendees((current) => [...current, savedAttendee]);
+        setNewAttendee(null);
+        setStep(attendees.length);
+        setReg((current) => ({ ...current, total_cost: totalCostWithDraft }));
+        return savedAttendee;
+      } finally {
+        if (newAttendeeSaveRef.current === savePromise) {
+          newAttendeeSaveRef.current = null;
+        }
+      }
+    }
+
+    const copy = [...attendees];
+    copy[step] = { ...updatedAttendee };
+
+    const totalCost = calculateTotalCost(copy);
+    setAttendees(copy);
+    setReg((current) => ({ ...current, total_cost: totalCost }));
+
+    const savedAttendee = await saveAttendeeToDB(copy[step], totalCost);
+
+    if (savedAttendee?.id) {
+      copy[step] = savedAttendee;
+      setAttendees([...copy]);
+    }
+
+    return savedAttendee;
+  }
+
   async function saveAllAttendeesToDB(attendeesToSave, totalCost) {
-    // 1. Update registration
-    const { error: regError } = await supabase
+    const { error: registrationError } = await supabase
       .from("registrations")
       .update({
         first_name: reg.first_name,
@@ -177,155 +344,87 @@ const MultiPageModal = ({
       })
       .eq("id", initialReg.id);
 
-    if (regError) throw regError;
+    if (registrationError) throw registrationError;
 
-    // 2. Update each attendee and their trainings
     for (const attendee of attendeesToSave) {
-      // Skip attendees that don't have required data
-      if (!attendee.first_name || !attendee.last_name) continue;
+      if (!attendee.first_name?.trim() || !attendee.last_name?.trim()) continue;
 
-      const trainingsText = Array.isArray(attendee.trainings)
-        ? attendee.trainings.join(", ")
-        : attendee.trainings;
-
-      const subtotal = (attendee.trainings || []).reduce((acc, t) => {
-        const match = t.match(/\(\$(\d+(?:\.\d{1,2})?)\)/);
-        return acc + (match ? parseFloat(match[1]) : 0);
-      }, 0);
-
-      // Handle both existing and new attendees
-      if (attendee.id) {
-        // Update existing attendee
-        const { error: attError } = await supabase
-          .from("attendees")
-          .update({
-            first_name: attendee.first_name,
-            last_name: attendee.last_name,
-            email: attendee.email,
-            position: attendee.position,
-            designation: attendee.designation,
-            country: attendee.country,
-            trainings: trainingsText,
-            subtotal,
-          })
-          .eq("id", attendee.id);
-
-        if (attError) {
-          console.error("Attendee update failed:", attError);
-          continue;
-        }
-
-        // Delete old training_references
-        await supabase
-          .from("training_references")
-          .delete()
-          .eq("registration_id", initialReg.id)
-          .eq("attendee_id", attendee.id);
-      } else {
-        // Insert new attendee
-        const { data: inserted, error: insertError } = await supabase
-          .from("attendees")
-          .insert([
-            {
-              first_name: attendee.first_name,
-              last_name: attendee.last_name,
-              email: attendee.email,
-              position: attendee.position,
-              designation: attendee.designation,
-              country: attendee.country,
-              trainings: trainingsText,
-              subtotal,
-              registration_id: initialReg.id,
-            },
-          ])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error("Attendee insert failed:", insertError);
-          continue;
-        }
-
-        // Update attendee object with new ID for training references
-        attendee.id = inserted.id;
-      }
-
-      // Insert new training_references
-      for (const line of attendee.trainings || []) {
-        const parsed = parseTrainingLine(line);
-        if (!parsed) continue;
-
-        const trainingId = await upsertTrainingByNameDatePrice(
-          parsed.name,
-          parsed.date,
-          parsed.price,
-        );
-
-        if (!trainingId) continue;
-
-        await supabase.from("training_references").insert([
-          {
-            training_id: trainingId,
-            registration_id: initialReg.id,
-            attendee_id: attendee.id,
-          },
-        ]);
-      }
+      const saved = await saveAttendeeToDB(attendee, totalCost);
+      attendee.id = saved.id;
     }
   }
 
-  function parseTrainingLine(line) {
-    const match = line.match(/^(.+?):\s*(.+?)\s*\(\$(\d+(?:\.\d{1,2})?)\)$/);
-    if (!match) return null;
-    return {
-      date: match[1].trim(),
-      name: match[2].trim(),
-      price: parseFloat(match[3]),
-    };
+  async function handleSubmitGroup(currentAttendeeData) {
+    try {
+      let workingAttendees = [...attendees];
+
+      if (isNewAttendee && currentAttendeeData?.first_name?.trim() && currentAttendeeData?.last_name?.trim()) {
+        const existingDraft = currentAttendeeData.id
+          ? workingAttendees.find((attendee) => attendee.id === currentAttendeeData.id)
+          : null;
+
+        if (!existingDraft) {
+          const draftSaved = await saveAttendeeToDB(
+            { ...currentAttendeeData },
+            calculateTotalCost([...workingAttendees, currentAttendeeData]),
+          );
+          workingAttendees = [...workingAttendees, draftSaved];
+        }
+      } else if (!isNewAttendee && currentAttendeeData) {
+        workingAttendees[step] = { ...currentAttendeeData };
+      }
+
+      const totalCost = calculateTotalCost(workingAttendees);
+      await saveAllAttendeesToDB(workingAttendees, totalCost);
+
+      setAttendees(workingAttendees);
+      setNewAttendee(null);
+      setStep(Math.min(step, Math.max(workingAttendees.length - 1, 0)));
+      setReg((current) => ({ ...current, total_cost: totalCost }));
+
+      Swal.fire({
+        title: "Saved!",
+        text: "Group registration updated successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          onHide();
+          onSuccess();
+        }
+      });
+    } catch (error) {
+      console.error("Error updating group:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "There was an error updating the group. Please try again.",
+        icon: "error",
+        confirmButtonText: "Close",
+      });
+    }
   }
 
-  async function upsertTrainingByNameDatePrice(name, date, price) {
-    const { data: existing } = await supabase
-      .from("trainings")
-      .select("id")
-      .eq("name", name)
-      .eq("date", date)
-      .eq("price", price)
-      .maybeSingle();
-
-    if (existing) return existing.id;
-
-    const { data: inserted } = await supabase
-      .from("trainings")
-      .insert([{ name, date, price }])
-      .select()
-      .single();
-
-    return inserted?.id;
-  }
-
-  // Render attendee form for current step
   const renderAttendeeForm = () => {
-    if (attendees.length === 0) return <p>No attendee data.</p>;
-    const attendee = attendees[step];
-    if (!attendee) return <p>No attendee data.</p>;
+    if (!activeAttendee) return <p>No attendee data.</p>;
 
     return (
       <EditFormGroup
         reg={{
           ...initialReg,
-          ...attendee,
+          ...activeAttendee,
           registration_id: initialReg.id,
-          trainings: Array.isArray(attendee.trainings)
-            ? attendee.trainings
-            : typeof attendee.trainings === "string"
-              ? attendee.trainings.split(",").map((t) => t.trim())
-              : [],
-          total_cost: attendee.subtotal,
+          trainings: Array.isArray(activeAttendee.trainings)
+            ? activeAttendee.trainings
+            : [],
+          training_ids: Array.isArray(activeAttendee.training_ids)
+            ? activeAttendee.training_ids
+            : [],
+          total_cost: activeAttendee.subtotal,
         }}
         {...{ isFirst, isLast, next, prev, attendees, step }}
         onSave={handleAttendeeSave}
         onSubmitGroup={handleSubmitGroup}
+        onHide={onHide}
       />
     );
   };
@@ -336,19 +435,13 @@ const MultiPageModal = ({
     <Modal show={show} onHide={onHide} size="lg" style={{ zIndex: 11000 }}>
       <Modal.Header closeButton>
         <Modal.Title>
-          <h1
-            className="modal-title fs-5"
-            id="editModalLabel"
-            style={{ fontWeight: 700 }}
-          >
+          <h1 className="modal-title fs-5" style={{ fontWeight: 700 }}>
             Edit Group Registration
           </h1>
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {/* Admin overview (read-only) */}
         <section className="mb-4">
-          {/* Admin overview (read-only) */}
           <h4 style={{ marginBottom: 12 }} className="fs-5">
             Admin Information
           </h4>
@@ -356,44 +449,26 @@ const MultiPageModal = ({
             <div className="card-body">
               <div className="d-flex flex-row">
                 <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-building"></i>
-                  </h3>
-                  <h6 className="card-title">
-                    <strong>Company</strong>
-                  </h6>
+                  <h3 className="card-title"><i className="bi bi-building"></i></h3>
+                  <h6 className="card-title"><strong>Company</strong></h6>
                   <p className="card-text">{initialReg.company}</p>
                 </div>
                 <div className="vr mx-3"></div>
                 <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-person-circle"></i>
-                  </h3>
-                  <h6 className="card-title">
-                    <strong>Name</strong>
-                  </h6>
-                  <p className="card-text">
-                    {initialReg.first_name} {initialReg.last_name}
-                  </p>
+                  <h3 className="card-title"><i className="bi bi-person-circle"></i></h3>
+                  <h6 className="card-title"><strong>Name</strong></h6>
+                  <p className="card-text">{initialReg.first_name} {initialReg.last_name}</p>
                 </div>
                 <div className="vr mx-3"></div>
                 <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-envelope-at-fill"></i>
-                  </h3>
-                  <h6 className="card-title">
-                    <strong>E-Mail</strong>
-                  </h6>
+                  <h3 className="card-title"><i className="bi bi-envelope-at-fill"></i></h3>
+                  <h6 className="card-title"><strong>E-Mail</strong></h6>
                   <p className="card-text">{initialReg.email}</p>
                 </div>
                 <div className="vr mx-3"></div>
                 <div className="flex-fill">
-                  <h3 className="card-title">
-                    <i className="bi bi-cash"></i>
-                  </h3>
-                  <h6 className="card-title">
-                    <strong>Total Cost</strong>
-                  </h6>
+                  <h3 className="card-title"><i className="bi bi-cash"></i></h3>
+                  <h6 className="card-title"><strong>Total Cost</strong></h6>
                   <p className="card-text">${initialReg.total_cost}</p>
                 </div>
               </div>
