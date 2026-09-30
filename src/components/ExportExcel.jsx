@@ -1,6 +1,53 @@
 import React from "react";
 import * as XLSX from "xlsx";
 
+const TRAINING_NAMES = [
+  "Foundations of Responsible Investment",
+  "Investment Steward Essentials",
+  "Responsible Investment Masterclass",
+  "Investment Steward Masterclass",
+  "24th Annual Pacific Region Investment Conference",
+];
+
+const normalizeTrainingName = (name) =>
+  String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+
+const findTrainingColumn = (trainingName) => {
+  const normalizedName = normalizeTrainingName(trainingName);
+
+  if (normalizedName.startsWith("24th annual pacific region investment")) {
+    return "24th Annual Pacific Region Investment Conference";
+  }
+
+  return TRAINING_NAMES.find(
+    (name) => normalizeTrainingName(name) === normalizedName,
+  );
+};
+
+const trainingColumns = (trainingReferences = []) => {
+  const columns = Object.fromEntries(
+    TRAINING_NAMES.map((name) => [name, []]),
+  );
+
+  trainingReferences.forEach((reference) => {
+    const training = reference?.trainings;
+    const columnName = findTrainingColumn(training?.name);
+    if (!columnName) return;
+
+    const label = training.date
+      ? `${training.name} (${training.date})`
+      : training.name;
+
+    if (!columns[columnName].includes(label)) {
+      columns[columnName].push(label);
+    }
+  });
+
+  return Object.fromEntries(
+    Object.entries(columns).map(([name, labels]) => [name, labels.join(" | ")]),
+  );
+};
+
 const ExportExcel = ({ excelData }) => {
   function exportToExcel(excelData) {
     // Always use the full excelData, not filteredUsers
@@ -21,14 +68,7 @@ const ExportExcel = ({ excelData }) => {
             Position: att.position,
             Designation: att.designation,
             Country: att.country,
-            Trainings: (att.training_references || [])
-              .map((tr) =>
-                tr.trainings
-                  ? `${tr.trainings.name} (${tr.trainings.date})`
-                  : ""
-              )
-              .filter(Boolean)
-              .join(", "),
+            ...trainingColumns(att.training_references),
             Subtotal: att.subtotal,
             "Total Cost": reg.total_cost,
             "Payment Status": reg.payment_status,
@@ -50,12 +90,7 @@ const ExportExcel = ({ excelData }) => {
         Position: reg.position,
         Designation: reg.designation,
         Country: reg.country,
-        Trainings: (reg.training_references || [])
-          .map((tr) =>
-            tr.trainings ? `${tr.trainings.name} (${tr.trainings.date})` : ""
-          )
-          .filter(Boolean)
-          .join(", "),
+        ...trainingColumns(reg.training_references),
         "Total Cost": reg.total_cost,
         "Payment Status": reg.payment_status,
         "Registration Type": reg.registration_type,
