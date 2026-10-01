@@ -164,7 +164,9 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
   const usersToDisplay = allFlattenedRows.filter((row) => {
     const paymentStatusMatches =
       !activePaymentStatus || row.payment_status === activePaymentStatus;
-    const countryMatches = !activeCountry || row.country === activeCountry;
+    const countryMatches =
+      !activeCountry ||
+      normalize(row.country) === normalize(activeCountry);
 
     const activeNormalized = (activeTraining || []).map(normalize);
 
@@ -494,42 +496,39 @@ const All = ({ filteredUsers = [], searchTerm = "", onRefresh = () => {} }) => {
               className="dropdown-menu"
               style={{ maxHeight: "300px", overflowY: "scroll" }}
             >
-              {filteredUsers
-                .map((user) => user.country)
-                .filter(
-                  (country) =>
-                    country !== null &&
-                    country !== undefined &&
-                    country.toString().trim() !== "",
-                )
-                .filter(
-                  (country, index, self) => self.indexOf(country) === index,
-                )
-                .map((country, index) => {
-                  const cleanCountry = country.toString().trim().toLowerCase();
-                  const abbreviations = {
-                    "commonwealth of the northern mariana islands": "CNMI",
-                    "federated states of micronesia": "FSM",
-                    guam: "Guam",
-                    "republic of palau": "ROP",
-                    "republic of the marshall islands": "RMI",
-                    "united states of america": "USA",
-                    other: "Other",
-                  };
-                  const displayName = abbreviations[cleanCountry] || country;
-
-                  return (
-                    <li key={index}>
-                      <div
-                        className="dropdown-item"
-                        onClick={() => setActiveCountry(country)}
-                      >
-                        {displayName}
-                      </div>
-                      <hr className="dropdown-divider" />
-                    </li>
-                  );
-                })}
+              {Array.from(
+                new Map(
+                  filteredUsers
+                    .flatMap((user) => [
+                      user.country,
+                      ...(user.attendees || []).map(
+                        (attendee) => attendee.country
+                      ),
+                    ])
+                    .filter(
+                      (country) =>
+                        country !== null &&
+                        country !== undefined &&
+                        country.toString().trim() !== "",
+                    )
+                    .map((country) => {
+                      const cleaned = country.toString().trim();
+                      return [normalize(cleaned), cleaned];
+                    })
+                ).values()
+              )
+                .sort((a, b) => a.localeCompare(b))
+                .map((country) => (
+                  <li key={country}>
+                    <div
+                      className="dropdown-item"
+                      onClick={() => setActiveCountry(country)}
+                    >
+                      {country}
+                    </div>
+                    <hr className="dropdown-divider" />
+                  </li>
+                ))}
               <li
                 className="dropdown-item text-center fw-bold"
                 onClick={() => setActiveCountry("")}

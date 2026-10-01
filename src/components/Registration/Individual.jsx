@@ -281,24 +281,7 @@ const Individual = ({ filteredUsers = [], onRefresh = () => {} }) => {
             >
               <i className="bi bi-globe-americas-fill" /> Country:{" "}
               <span className="fw-bold">
-                {(() => {
-                  // Shortens the button label when a country is selected
-                  if (!activeCountry) return "";
-                  const cleanActive = activeCountry
-                    .toString()
-                    .trim()
-                    .toLowerCase();
-                  const btnAbbreviations = {
-                    "commonwealth of the northern mariana islands": "CNMI",
-                    "federated states of micronesia": "FSM",
-                    guam: "Guam",
-                    "republic of palau": "ROP",
-                    "republic of the marshall islands": "RMI",
-                    "united states of america": "USA",
-                    other: "Other",
-                  };
-                  return btnAbbreviations[cleanActive] || activeCountry;
-                })()}
+                {activeCountry}
               </span>
             </button>
             <ul
@@ -314,25 +297,13 @@ const Individual = ({ filteredUsers = [], onRefresh = () => {} }) => {
                   // Safeguard against null/undefined before checking dictionary
                   if (!country) return null;
 
-                  const cleanCountry = country.toString().trim().toLowerCase();
-                  const abbreviations = {
-                    "commonwealth of the northern mariana islands": "CNMI",
-                    "federated states of micronesia": "FSM",
-                    guam: "Guam",
-                    "republic of palau": "ROP",
-                    "republic of the marshall islands": "RMI",
-                    "united states of america": "USA",
-                    other: "Other",
-                  };
-                  const displayName = abbreviations[cleanCountry] || country;
-
                   return (
                     <li key={index}>
                       <div
                         className="dropdown-item"
                         onClick={() => setActiveCountry(country)}
                       >
-                        {displayName}
+                        {country}
                       </div>
                       <hr className="dropdown-divider" />
                     </li>
