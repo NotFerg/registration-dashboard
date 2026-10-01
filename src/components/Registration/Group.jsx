@@ -84,7 +84,13 @@ const Group = ({ filteredUsers = [], onRefresh = () => {} }) => {
   const filteredRegistrations = filteredUsers.filter((reg) => {
     const paymentStatusMatches =
       !activePaymentStatus || reg.payment_status === activePaymentStatus;
-    const countryMatches = !activeCountry || reg.country === activeCountry;
+    const countryMatches =
+      !activeCountry ||
+      normalize(reg.country) === normalize(activeCountry) ||
+      (reg.attendees || []).some(
+        (attendee) =>
+          normalize(attendee.country) === normalize(activeCountry)
+      );
 
     const activeNormalized = (activeTraining || []).map(normalize);
     if (activeNormalized.length === 0) {
@@ -98,6 +104,7 @@ const Group = ({ filteredUsers = [], onRefresh = () => {} }) => {
 
     return paymentStatusMatches && countryMatches && trainingMatches;
   });
+
 
   const usersToDisplay = filteredRegistrations.flatMap((user) =>
     (user.attendees || []).length > 0
@@ -424,23 +431,7 @@ const Group = ({ filteredUsers = [], onRefresh = () => {} }) => {
             >
               <i className="bi bi-globe-americas-fill" /> Country:{" "}
               <span className="fw-bold">
-                {(() => {
-                  if (!activeCountry) return "";
-                  const cleanActive = activeCountry
-                    .toString()
-                    .trim()
-                    .toLowerCase();
-                  const btnAbbreviations = {
-                    "commonwealth of the northern mariana islands": "CNMI",
-                    "federated states of micronesia": "FSM",
-                    guam: "Guam",
-                    "republic of palau": "ROP",
-                    "republic of the marshall islands": "RMI",
-                    "united states of america": "USA",
-                    other: "Other",
-                  };
-                  return btnAbbreviations[cleanActive] || activeCountry;
-                })()}
+                {activeCountry}
               </span>
             </button>
             <ul
@@ -451,35 +442,36 @@ const Group = ({ filteredUsers = [], onRefresh = () => {} }) => {
                 zIndex: "100",
               }}
             >
-              {filteredUsers
-                .map((u) => u.country)
-                .filter(
-                  (country) =>
-                    country !== null &&
-                    country !== undefined &&
-                    country.toString().trim() !== "",
-                )
-                .filter((c, i, self) => self.indexOf(c) === i)
-                .map((country, idx) => {
-                  const cleanCountry = country.toString().trim().toLowerCase();
-                  const abbreviations = {
-                    "commonwealth of the northern mariana islands": "CNMI",
-                    "federated states of micronesia": "FSM",
-                    guam: "Guam",
-                    "republic of palau": "ROP",
-                    "republic of the marshall islands": "RMI",
-                    "united states of america": "USA",
-                    other: "Other",
-                  };
-                  const displayName = abbreviations[cleanCountry] || country;
-
+              {Array.from(
+                new Map(
+                  filteredUsers
+                    .flatMap((user) => [
+                      user.country,
+                      ...(user.attendees || []).map(
+                        (attendee) => attendee.country
+                      ),
+                    ])
+                    .filter(
+                      (country) =>
+                        country !== null &&
+                        country !== undefined &&
+                        country.toString().trim() !== "",
+                    )
+                    .map((country) => {
+                      const cleaned = country.toString().trim();
+                      return [normalize(cleaned), cleaned];
+                    })
+                ).values()
+              )
+                .sort((a, b) => a.localeCompare(b))
+                .map((country) => {
                   return (
-                    <li key={idx}>
+                    <li key={country}>
                       <div
                         className="dropdown-item"
                         onClick={() => setActiveCountry(country)}
                       >
-                        {displayName}
+                        {country}
                       </div>
                       <hr className="dropdown-divider" />
                     </li>
