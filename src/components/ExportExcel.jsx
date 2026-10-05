@@ -10,12 +10,19 @@ const TRAINING_NAMES = [
 ];
 
 const normalizeTrainingName = (name) =>
-  String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+  String(name || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 
 const findTrainingColumn = (trainingName) => {
   const normalizedName = normalizeTrainingName(trainingName);
 
-  if (normalizedName.startsWith("24th annual pacific region investment")) {
+  if (
+    normalizedName.startsWith(
+      "24th annual pacific region investment",
+    )
+  ) {
     return "24th Annual Pacific Region Investment Conference";
   }
 
@@ -32,6 +39,7 @@ const trainingColumns = (trainingReferences = []) => {
   trainingReferences.forEach((reference) => {
     const training = reference?.trainings;
     const columnName = findTrainingColumn(training?.name);
+
     if (!columnName) return;
 
     const label = training.date
@@ -44,15 +52,21 @@ const trainingColumns = (trainingReferences = []) => {
   });
 
   return Object.fromEntries(
-    Object.entries(columns).map(([name, labels]) => [name, labels.join(" | ")]),
+    Object.entries(columns).map(([name, labels]) => [
+      name,
+      labels.join(" | "),
+    ]),
   );
 };
 
 const ExportExcel = ({ excelData }) => {
   function exportToExcel(excelData) {
-    // Always use the full excelData, not filteredUsers
-    // Prepare group registrations (flattened attendees)
+    // ==========================================
+    // GROUP REGISTRATIONS
+    // ==========================================
+
     const groupRows = [];
+
     excelData.forEach((reg) => {
       if (
         reg.registration_type === "Someone Else / Group" &&
@@ -78,7 +92,10 @@ const ExportExcel = ({ excelData }) => {
       }
     });
 
-    // Prepare individual registrations
+    // ==========================================
+    // INDIVIDUAL REGISTRATIONS
+    // ==========================================
+
     const individualRows = excelData
       .filter((reg) => reg.registration_type === "Myself")
       .map((reg) => ({
@@ -96,13 +113,83 @@ const ExportExcel = ({ excelData }) => {
         "Registration Type": reg.registration_type,
       }));
 
-    // Create workbook and sheets
+    // ==========================================
+    // ALL REGISTRATIONS
+    // ==========================================
+
+    const allRows = [];
+
+    excelData.forEach((reg) => {
+      // Group registration
+      if (
+        reg.registration_type === "Someone Else / Group" &&
+        reg.attendees?.length
+      ) {
+        reg.attendees.forEach((att) => {
+          allRows.push({
+            "Company / Institution": reg.company,
+            "Submission Date": reg.submission_date,
+            "First Name": att.first_name,
+            "Last Name": att.last_name,
+            Email: att.email,
+            Position: att.position,
+            Designation: att.designation,
+            Country: att.country,
+            ...trainingColumns(att.training_references),
+            Subtotal: att.subtotal,
+            "Total Cost": reg.total_cost,
+            "Payment Status": reg.payment_status,
+            "Registration Type": reg.registration_type,
+          });
+        });
+
+        return;
+      }
+
+      // Every other registration type
+      allRows.push({
+        "Company / Institution": reg.company,
+        "Submission Date": reg.submission_date,
+        "First Name": reg.first_name,
+        "Last Name": reg.last_name,
+        Email: reg.email,
+        Position: reg.position,
+        Designation: reg.designation,
+        Country: reg.country,
+        ...trainingColumns(reg.training_references),
+        "Total Cost": reg.total_cost,
+        "Payment Status": reg.payment_status,
+        "Registration Type": reg.registration_type,
+      });
+    });
+
+    // ==========================================
+    // CREATE WORKBOOK
+    // ==========================================
+
     const wb = XLSX.utils.book_new();
+
     const wsGroup = XLSX.utils.json_to_sheet(groupRows);
     const wsIndividual = XLSX.utils.json_to_sheet(individualRows);
+    const wsAll = XLSX.utils.json_to_sheet(allRows);
+    
+    XLSX.utils.book_append_sheet(
+      wb,
+      wsAll,
+      "All Registrations",
+    );
+    XLSX.utils.book_append_sheet(
+      wb,
+      wsGroup,
+      "Group Registrations",
+    );
 
-    XLSX.utils.book_append_sheet(wb, wsGroup, "Group Registrations");
-    XLSX.utils.book_append_sheet(wb, wsIndividual, "Individual Registrations");
+    XLSX.utils.book_append_sheet(
+      wb,
+      wsIndividual,
+      "Individual Registrations",
+    );
+
 
     XLSX.writeFile(wb, "registrations.xlsx");
   }
