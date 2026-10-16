@@ -18,11 +18,7 @@ const normalizeTrainingName = (name) =>
 const findTrainingColumn = (trainingName) => {
   const normalizedName = normalizeTrainingName(trainingName);
 
-  if (
-    normalizedName.startsWith(
-      "24th annual pacific region investment",
-    )
-  ) {
+  if (normalizedName.startsWith("24th annual pacific region investment")) {
     return "24th Annual Pacific Region Investment Conference";
   }
 
@@ -32,9 +28,7 @@ const findTrainingColumn = (trainingName) => {
 };
 
 const trainingColumns = (trainingReferences = []) => {
-  const columns = Object.fromEntries(
-    TRAINING_NAMES.map((name) => [name, []]),
-  );
+  const columns = Object.fromEntries(TRAINING_NAMES.map((name) => [name, []]));
 
   trainingReferences.forEach((reference) => {
     const training = reference?.trainings;
@@ -52,10 +46,7 @@ const trainingColumns = (trainingReferences = []) => {
   });
 
   return Object.fromEntries(
-    Object.entries(columns).map(([name, labels]) => [
-      name,
-      labels.join(" | "),
-    ]),
+    Object.entries(columns).map(([name, labels]) => [name, labels.join(" | ")]),
   );
 };
 
@@ -157,6 +148,8 @@ const ExportExcel = ({ excelData }) => {
         Designation: reg.designation,
         Country: reg.country,
         ...trainingColumns(reg.training_references),
+        Subtotal:
+          reg.registration_type === "Myself" ? reg.total_cost : undefined,
         "Total Cost": reg.total_cost,
         "Payment Status": reg.payment_status,
         "Registration Type": reg.registration_type,
@@ -172,24 +165,11 @@ const ExportExcel = ({ excelData }) => {
     const wsGroup = XLSX.utils.json_to_sheet(groupRows);
     const wsIndividual = XLSX.utils.json_to_sheet(individualRows);
     const wsAll = XLSX.utils.json_to_sheet(allRows);
-    
-    XLSX.utils.book_append_sheet(
-      wb,
-      wsAll,
-      "All Registrations",
-    );
-    XLSX.utils.book_append_sheet(
-      wb,
-      wsGroup,
-      "Group Registrations",
-    );
 
-    XLSX.utils.book_append_sheet(
-      wb,
-      wsIndividual,
-      "Individual Registrations",
-    );
+    XLSX.utils.book_append_sheet(wb, wsAll, "All Registrations");
+    XLSX.utils.book_append_sheet(wb, wsGroup, "Group Registrations");
 
+    XLSX.utils.book_append_sheet(wb, wsIndividual, "Individual Registrations");
 
     XLSX.writeFile(wb, "registrations.xlsx");
   }
@@ -197,10 +177,10 @@ const ExportExcel = ({ excelData }) => {
   return (
     <>
       <button
-        className='btn btn-primary fw-bold ms-2'
+        className="btn btn-primary fw-bold ms-2"
         onClick={() => exportToExcel(excelData)}
       >
-        <i className='bi bi-download'></i> Export Data
+        <i className="bi bi-download"></i> Export Data
       </button>
     </>
   );
