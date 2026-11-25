@@ -78,6 +78,7 @@ const ExportExcel = ({ excelData }) => {
             "Total Cost": reg.total_cost,
             "Payment Status": reg.payment_status,
             "Registration Type": reg.registration_type,
+            Notes: reg.notes,
           });
         });
       }
@@ -102,6 +103,7 @@ const ExportExcel = ({ excelData }) => {
         "Total Cost": reg.total_cost,
         "Payment Status": reg.payment_status,
         "Registration Type": reg.registration_type,
+        Notes: reg.notes,
       }));
 
     // ==========================================
@@ -131,6 +133,7 @@ const ExportExcel = ({ excelData }) => {
             "Total Cost": reg.total_cost,
             "Payment Status": reg.payment_status,
             "Registration Type": reg.registration_type,
+            Notes: reg.notes,
           });
         });
 
@@ -153,6 +156,7 @@ const ExportExcel = ({ excelData }) => {
         "Total Cost": reg.total_cost,
         "Payment Status": reg.payment_status,
         "Registration Type": reg.registration_type,
+        Notes: reg.notes,
       });
     });
 
